@@ -1,0 +1,16 @@
+This folder is for PowerGrid sprites.
+
+For v1, the mod generates placeholder sprites at runtime by tinting vanilla textures.
+To replace them with custom art, place PNG files here with these exact names:
+
+  CopperCable.png       (64x128 Autotiling Spritesheet)
+  IronCable.png         (64x128 Autotiling Spritesheet)
+  IridiumCable.png      (64x128 Autotiling Spritesheet)
+  SteamGenerator.png    (16x32 BigCraftable)
+  WindGenerator.png     (16x32 BigCraftable)
+  BasicBattery.png      (16x32 BigCraftable)
+  IridiumBattery.png    (16x32 BigCraftable)
+  PowerConduit.png      (16x32 BigCraftable)
+
+The mod checks for these files on load. If found, it uses them instead of the tinted placeholder.
+See README.md "Sprite Upgrade Guide" for detailed instructions.

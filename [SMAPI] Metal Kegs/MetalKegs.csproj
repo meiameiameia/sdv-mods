@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Version>1.0.1</Version>
+    <AssemblyVersion>1.0.1.0</AssemblyVersion>
+    <FileVersion>1.0.1.0</FileVersion>
+    <InformationalVersion>1.0.1</InformationalVersion>
+    <AssemblyName>MetalKegs</AssemblyName>
+    <RootNamespace>Darth.MetalKegs</RootNamespace>
+    <EnableModDeploy>false</EnableModDeploy>
+    <EnableModZip>false</EnableModZip>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.4.0" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\shared\DarthMods.API\DarthMods.API.csproj" />
+  </ItemGroup>
+  <Target Name="CopyBuildOutputsToModRoot" AfterTargets="Build">
+    <Copy SourceFiles="$(TargetDir)MetalKegs.dll" DestinationFiles="$(MSBuildProjectDirectory)\MetalKegs.dll" />
+    <Copy SourceFiles="$(TargetDir)MetalKegs.deps.json" DestinationFiles="$(MSBuildProjectDirectory)\MetalKegs.deps.json" Condition="Exists('$(TargetDir)MetalKegs.deps.json')" />
+    <Copy SourceFiles="..\shared\DarthMods.API\bin\$(Configuration)\net6.0\DarthMods.API.dll" DestinationFiles="$(MSBuildProjectDirectory)\DarthMods.API.dll" Condition="Exists('..\shared\DarthMods.API\bin\$(Configuration)\net6.0\DarthMods.API.dll')" />
+  </Target>
+</Project>
