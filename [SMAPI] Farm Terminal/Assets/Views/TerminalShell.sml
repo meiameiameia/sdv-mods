@@ -10,6 +10,7 @@
             <lane layout="stretch content" orientation="vertical">
                 <label font="dialogue" text={TitleText} />
                 <label margin="0,8,0,0" text={SubtitleText} />
+                <label margin="0,8,0,0" color="#6b5946" text={HeaderStatusText} />
             </lane>
         </frame>
 
@@ -32,7 +33,9 @@
             <scrollable *case="Overview" layout="stretch stretch" peeking="48">
                 <lane orientation="vertical">
                     <label font="dialogue" text={ActiveSectionTitle} />
+                    <label margin="0,8,0,0" color="#6b5946" text={ActiveSectionSummaryText} />
                     <label margin="0,12,0,0" text={OverviewSummaryText} />
+                    <label *if={ShowOverviewEmptyText} margin="0,12,0,0" color="#6b5946" text={OverviewEmptyText} />
 
                     <lane *repeat={OverviewCards} margin="0,18,0,0" orientation="vertical">
                         <frame layout="stretch content"
@@ -51,7 +54,8 @@
             <scrollable *case="Power" layout="stretch stretch" peeking="48">
                 <lane orientation="vertical">
                     <label font="dialogue" text={ActiveSectionTitle} />
-                    <label *if={ShowPowerEmptyText} margin="0,12,0,0" text={PowerEmptyText} />
+                    <label margin="0,8,0,0" color="#6b5946" text={ActiveSectionSummaryText} />
+                    <label *if={ShowPowerEmptyText} margin="0,12,0,0" color="#6b5946" text={PowerEmptyText} />
 
                     <lane *repeat={Networks} margin="0,18,0,0" orientation="vertical">
                         <frame layout="stretch content"
@@ -72,7 +76,8 @@
             <scrollable *case="Consumers" layout="stretch stretch" peeking="48">
                 <lane orientation="vertical">
                     <label font="dialogue" text={ActiveSectionTitle} />
-                    <label *if={ShowConsumersEmptyText} margin="0,12,0,0" text={ConsumersEmptyText} />
+                    <label margin="0,8,0,0" color="#6b5946" text={ActiveSectionSummaryText} />
+                    <label *if={ShowConsumersEmptyText} margin="0,12,0,0" color="#6b5946" text={ConsumersEmptyText} />
 
                     <lane *repeat={Consumers} margin="0,18,0,0" orientation="vertical">
                         <frame layout="stretch content"
@@ -94,7 +99,8 @@
             <scrollable *case="Sources" layout="stretch stretch" peeking="48">
                 <lane orientation="vertical">
                     <label font="dialogue" text={ActiveSectionTitle} />
-                    <label *if={ShowSourcesEmptyText} margin="0,12,0,0" text={SourcesEmptyText} />
+                    <label margin="0,8,0,0" color="#6b5946" text={ActiveSectionSummaryText} />
+                    <label *if={ShowSourcesEmptyText} margin="0,12,0,0" color="#6b5946" text={SourcesEmptyText} />
 
                     <lane *repeat={Sources} margin="0,18,0,0" orientation="vertical">
                         <frame layout="stretch content"
@@ -116,15 +122,18 @@
             <scrollable *case="Alerts" layout="stretch stretch" peeking="48">
                 <lane orientation="vertical">
                     <label font="dialogue" text={ActiveSectionTitle} />
-                    <label *if={ShowAlertsEmptyText} margin="0,12,0,0" text={AlertsEmptyText} />
+                    <label margin="0,8,0,0" color="#6b5946" text={ActiveSectionSummaryText} />
+                    <label *if={ShowAlertsEmptyText} margin="0,12,0,0" color="#6b5946" text={AlertsEmptyText} />
 
                     <lane *repeat={Alerts} margin="0,18,0,0" orientation="vertical">
                         <frame layout="stretch content"
                                background={@Mods/StardewUI/Sprites/ControlBorder}
                                padding="20,14,20,16">
                             <lane orientation="vertical">
-                                <label font="dialogue" text={:Title} />
-                                <label margin="0,8,0,0" text={:Severity} />
+                                <lane orientation="horizontal" layout="stretch content">
+                                    <label margin="0,0,8,0" color="#7d3f00" text={:SeverityBadgeText} />
+                                    <label font="dialogue" text={:Title} />
+                                </lane>
                                 <label margin="0,8,0,0" text={:Detail} />
                             </lane>
                         </frame>

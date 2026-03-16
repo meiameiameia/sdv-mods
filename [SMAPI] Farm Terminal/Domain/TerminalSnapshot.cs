@@ -39,4 +39,7 @@ internal sealed record TerminalSourceSummary(
     string SecondaryMetricText
 );
 
-internal sealed record TerminalAlertSummary(string Severity, string Title, string Detail);
+internal sealed record TerminalAlertSummary(string Severity, string Title, string Detail)
+{
+    public string SeverityBadgeText => $"[{Severity}]";
+}

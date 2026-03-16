@@ -50,10 +50,10 @@ internal sealed class PowerGridTerminalQueryService
         List<TerminalSourceSummary> sourceSummaries = BuildSourceSummaries(generators, batteries);
 
         string scopeText = string.IsNullOrWhiteSpace(currentLocationName)
-            ? "Loaded farm snapshot"
-            : $"Loaded farm snapshot while standing in {currentLocationName}";
+            ? "Showing all loaded PowerGrid networks"
+            : $"Showing all loaded PowerGrid networks while standing in {currentLocationName}";
 
-        string refreshStatusText = $"Refreshed {Game1.dayOfMonth}/{Game1.currentSeason} at {FormatTime(Game1.timeOfDay)}";
+        string refreshStatusText = $"Refreshed just now at {FormatTime(Game1.timeOfDay)} on {Game1.currentSeason} {Game1.dayOfMonth}";
         string overviewSummaryText = BuildOverviewSummary(networks, consumers, generators, batteries, alerts);
 
         return new TerminalSnapshot(
@@ -71,10 +71,10 @@ internal sealed class PowerGridTerminalQueryService
     private static TerminalSnapshot CreateUnavailableSnapshot(string? currentLocationName, string detail)
     {
         string scopeText = string.IsNullOrWhiteSpace(currentLocationName)
-            ? "Loaded farm snapshot unavailable"
-            : $"Loaded farm snapshot unavailable while standing in {currentLocationName}";
+            ? "Farm snapshot unavailable"
+            : $"Farm snapshot unavailable while standing in {currentLocationName}";
 
-        string refreshStatusText = "No PowerGrid data loaded";
+        string refreshStatusText = "No PowerGrid snapshot available";
         TerminalAlertSummary alert = new("Warning", "PowerGrid unavailable", detail);
 
         return new TerminalSnapshot(
@@ -100,7 +100,7 @@ internal sealed class PowerGridTerminalQueryService
         IReadOnlyList<TerminalAlertSummary> alerts)
     {
         if (networks.Count == 0)
-            return "No loaded power networks were reported by PowerGrid.";
+            return "No loaded power networks were reported. Place or load PowerGrid equipment, wait for the next 10-minute tick, and refresh.";
 
         int activeConsumers = consumers.Count(consumer => consumer.IsProcessing && consumer.IsPowered);
         int unpoweredConsumers = consumers.Count(consumer => !consumer.IsPowered);
@@ -108,7 +108,7 @@ internal sealed class PowerGridTerminalQueryService
         int totalStored = batteries.Sum(battery => battery.Charge);
         int totalCapacity = batteries.Sum(battery => battery.Capacity);
 
-        return $"{networks.Count} network(s), {activeConsumers} active consumer(s), {unpoweredConsumers} unpowered consumer(s), {onlineGenerators} online source(s), {totalStored}/{Math.Max(totalCapacity, 0)} EU stored, {alerts.Count} alert(s).";
+        return $"{networks.Count} network(s) online, {activeConsumers} active consumer(s), {unpoweredConsumers} unpowered consumer(s), {onlineGenerators} online source(s), {totalStored}/{Math.Max(totalCapacity, 0)} EU stored, {alerts.Count} alert(s).";
     }
 
     private static List<TerminalSummaryCard> BuildOverviewCards(
@@ -133,7 +133,7 @@ internal sealed class PowerGridTerminalQueryService
             new("Power", $"{totalGeneration} / {totalDemand} EU/tick", $"{onlineGenerators} online source(s) feeding {consumers.Count} consumer(s)."),
             new("Consumers", $"{activeConsumers} active", $"{idleConsumers} idle, {unpoweredConsumers} unpowered."),
             new("Storage", totalCapacity > 0 ? $"{totalStored} / {totalCapacity} EU" : "No batteries", $"{batteries.Count} battery node(s) reported."),
-            new("Alerts", alerts.Count.ToString(), alerts.Count == 0 ? "No warnings derived from the latest snapshot." : "Review the Alerts module for derived warnings.")
+            new("Alerts", alerts.Count.ToString(), alerts.Count == 0 ? "All clear on the latest snapshot." : "Review the Alerts module for warnings and low-reserve notices.")
         };
     }
 
@@ -143,9 +143,9 @@ internal sealed class PowerGridTerminalQueryService
             $"Network {network.NetworkId}",
             string.Join(", ", network.LocationNames.OrderBy(name => name, StringComparer.OrdinalIgnoreCase)),
             $"{network.GeneratorCount} generator(s), {network.BatteryCount} battery node(s), {network.ConsumerCount} consumer(s), {network.CableCount} cable tile(s), {network.ConduitCount} conduit endpoint(s).",
-            $"Generation {network.TotalGenerationPerTick} EU/tick, demand {network.TotalDemandPerTick} EU/tick, last tick {network.LastTickGenerated} generated / {network.LastTickConsumed} consumed, throughput cap {network.CableThroughputCap}.",
+            $"Rated {network.TotalGenerationPerTick} EU/tick against {network.TotalDemandPerTick} EU/tick demand. Last tick: {network.LastTickGenerated} generated / {network.LastTickConsumed} consumed. Throughput cap {network.CableThroughputCap}.",
             network.TotalBatteryCapacity > 0
-                ? $"{network.TotalStoredEU}/{network.TotalBatteryCapacity} EU stored, {network.LastTickFromBatteries} drained and {network.LastTickStoredInBatteries} stored last tick."
+                ? $"{network.TotalStoredEU}/{network.TotalBatteryCapacity} EU stored. Last tick: {network.LastTickFromBatteries} drained from batteries, {network.LastTickStoredInBatteries} stored."
                 : "No batteries reported in this network."
         )).ToList();
     }
@@ -159,10 +159,10 @@ internal sealed class PowerGridTerminalQueryService
             $"Demand {consumer.DemandPerTick} EU/tick",
             $"Allocated {consumer.EUAllocated} EU, speedup {consumer.SpeedupFraction:P0}",
             consumer.IsProcessing
-                ? $"Processing with {consumer.MinutesRemaining} in-game minute(s) remaining."
+                ? $"Processing with about {consumer.MinutesRemaining} in-game minute(s) remaining."
                 : consumer.IsPowered
-                    ? "Powered and idle."
-                    : "Not receiving power."
+                    ? "Powered and ready for work."
+                    : "Not receiving power from the latest snapshot."
         )).ToList();
     }
 
@@ -176,7 +176,7 @@ internal sealed class PowerGridTerminalQueryService
                 "Generator",
                 generator.IsOnline ? "Online" : "Offline",
                 $"{generator.LocationName} @ ({generator.TileX}, {generator.TileY})",
-                $"Rated {generator.GenerationPerTick} EU/tick, generated {generator.GeneratedThisTick} last tick.",
+                $"Rated {generator.GenerationPerTick} EU/tick. Last tick: {generator.GeneratedThisTick} EU generated.",
                 generator.RequiresFuel
                     ? $"{generator.FuelTicksRemaining} fuel tick(s) remaining."
                     : "No fuel required."
@@ -221,7 +221,7 @@ internal sealed class PowerGridTerminalQueryService
             alerts.Add(new TerminalAlertSummary(
                 "Warning",
                 "Unpowered consumers detected",
-                $"{unpoweredConsumers} consumer(s) were unpowered in the latest snapshot."
+                BuildUnpoweredConsumerDetail(consumers)
             ));
         }
 
@@ -254,7 +254,10 @@ internal sealed class PowerGridTerminalQueryService
             }
         }
 
-        return alerts;
+        return alerts
+            .OrderBy(alert => GetAlertSortOrder(alert.Severity))
+            .ThenBy(alert => alert.Title, StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     private static int GetConsumerSortOrder(PowerConsumerSnapshot consumer)
@@ -273,6 +276,33 @@ internal sealed class PowerGridTerminalQueryService
         if (consumer.IsProcessing)
             return "Active";
         return "Idle";
+    }
+
+    private static string BuildUnpoweredConsumerDetail(IReadOnlyList<PowerConsumerSnapshot> consumers)
+    {
+        PowerConsumerSnapshot[] sample = consumers
+            .Where(consumer => !consumer.IsPowered)
+            .Take(3)
+            .ToArray();
+
+        if (sample.Length == 0)
+            return "One or more consumers were unpowered in the latest snapshot.";
+
+        string sampleText = string.Join(
+            ", ",
+            sample.Select(consumer => $"{consumer.DisplayName} ({consumer.LocationName} {consumer.TileX},{consumer.TileY})"));
+
+        return $"{consumers.Count(consumer => !consumer.IsPowered)} consumer(s) were unpowered in the latest snapshot: {sampleText}.";
+    }
+
+    private static int GetAlertSortOrder(string severity)
+    {
+        return severity switch
+        {
+            "Warning" => 0,
+            "Info" => 1,
+            _ => 2
+        };
     }
 
     private static string FormatTime(int timeOfDay)

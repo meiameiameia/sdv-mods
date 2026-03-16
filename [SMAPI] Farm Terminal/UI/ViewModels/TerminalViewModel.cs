@@ -9,9 +9,10 @@ internal sealed class TerminalViewModel : BindableBase
     private readonly PowerGridTerminalQueryService queryService;
     private readonly IReadOnlyList<TerminalTabViewModel> tabs;
     private string activeModuleId = TerminalModule.Overview;
-    private string scopeText = "Loaded farm snapshot";
-    private string refreshStatusText = "Not yet refreshed.";
-    private string overviewSummaryText = "Open the terminal to load a PowerGrid snapshot.";
+    private string headerStatusText = "Waiting for first refresh.";
+    private string scopeText = "No snapshot loaded yet.";
+    private string refreshStatusText = "Refresh to load a PowerGrid snapshot.";
+    private string overviewSummaryText = "Open the terminal and refresh to load a PowerGrid snapshot.";
     private IReadOnlyList<TerminalSummaryCard> overviewCards = Array.Empty<TerminalSummaryCard>();
     private IReadOnlyList<TerminalNetworkSummary> networks = Array.Empty<TerminalNetworkSummary>();
     private IReadOnlyList<TerminalConsumerSummary> consumers = Array.Empty<TerminalConsumerSummary>();
@@ -36,6 +37,12 @@ internal sealed class TerminalViewModel : BindableBase
 
     public string SubtitleText => "Read-only PowerGrid dashboard";
 
+    public string HeaderStatusText
+    {
+        get => this.headerStatusText;
+        private set => this.SetProperty(ref this.headerStatusText, value);
+    }
+
     public IReadOnlyList<TerminalTabViewModel> Tabs => this.tabs;
 
     public string ActiveModuleId
@@ -47,10 +54,25 @@ internal sealed class TerminalViewModel : BindableBase
                 return;
 
             this.OnPropertyChanged(nameof(this.ActiveSectionTitle));
+            this.OnPropertyChanged(nameof(this.ActiveSectionSummaryText));
         }
     }
 
     public string ActiveSectionTitle => this.ActiveModuleId;
+
+    public string ActiveSectionSummaryText => this.ActiveModuleId switch
+    {
+        TerminalModule.Overview => this.OverviewCards.Count == 0
+            ? "High-level status cards appear here after a successful refresh."
+            : $"{this.OverviewCards.Count} overview card(s) summarizing the latest PowerGrid snapshot.",
+        TerminalModule.Power => this.Networks.Count == 0
+            ? "No network summary is available yet."
+            : $"{this.Networks.Count} network summary card(s) loaded from the latest PowerGrid snapshot.",
+        TerminalModule.Consumers => BuildConsumerModuleSummary(),
+        TerminalModule.Sources => BuildSourceModuleSummary(),
+        TerminalModule.Alerts => BuildAlertsModuleSummary(),
+        _ => "Read-only module view."
+    };
 
     public string ScopeText
     {
@@ -132,15 +154,27 @@ internal sealed class TerminalViewModel : BindableBase
         }
     }
 
-    public string OverviewEmptyText => this.OverviewCards.Count == 0 ? "No overview cards available." : "";
+    public string OverviewEmptyText => this.OverviewCards.Count == 0
+        ? "No overview cards are available yet. Refresh after the next PowerGrid tick to populate the dashboard."
+        : "";
 
-    public string PowerEmptyText => this.Networks.Count == 0 ? "No loaded power networks reported by PowerGrid." : "";
+    public string PowerEmptyText => this.Networks.Count == 0
+        ? "No loaded power networks were reported. Make sure grid equipment is loaded, then refresh after the next PowerGrid tick."
+        : "";
 
-    public string ConsumersEmptyText => this.Consumers.Count == 0 ? "No consumers reported by PowerGrid." : "";
+    public string ConsumersEmptyText => this.Consumers.Count == 0
+        ? "No powered consumers were reported. Load powered machines or refresh after the next PowerGrid tick."
+        : "";
 
-    public string SourcesEmptyText => this.Sources.Count == 0 ? "No generators or batteries reported by PowerGrid." : "";
+    public string SourcesEmptyText => this.Sources.Count == 0
+        ? "No generators or batteries were reported. Place sources on a loaded map and refresh."
+        : "";
 
-    public string AlertsEmptyText => this.Alerts.Count == 0 ? "No derived alerts for the latest snapshot." : "";
+    public string AlertsEmptyText => this.Alerts.Count == 0
+        ? "All clear. No alerts were derived from the latest snapshot."
+        : "";
+
+    public bool ShowOverviewEmptyText => this.OverviewCards.Count == 0;
 
     public bool ShowPowerEmptyText => this.Networks.Count == 0;
 
@@ -153,6 +187,7 @@ internal sealed class TerminalViewModel : BindableBase
     public void Refresh()
     {
         TerminalSnapshot snapshot = this.queryService.CreateSnapshot(this.currentLocationNameProvider());
+        this.HeaderStatusText = $"{snapshot.RefreshStatusText} | {snapshot.ScopeText}";
         this.ScopeText = snapshot.ScopeText;
         this.RefreshStatusText = snapshot.RefreshStatusText;
         this.OverviewSummaryText = snapshot.OverviewSummaryText;
@@ -161,6 +196,7 @@ internal sealed class TerminalViewModel : BindableBase
         this.Consumers = snapshot.Consumers;
         this.Sources = snapshot.Sources;
         this.Alerts = snapshot.Alerts;
+        this.OnPropertyChanged(nameof(this.ActiveSectionSummaryText));
     }
 
     public void OnTabActivated(string id)
@@ -169,5 +205,39 @@ internal sealed class TerminalViewModel : BindableBase
 
         foreach (TerminalTabViewModel tab in this.Tabs)
             tab.Active = string.Equals(tab.Id, id, StringComparison.Ordinal);
+    }
+
+    private string BuildConsumerModuleSummary()
+    {
+        int active = this.Consumers.Count(consumer => string.Equals(consumer.StatusText, "Active", StringComparison.Ordinal));
+        int idle = this.Consumers.Count(consumer => string.Equals(consumer.StatusText, "Idle", StringComparison.Ordinal));
+        int unpowered = this.Consumers.Count(consumer => string.Equals(consumer.StatusText, "Unpowered", StringComparison.Ordinal));
+
+        return this.Consumers.Count == 0
+            ? "No consumer details are available yet."
+            : $"{active} active, {idle} idle, {unpowered} unpowered consumer(s).";
+    }
+
+    private string BuildSourceModuleSummary()
+    {
+        int generators = this.Sources.Count(source => string.Equals(source.SourceType, "Generator", StringComparison.Ordinal));
+        int batteries = this.Sources.Count(source => string.Equals(source.SourceType, "Battery", StringComparison.Ordinal));
+        int onlineGenerators = this.Sources.Count(source =>
+            string.Equals(source.SourceType, "Generator", StringComparison.Ordinal)
+            && string.Equals(source.StatusText, "Online", StringComparison.Ordinal));
+
+        return this.Sources.Count == 0
+            ? "No source details are available yet."
+            : $"{generators} generator(s), {batteries} battery node(s), {onlineGenerators} generator(s) online.";
+    }
+
+    private string BuildAlertsModuleSummary()
+    {
+        int warnings = this.Alerts.Count(alert => string.Equals(alert.Severity, "Warning", StringComparison.Ordinal));
+        int infos = this.Alerts.Count(alert => string.Equals(alert.Severity, "Info", StringComparison.Ordinal));
+
+        return this.Alerts.Count == 0
+            ? "No warnings or low-reserve notices are active."
+            : $"{warnings} warning(s), {infos} info notice(s).";
     }
 }
