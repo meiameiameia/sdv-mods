@@ -13,7 +13,7 @@
 - Canvas size: `16x32`
 - Layout: single big-craftable sprite
 - State variants: `off`, `on`
-- State deliverable convention: review-ready separate files `SteamGenerator__off.png` and `SteamGenerator__on.png`; current shipped path stays `SteamGenerator.png` until runtime switching exists
+- State deliverable convention: review-ready separate files `SteamGenerator__off.png` and `SteamGenerator__on.png`; runtime loads those optional state files when present and otherwise falls back to `SteamGenerator.png`
 - Animation: none
 
 ## In-Game Role
@@ -46,7 +46,7 @@
 
 ## Assumptions
 
-- The sprite has no alternate powered state in code today, but the art contract should prepare `off` and `on` variants now.
+- Runtime state switching now supports optional `off` and `on` sprites with base-sprite fallback when either state file is missing.
 - Fuel logic is communicated by gameplay behavior, so the sprite only needs to imply a fueled machine.
 
 ## Done Criteria

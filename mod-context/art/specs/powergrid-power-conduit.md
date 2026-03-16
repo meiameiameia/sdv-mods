@@ -13,7 +13,7 @@
 - Canvas size: `16x32`
 - Layout: single big-craftable sprite
 - State variants: `unpaired`, `linked`
-- State deliverable convention: review-ready separate files `PowerConduit__unpaired.png` and `PowerConduit__linked.png`; current shipped path stays `PowerConduit.png` until runtime switching exists
+- State deliverable convention: review-ready separate files `PowerConduit__unpaired.png` and `PowerConduit__linked.png`; runtime loads those optional state files when present and otherwise falls back to `PowerConduit.png`
 - Animation: none
 
 ## In-Game Role
@@ -46,7 +46,7 @@
 
 ## Assumptions
 
-- Link state is not rendered through alternate sprites today, but the art contract should prepare `unpaired` and `linked` variants now.
+- Runtime state switching now supports optional `unpaired` and `linked` sprites with base-sprite fallback when either state file is missing.
 - The conduit should still feel grounded in Stardew’s crafted-machine language.
 
 ## Done Criteria

@@ -38,6 +38,12 @@ internal sealed class ModEntry : Mod
     private const string PersistedLinkedKey = PersistedModDataPrefix + "linked";
     private const string PersistedPartnerLocationKey = PersistedModDataPrefix + "partnerLocation";
     private const string PersistedPartnerTileKey = PersistedModDataPrefix + "partnerTile";
+    private const string RuntimeOnlineKey = PersistedModDataPrefix + "online";
+    private const string RuntimeGeneratedThisTickKey = PersistedModDataPrefix + "generatedThisTick";
+    private const float ChargedBatteryThreshold = 0.5f;
+    private static readonly Rectangle BigCraftableSourceRect = new(0, 0, 16, 32);
+    private readonly HashSet<string> invalidStateSpritesLogged = new(StringComparer.Ordinal);
+    private readonly HashSet<string> conduitRenderDiagnosticsLogged = new(StringComparer.Ordinal);
 
     // Texture asset keys (lazy-computed from manifest)
     private string CopperCableTexture => $"Mods/{ModManifest.UniqueID}/CopperCable";
@@ -103,6 +109,7 @@ internal sealed class ModEntry : Mod
             Config = Helper.ReadConfig<ModConfig>() ?? new ModConfig();
         });
 
+        LogConduitStateSpriteAvailability();
         Monitor.Log("[PowerGrid] Loaded. Waiting for save.", LogLevel.Info);
     }
 
@@ -613,6 +620,17 @@ internal sealed class ModEntry : Mod
         TryLoadTexture(e, BasicBatteryTexture, "BasicBattery", new Color(60, 180, 60));
         TryLoadTexture(e, IridiumBatteryTexture, "IridiumBattery", new Color(150, 80, 220));
         TryLoadTexture(e, PowerConduitTexture, "PowerConduit", new Color(220, 200, 60));
+
+        TryLoadStateTexture(e, "SteamGenerator", "off", new Color(140, 140, 160));
+        TryLoadStateTexture(e, "SteamGenerator", "on", new Color(140, 140, 160));
+        TryLoadStateTexture(e, "WindGenerator", "idle", new Color(100, 180, 220));
+        TryLoadStateTexture(e, "WindGenerator", "generating", new Color(100, 180, 220));
+        TryLoadStateTexture(e, "BasicBattery", "low", new Color(60, 180, 60));
+        TryLoadStateTexture(e, "BasicBattery", "charged", new Color(60, 180, 60));
+        TryLoadStateTexture(e, "IridiumBattery", "low", new Color(150, 80, 220));
+        TryLoadStateTexture(e, "IridiumBattery", "charged", new Color(150, 80, 220));
+        TryLoadStateTexture(e, "PowerConduit", "unpaired", new Color(220, 200, 60));
+        TryLoadStateTexture(e, "PowerConduit", "linked", new Color(220, 200, 60));
     }
 
     private void TryLoadTexture(AssetRequestedEventArgs e, string assetKey, string spriteName, Color tint)
@@ -620,17 +638,53 @@ internal sealed class ModEntry : Mod
         if (!e.NameWithoutLocale.IsEquivalentTo(assetKey))
             return;
 
-        e.LoadFrom(() =>
-        {
-            // Try custom sprite from Assets/ folder first
-            string customPath = $"assets/{spriteName}.png";
-            string fullPath = Path.Combine(Helper.DirectoryPath, customPath.Replace('/', Path.DirectorySeparatorChar));
-            if (File.Exists(fullPath))
-                return Helper.ModContent.Load<Texture2D>(customPath);
+        e.LoadFrom(() => LoadTextureOrFallback(spriteName, spriteName, tint), AssetLoadPriority.Medium);
+    }
 
-            // Fallback: build a tinted placeholder from vanilla BigCraftable sprites
-            return BuildPlaceholderSprite(spriteName, tint);
-        }, AssetLoadPriority.Medium);
+    private void TryLoadStateTexture(AssetRequestedEventArgs e, string baseSpriteName, string stateName, Color tint)
+    {
+        string stateSpriteName = GetStateSpriteName(baseSpriteName, stateName);
+        string assetKey = GetTextureAsset(stateSpriteName);
+        if (!e.NameWithoutLocale.IsEquivalentTo(assetKey))
+            return;
+
+        if (baseSpriteName == "PowerConduit")
+        {
+            string fullPath = Path.Combine(Helper.DirectoryPath, "assets", $"{stateSpriteName}.png");
+            LogConduitDiagnosticOnce(
+                $"asset-request|{stateSpriteName}",
+                $"[PowerGrid] Conduit state asset requested: assetKey={assetKey}, fileExists={File.Exists(fullPath)}, path={fullPath}");
+        }
+
+        e.LoadFrom(() => LoadTextureOrFallback(stateSpriteName, baseSpriteName, tint), AssetLoadPriority.Medium);
+    }
+
+    private Texture2D LoadTextureOrFallback(string spriteName, string fallbackSpriteName, Color tint)
+    {
+        string customPath = $"assets/{spriteName}.png";
+        string fullPath = Path.Combine(Helper.DirectoryPath, customPath.Replace('/', Path.DirectorySeparatorChar));
+
+        if (File.Exists(fullPath))
+        {
+            try
+            {
+                return Helper.ModContent.Load<Texture2D>(customPath);
+            }
+            catch (Exception ex)
+            {
+                if (invalidStateSpritesLogged.Add(spriteName))
+                {
+                    Monitor.Log(
+                        $"[PowerGrid] Failed to load sprite asset '{customPath}'. Falling back to '{fallbackSpriteName}'. {ex.Message}",
+                        LogLevel.Warn);
+                }
+            }
+        }
+
+        if (!string.Equals(spriteName, fallbackSpriteName, StringComparison.Ordinal))
+            return LoadTextureOrFallback(fallbackSpriteName, fallbackSpriteName, tint);
+
+        return BuildPlaceholderSprite(fallbackSpriteName, tint);
     }
 
     private static Texture2D BuildPlaceholderSprite(string spriteName, Color tint)
@@ -1065,10 +1119,46 @@ internal sealed class ModEntry : Mod
             }
 
             harmony.Patch(target, postfix: new HarmonyMethod(typeof(ModEntry), nameof(CablePassablePostfix)));
+
+            MethodInfo? drawTarget = typeof(StardewValley.Object).GetMethod(
+                "draw",
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
+                binder: null,
+                types: new[] { typeof(SpriteBatch), typeof(int), typeof(int), typeof(float) },
+                modifiers: null);
+            if (drawTarget != null)
+            {
+                harmony.Patch(
+                    drawTarget,
+                    prefix: new HarmonyMethod(typeof(ModEntry), nameof(StatefulConduitTileDrawPrefix)),
+                    postfix: new HarmonyMethod(typeof(ModEntry), nameof(StatefulObjectTileDrawPostfix)));
+            }
+
+            MethodInfo? drawWithLayerTarget = typeof(StardewValley.Object).GetMethod(
+                "draw",
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
+                binder: null,
+                types: new[] { typeof(SpriteBatch), typeof(int), typeof(int), typeof(float), typeof(float) },
+                modifiers: null);
+            if (drawWithLayerTarget != null)
+            {
+                harmony.Patch(drawWithLayerTarget, postfix: new HarmonyMethod(typeof(ModEntry), nameof(StatefulObjectScreenDrawPostfix)));
+            }
+
+            MethodInfo? drawAboveFrontLayerTarget = typeof(StardewValley.Object).GetMethod(
+                "drawAboveFrontLayer",
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
+                binder: null,
+                types: new[] { typeof(SpriteBatch), typeof(int), typeof(int), typeof(float) },
+                modifiers: null);
+            if (drawAboveFrontLayerTarget != null)
+            {
+                harmony.Patch(drawAboveFrontLayerTarget, postfix: new HarmonyMethod(typeof(ModEntry), nameof(StatefulObjectAboveFrontLayerPostfix)));
+            }
         }
         catch (Exception ex)
         {
-            Monitor.Log($"[PowerGrid] Failed to patch cable passability: {ex}", LogLevel.Error);
+            Monitor.Log($"[PowerGrid] Failed to apply runtime object patches: {ex}", LogLevel.Error);
         }
     }
 
@@ -1081,6 +1171,305 @@ internal sealed class ModEntry : Mod
         {
             __result = true;
         }
+    }
+
+    private static bool StatefulConduitTileDrawPrefix(StardewValley.Object __instance, object[] __args)
+    {
+        if (Instance == null || __instance?.ItemId != PowerConstants.PowerConduitId || __args.Length < 4 || __args[0] is not SpriteBatch spriteBatch)
+            return true;
+
+        if (__args[1] is not int tileX || __args[2] is not int tileY)
+            return true;
+
+        float alpha = __args[3] is float drawAlpha ? drawAlpha : 1f;
+        return !Instance.TryDrawConduitTileReplacement(__instance, spriteBatch, tileX, tileY, alpha, "tile-prefix");
+    }
+
+    private static void StatefulObjectTileDrawPostfix(StardewValley.Object __instance, object[] __args)
+    {
+        if (Instance == null || __args.Length < 4 || __args[0] is not SpriteBatch spriteBatch)
+            return;
+
+        if (__args[1] is not int tileX || __args[2] is not int tileY)
+            return;
+
+        float alpha = __args[3] is float drawAlpha ? drawAlpha : 1f;
+        Instance.DrawStatefulObjectOverlayAtTile(__instance, spriteBatch, tileX, tileY, alpha);
+    }
+
+    private static void StatefulObjectScreenDrawPostfix(StardewValley.Object __instance, object[] __args)
+    {
+        if (Instance == null || __args.Length < 5 || __args[0] is not SpriteBatch spriteBatch)
+            return;
+
+        if (__args[1] is not int xNonTile || __args[2] is not int yNonTile)
+            return;
+
+        float? layerDepth = __args[3] is float explicitLayerDepth ? explicitLayerDepth : null;
+        float alpha = __args[4] is float explicitAlpha ? explicitAlpha : 1f;
+        Instance.LogConduitRenderDiagnostic(__instance, "screen-postfix", __args);
+        Instance.DrawStatefulObjectOverlayAtScreen(__instance, spriteBatch, xNonTile, yNonTile, alpha, layerDepth);
+    }
+
+    private static void StatefulObjectAboveFrontLayerPostfix(StardewValley.Object __instance, object[] __args)
+    {
+        Instance?.LogConduitRenderDiagnostic(__instance, "above-front-postfix", __args);
+    }
+
+    private void DrawStatefulObjectOverlayAtTile(StardewValley.Object obj, SpriteBatch spriteBatch, int tileX, int tileY, float alpha)
+    {
+        if (!Context.IsWorldReady || Game1.currentLocation == null || obj == null || !obj.bigCraftable.Value)
+            return;
+
+        if (Game1.currentLocation.getObjectAtTile(tileX, tileY) != obj)
+            return;
+
+        Vector2 tile = new(tileX, tileY);
+        if (!TryGetStatefulSpriteName(obj, tile, out string? stateSpriteName))
+            return;
+
+        if (!TryLoadStateTextureForDraw(stateSpriteName!, out Texture2D? texture))
+            return;
+
+        Vector2 screenPos = Game1.GlobalToLocal(Game1.viewport, new Vector2(tileX * 64, tileY * 64 - 64));
+        float layerDepth = Math.Max(0f, ((tileY + 1) * 64f - 24f) / 10000f + tileX / 1000000f);
+
+        DrawStatefulTexture(spriteBatch, texture!, screenPos, alpha, layerDepth);
+    }
+
+    private void DrawStatefulObjectOverlayAtScreen(StardewValley.Object obj, SpriteBatch spriteBatch, int xNonTile, int yNonTile, float alpha, float? layerDepthOverride)
+    {
+        if (!Context.IsWorldReady || Game1.currentLocation == null || obj == null || !obj.bigCraftable.Value)
+            return;
+
+        Vector2 tile = obj.TileLocation;
+        int tileX = (int)tile.X;
+        int tileY = (int)tile.Y;
+
+        if (Game1.currentLocation.getObjectAtTile(tileX, tileY) != obj)
+            return;
+
+        if (!TryGetStatefulSpriteName(obj, tile, out string? stateSpriteName))
+            return;
+
+        if (!TryLoadStateTextureForDraw(stateSpriteName!, out Texture2D? texture))
+            return;
+
+        Vector2 screenPos = new(xNonTile, yNonTile);
+        float layerDepth = layerDepthOverride ?? Math.Max(0f, ((tileY + 1) * 64f - 24f) / 10000f + tileX / 1000000f);
+
+        DrawStatefulTexture(spriteBatch, texture!, screenPos, alpha, layerDepth);
+    }
+
+    private static void DrawStatefulTexture(SpriteBatch spriteBatch, Texture2D texture, Vector2 screenPos, float alpha, float layerDepth)
+    {
+        spriteBatch.Draw(
+            texture,
+            screenPos,
+            BigCraftableSourceRect,
+            Color.White * alpha,
+            0f,
+            Vector2.Zero,
+            4f,
+            SpriteEffects.None,
+            layerDepth);
+    }
+
+    private bool TryDrawConduitTileReplacement(StardewValley.Object obj, SpriteBatch spriteBatch, int tileX, int tileY, float alpha, string source)
+    {
+        if (!Context.IsWorldReady || Game1.currentLocation == null || Game1.currentLocation.getObjectAtTile(tileX, tileY) != obj)
+            return false;
+
+        Vector2 tile = new(tileX, tileY);
+        if (!TryGetStatefulSpriteName(obj, tile, out string? stateSpriteName))
+            return false;
+
+        if (!TryLoadStateTextureForDraw(stateSpriteName!, out Texture2D? texture))
+            return false;
+
+        Vector2 screenPos = Game1.GlobalToLocal(Game1.viewport, new Vector2(tileX * 64, tileY * 64 - 64));
+        float layerDepth = Math.Max(0f, ((tileY + 1) * 64f - 24f) / 10000f + tileX / 1000000f);
+        LogConduitRenderDiagnostic(obj, source, new object[] { tileX, tileY, alpha, stateSpriteName! });
+        DrawStatefulTexture(spriteBatch, texture!, screenPos, alpha, layerDepth);
+        return true;
+    }
+
+    private bool TryGetStatefulSpriteName(StardewValley.Object obj, Vector2 tile, out string? stateSpriteName)
+    {
+        stateSpriteName = null;
+
+        string itemId = obj.ItemId ?? "";
+        string locationName = Game1.currentLocation?.NameOrUniqueName ?? "";
+
+        string? stateName = itemId switch
+        {
+            PowerConstants.SteamGeneratorId => GetSteamGeneratorState(locationName, tile),
+            PowerConstants.WindGeneratorId => GetWindGeneratorState(obj),
+            PowerConstants.BasicBatteryId => GetBatteryState(locationName, tile, itemId),
+            PowerConstants.IridiumBatteryId => GetBatteryState(locationName, tile, itemId),
+            PowerConstants.PowerConduitId => GetConduitState(locationName, tile),
+            _ => null
+        };
+
+        if (string.IsNullOrWhiteSpace(stateName))
+            return false;
+
+        string? baseSpriteName = GetBaseSpriteName(itemId);
+        if (string.IsNullOrWhiteSpace(baseSpriteName))
+            return false;
+
+        stateSpriteName = GetStateSpriteName(baseSpriteName, stateName);
+        return true;
+    }
+
+    private bool TryLoadStateTextureForDraw(string stateSpriteName, out Texture2D? texture)
+    {
+        texture = null;
+
+        string customPath = $"assets/{stateSpriteName}.png";
+        string fullPath = Path.Combine(Helper.DirectoryPath, customPath.Replace('/', Path.DirectorySeparatorChar));
+        if (!File.Exists(fullPath))
+            return false;
+
+        try
+        {
+            texture = Helper.GameContent.Load<Texture2D>(GetTextureAsset(stateSpriteName));
+            if (stateSpriteName.StartsWith("PowerConduit__", StringComparison.Ordinal))
+            {
+                LogConduitDiagnosticOnce(
+                    $"draw-load|{stateSpriteName}",
+                    $"[PowerGrid] Conduit state texture loaded for draw: assetKey={GetTextureAsset(stateSpriteName)}, path={customPath}, size={texture.Width}x{texture.Height}");
+            }
+            return true;
+        }
+        catch (Exception ex)
+        {
+            if (invalidStateSpritesLogged.Add(stateSpriteName))
+            {
+                Monitor.Log(
+                    $"[PowerGrid] Failed to load state sprite '{customPath}'. Falling back to the base sprite. {ex.Message}",
+                    LogLevel.Warn);
+            }
+
+            return false;
+        }
+    }
+
+    private string? GetSteamGeneratorState(string locationName, Vector2 tile)
+    {
+        if (string.IsNullOrWhiteSpace(locationName))
+            return null;
+
+        string generatorKey = PowerConstants.MakeNodeKey(locationName, tile, PowerConstants.SteamGeneratorId);
+        return FuelMgr.GetFuelTicksRemaining(generatorKey) > 0 ? "on" : "off";
+    }
+
+    private static string? GetWindGeneratorState(StardewValley.Object obj)
+    {
+        if (obj.modData.TryGetValue(RuntimeGeneratedThisTickKey, out string? generatedText)
+            && int.TryParse(generatedText, out int generatedThisTick))
+        {
+            return generatedThisTick > 0 ? "generating" : "idle";
+        }
+
+        if (obj.modData.TryGetValue(RuntimeOnlineKey, out string? onlineText))
+            return onlineText == "1" ? "generating" : "idle";
+
+        return null;
+    }
+
+    private string? GetBatteryState(string locationName, Vector2 tile, string itemId)
+    {
+        int capacity = GetBatteryCapacity(itemId);
+        if (string.IsNullOrWhiteSpace(locationName) || capacity <= 0)
+            return null;
+
+        var batteryNode = new PowerNode
+        {
+            NodeType = PowerNodeType.Battery,
+            LocationName = locationName,
+            Tile = tile,
+            ItemId = itemId,
+            Capacity = capacity
+        };
+
+        float chargePercent = capacity > 0
+            ? (float)BatteryState.GetCharge(batteryNode) / capacity
+            : 0f;
+
+        return chargePercent >= ChargedBatteryThreshold ? "charged" : "low";
+    }
+
+    private string GetConduitState(string locationName, Vector2 tile)
+    {
+        if (string.IsNullOrWhiteSpace(locationName))
+            return "unpaired";
+
+        return ConduitMgr.GetPartner(locationName, tile) != null ? "linked" : "unpaired";
+    }
+
+    private int GetBatteryCapacity(string itemId)
+    {
+        return itemId switch
+        {
+            PowerConstants.BasicBatteryId => Config.BasicBatteryCapacity,
+            PowerConstants.IridiumBatteryId => Config.IridiumBatteryCapacity,
+            _ => 0
+        };
+    }
+
+    private string? GetBaseSpriteName(string itemId)
+    {
+        return itemId switch
+        {
+            PowerConstants.SteamGeneratorId => "SteamGenerator",
+            PowerConstants.WindGeneratorId => "WindGenerator",
+            PowerConstants.BasicBatteryId => "BasicBattery",
+            PowerConstants.IridiumBatteryId => "IridiumBattery",
+            PowerConstants.PowerConduitId => "PowerConduit",
+            _ => null
+        };
+    }
+
+    private string GetTextureAsset(string spriteName)
+    {
+        return PowerConstants.TextureAsset(ModManifest.UniqueID, spriteName);
+    }
+
+    private static string GetStateSpriteName(string baseSpriteName, string stateName)
+    {
+        return $"{baseSpriteName}__{stateName}";
+    }
+
+    private void LogConduitStateSpriteAvailability()
+    {
+        string linkedPath = Path.Combine(Helper.DirectoryPath, "assets", "PowerConduit__linked.png");
+        string unpairedPath = Path.Combine(Helper.DirectoryPath, "assets", "PowerConduit__unpaired.png");
+        LogConduitDiagnosticOnce(
+            "startup-assets",
+            $"[PowerGrid] Conduit state sprite availability: linkedExists={File.Exists(linkedPath)} ({linkedPath}), unpairedExists={File.Exists(unpairedPath)} ({unpairedPath})");
+    }
+
+    private void LogConduitRenderDiagnostic(StardewValley.Object obj, string pathName, object[] args)
+    {
+        if (obj?.ItemId != PowerConstants.PowerConduitId || Game1.currentLocation == null)
+            return;
+
+        Vector2 tile = obj.TileLocation;
+        string locationName = Game1.currentLocation.NameOrUniqueName;
+        string stateName = GetConduitState(locationName, tile);
+        string stateSpriteName = GetStateSpriteName("PowerConduit", stateName);
+        string argsSummary = string.Join(", ", args.Select(arg => arg == null ? "null" : $"{arg.GetType().Name}:{arg}"));
+
+        LogConduitDiagnosticOnce(
+            $"render|{pathName}|{locationName}|{tile.X}|{tile.Y}|{stateName}",
+            $"[PowerGrid] Conduit render path: path={pathName}, location={locationName}, tile=({tile.X},{tile.Y}), state={stateName}, stateSprite={stateSpriteName}, args=[{argsSummary}]");
+    }
+
+    private void LogConduitDiagnosticOnce(string key, string message)
+    {
+        if (conduitRenderDiagnosticsLogged.Add(key))
+            Monitor.Log(message, LogLevel.Info);
     }
 
     private static void TrySetPassableFlags(BigCraftableData data)

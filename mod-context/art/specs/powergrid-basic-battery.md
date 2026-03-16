@@ -13,7 +13,7 @@
 - Canvas size: `16x32`
 - Layout: single big-craftable sprite
 - State variants: `low`, `charged`
-- State deliverable convention: review-ready separate files `BasicBattery__low.png` and `BasicBattery__charged.png`; current shipped path stays `BasicBattery.png` until runtime switching exists
+- State deliverable convention: review-ready separate files `BasicBattery__low.png` and `BasicBattery__charged.png`; runtime loads those optional state files when present and otherwise falls back to `BasicBattery.png`
 - Animation: none
 
 ## In-Game Role
@@ -46,7 +46,7 @@
 
 ## Assumptions
 
-- The battery has no dynamic charged/uncharged art state in code today, but the art contract should prepare `low` and `charged` variants now.
+- Runtime state switching now supports optional `low` and `charged` sprites with base-sprite fallback when either state file is missing.
 - The visual quality step between basic and iridium should be obvious without changing footprint.
 
 ## Done Criteria

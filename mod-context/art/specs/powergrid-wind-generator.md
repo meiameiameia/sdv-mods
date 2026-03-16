@@ -13,7 +13,7 @@
 - Canvas size: `16x32`
 - Layout: single big-craftable sprite
 - State variants: `idle`, `generating`
-- State deliverable convention: review-ready separate files `WindGenerator__idle.png` and `WindGenerator__generating.png`; current shipped path stays `WindGenerator.png` until runtime switching exists
+- State deliverable convention: review-ready separate files `WindGenerator__idle.png` and `WindGenerator__generating.png`; runtime loads those optional state files when present and otherwise falls back to `WindGenerator.png`
 - Animation: none
 
 ## In-Game Role
@@ -46,7 +46,7 @@
 
 ## Assumptions
 
-- The code currently uses one static sprite only, but the art contract should prepare `idle` and `generating` variants now.
+- Runtime state switching now supports optional `idle` and `generating` sprites with base-sprite fallback when either state file is missing.
 - Weather/output variation is mechanical, not visual.
 
 ## Done Criteria

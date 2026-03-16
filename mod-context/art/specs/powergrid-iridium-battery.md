@@ -13,7 +13,7 @@
 - Canvas size: `16x32`
 - Layout: single big-craftable sprite
 - State variants: `low`, `charged`
-- State deliverable convention: review-ready separate files `IridiumBattery__low.png` and `IridiumBattery__charged.png`; current shipped path stays `IridiumBattery.png` until runtime switching exists
+- State deliverable convention: review-ready separate files `IridiumBattery__low.png` and `IridiumBattery__charged.png`; runtime loads those optional state files when present and otherwise falls back to `IridiumBattery.png`
 - Animation: none
 
 ## In-Game Role
@@ -46,7 +46,7 @@
 
 ## Assumptions
 
-- The sprite remains static regardless of charge level today, but the art contract should prepare `low` and `charged` variants now.
+- Runtime state switching now supports optional `low` and `charged` sprites with base-sprite fallback when either state file is missing.
 - Tier upgrade should be obvious next to the basic battery.
 
 ## Done Criteria
