@@ -13,6 +13,7 @@
 - Canvas size: `16x32`
 - Layout: single big-craftable sprite
 - State variants: none
+- State deliverable convention: single-state only for now; no powered/unpowered companion deliverable is required yet
 - Animation: none
 
 ## In-Game Role
@@ -37,14 +38,17 @@
 
 - Transparent background: yes
 - No anti-aliasing: yes
+- Perspective / view rule: preserve vanilla keg-style slight top-down / 3/4-ish perspective with a readable top ellipse; do not render it as a flat front-on cask
+- Width / silhouette discipline: soft target `11-14 px` for the main barrel/body mass on most rows, with reinforced trim allowed to flare slightly; avoid a square full-width `16 px` slab
 - Pixel readability requirements: premium variant must still read as a keg-family machine first
-- Edge / connection requirements: stay inside `16x32`
+- Edge / connection requirements: stay inside `16x32` and preserve plausible left/right/up/down cable adjacency around the keg body
 - Forbidden output mistakes: sci-fi glowing keg, purple neon overload, silhouette drift so large that it no longer reads as keg-related
 
 ## Assumptions
 
 - The GOF hardwood-keg lineage is a compatibility cue, not a style authority.
 - The sprite remains static regardless of installed integrations.
+- A powered/unpowered visual split is not justified enough yet to require multi-state art deliverables.
 
 ## Done Criteria
 

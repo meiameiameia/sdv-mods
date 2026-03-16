@@ -17,6 +17,7 @@ Output filename: HardIridiumKeg.png
 Canvas: 16x32 pixels
 Layout: single big-craftable sprite
 State variants: none
+Single-state only for now. Do not prepare powered/unpowered companion files yet.
 Animation: none
 
 Use attached references in this priority order:
@@ -33,6 +34,9 @@ Technical requirements:
 - no mockup, no scene, no UI frame
 - no anti-aliasing or blurred edges
 - clean readable silhouette at gameplay scale
+- preserve vanilla keg-style slight top-down / 3/4-ish perspective so the top ellipse is readable; do not render it flat front-on
+- keep the main barrel/body mass near a soft `11-14 px` width on most rows, with reinforced trim allowed to flare slightly wider
+- leave plausible cable attachment zones on the left, right, top, and bottom adjacency sides; do not let reinforced trim or side hardware imply that a neighboring cable cannot connect
 - grounded lower edge
 - stay strictly inside the exact canvas
 
@@ -40,6 +44,8 @@ Family consistency rules:
 - must still read as a keg-family machine first
 - should look clearly more premium than MetalKeg
 - use iridium cues with restraint; quality comes from finish and reinforcement, not VFX
+- keep the body rounded and keg-sized instead of broadening into a square full-width block
+- keep this asset single-state for now; do not invent powered/unpowered cues in the deliverable
 
 Do not:
 - output multiple options

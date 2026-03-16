@@ -97,3 +97,5 @@ Do not treat it as a mandatory exact palette map and do not let it override vani
 - `PowerGrid` cable sheets are currently functional placeholder-style assets. Preserve the connection logic and footprint, not the crude rendering.
 - `PowerGrid` machine sprites preserve gameplay categories but should be reinterpreted through vanilla big-craftable styling when upgraded.
 - `Metal Kegs/assets/templates/*.png` are useful compatibility references because they show the template lineage of the two keg-family machines.
+- Curated in-repo reference-only copies live under `mod-context/art/references/compatibility/`.
+- Vanilla style-authority crops are intentionally not fully dumped in-repo; use `mod-context/art/references/vanilla/minimum-crop-set.md` to prepare the minimum local crop bundle for each generation run.

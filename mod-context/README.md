@@ -4,7 +4,7 @@ This repository uses a lightweight Context Mesh-inspired structure.
 
 The goal is not framework adoption. The goal is to make long-term AI guidance more stable by giving future agents a small set of reliable entry points for:
 
-- intent
+- roadmap
 - architecture
 - decisions
 - testing
@@ -14,8 +14,8 @@ The goal is not framework adoption. The goal is to make long-term AI guidance mo
 
 ## Context Map
 
-### Intent
-- `intent/current-intent.md`
+### Roadmap
+- `roadmap.md`
 
 ### Architecture and Ecosystem
 - `architecture.md`
@@ -25,9 +25,9 @@ The goal is not framework adoption. The goal is to make long-term AI guidance mo
 - `modpack-overview.md`
 - `mod-list.md`
 - `api-surface.md`
+- `frameworks.md`
 - `my-mods/`
 - `systems/`
-- `frameworks/`
 - `integrations/`
 
 ### Decisions
@@ -41,7 +41,7 @@ The goal is not framework adoption. The goal is to make long-term AI guidance mo
 
 For most work, future agents should read in this order:
 
-1. `intent/current-intent.md`
+1. `roadmap.md`
 2. `architecture.md`
 3. `architectural-audit.md`
 4. the relevant file in `my-mods/`

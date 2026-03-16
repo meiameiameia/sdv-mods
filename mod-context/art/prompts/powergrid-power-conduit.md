@@ -14,7 +14,8 @@ Asset name: PowerGrid Power Conduit
 Output filename: PowerConduit.png
 Canvas: 16x32 pixels
 Layout: single big-craftable sprite
-State variants: none
+State variants: `unpaired`, `linked`
+If multiple states are requested, deliver separate review files named `PowerConduit__unpaired.png` and `PowerConduit__linked.png` while keeping the same footprint and attachment zones.
 Animation: none
 
 Use attached references in this priority order:
@@ -31,6 +32,9 @@ Technical requirements:
 - no mockup, no scene, no UI frame
 - no anti-aliasing or blurred edges
 - clean readable silhouette at gameplay scale
+- use Stardew's slight top-down / 3/4-ish machine perspective; a top cap or top face should be visible instead of a flat front panel
+- keep the main conduit body near a soft `10-13 px` width on most rows, with specialized relay details allowed to extend slightly
+- leave plausible cable attachment zones on the left, right, top, and bottom adjacency sides; do not let relay details imply that one side cannot connect
 - grounded lower edge
 - stay strictly inside the exact canvas
 
@@ -38,6 +42,8 @@ Family consistency rules:
 - belongs to the same PowerGrid hardware family as generators and batteries
 - should feel more specialized and link-oriented than a storage or generation device
 - remain readable and grounded, not magical or portal-like
+- keep the main body vanilla-machine sized rather than a full-width monolith
+- keep unpaired and linked states silhouette-compatible, with state change coming from restrained signal/link cues rather than shape drift
 
 Do not:
 - output multiple options

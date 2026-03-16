@@ -13,6 +13,10 @@
 
 # Local reference dumps and personal sandbox exports
 /reference-files/
+/mod-context/art/references/**/*.png
+/mod-context/art/references/**/*.jpg
+/mod-context/art/references/**/*.jpeg
+/mod-context/art/references/**/*.webp
 
 # IDE/editor machine-local files
 .vs/

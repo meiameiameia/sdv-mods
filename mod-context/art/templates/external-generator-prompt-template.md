@@ -21,6 +21,8 @@ Layout: [layout]
 State variants: [state rules]
 Animation: [yes/no and rules]
 
+If multiple states are listed, deliver one separate labeled sprite per state for review using `[BaseName]__[state].png` filenames while keeping the same canvas, silhouette family, and attachment zones across states.
+
 Use attached references in this priority order:
 1. Vanilla Stardew Valley references are the style authority.
 2. Current repo sprite references are compatibility references only. Preserve gameplay identity where useful, but do not preserve off-style rendering if it conflicts with vanilla readability or shading logic.
@@ -35,6 +37,9 @@ Technical requirements:
 - no mockup, no scene, no UI frame
 - no anti-aliasing or blurred edges
 - clean readable silhouette at gameplay scale
+- for machine-like `16x32` big craftables, use Stardew's slight top-down / 3/4-ish read with a visible top face; do not render the object as a flat front-on rectangle
+- for machine-like `16x32` big craftables, keep the dominant body width within vanilla-feeling proportions instead of filling the full `16` px width on most rows
+- for PowerGrid-adjacent machine sprites, leave visually plausible cable attachment zones on the left, right, top, and bottom adjacency sides; do not let overhangs or asymmetrical bulk imply that one side cannot connect
 - match vanilla Stardew Valley big-craftable or modular-tile readability as appropriate
 - stay strictly inside the exact canvas
 

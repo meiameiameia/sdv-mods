@@ -14,7 +14,8 @@ Asset name: PowerGrid Steam Generator
 Output filename: SteamGenerator.png
 Canvas: 16x32 pixels
 Layout: single big-craftable sprite
-State variants: none
+State variants: `off`, `on`
+If multiple states are requested, deliver separate review files named `SteamGenerator__off.png` and `SteamGenerator__on.png` while keeping the same footprint and attachment zones.
 Animation: none
 
 Use attached references in this priority order:
@@ -31,6 +32,9 @@ Technical requirements:
 - no mockup, no scene, no UI frame
 - no anti-aliasing or blurred edges
 - clean readable silhouette at gameplay scale
+- use Stardew's slight top-down / 3/4-ish machine perspective; the top face should be visibly readable instead of flat front-on
+- keep the dominant machine body near a soft `10-13 px` width on most rows, with only small accents allowed to flare slightly wider
+- leave plausible cable attachment zones on the left, right, top, and bottom adjacency sides; do not use bulk that makes one side look non-connectable
 - strong grounded base in the lower rows
 - stay strictly inside the exact canvas
 
@@ -38,6 +42,8 @@ Family consistency rules:
 - belongs to the same PowerGrid hardware family as the wind generator, batteries, and conduit
 - heavier and more fuel-driven than WindGenerator
 - machine detail should stay vanilla-readable and not become noisy
+- do not let the generator body balloon to full-canvas width or lose the readable top face
+- keep the off and on states silhouette-compatible, with state change coming from controlled vent/indicator cues rather than shape drift
 
 Do not:
 - output multiple options

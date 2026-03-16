@@ -15,7 +15,8 @@ Asset name: PowerGrid Basic Battery
 Output filename: BasicBattery.png
 Canvas: 16x32 pixels
 Layout: single big-craftable sprite
-State variants: none
+State variants: `low`, `charged`
+If multiple states are requested, deliver separate review files named `BasicBattery__low.png` and `BasicBattery__charged.png` while keeping the same footprint and attachment zones.
 Animation: none
 
 Use attached references in this priority order:
@@ -32,6 +33,9 @@ Technical requirements:
 - no mockup, no scene, no UI frame
 - no anti-aliasing or blurred edges
 - clean readable silhouette at gameplay scale
+- use Stardew's slight top-down / 3/4-ish machine perspective; the top face should be visibly readable instead of a flat front panel
+- keep the main battery body near a soft `10-13 px` width on most rows, with small terminals or trim allowed to flare slightly wider
+- leave plausible cable attachment zones on the left, right, top, and bottom adjacency sides; do not use overhangs that visually block a neighboring cable
 - grounded lower edge
 - stay strictly inside the exact canvas
 
@@ -39,6 +43,8 @@ Family consistency rules:
 - should read as a sibling to the IridiumBattery
 - lower-tier identity should come from simpler material and trim
 - keep the silhouette clean and big-craftable readable
+- keep the battery cabinet narrower than the full canvas so it stays vanilla-machine sized
+- keep low and charged states silhouette-compatible, with state change coming from restrained charge-window or indicator cues
 
 Do not:
 - output multiple options

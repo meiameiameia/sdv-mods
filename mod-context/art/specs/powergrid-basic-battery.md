@@ -12,7 +12,8 @@
 
 - Canvas size: `16x32`
 - Layout: single big-craftable sprite
-- State variants: none
+- State variants: `low`, `charged`
+- State deliverable convention: review-ready separate files `BasicBattery__low.png` and `BasicBattery__charged.png`; current shipped path stays `BasicBattery.png` until runtime switching exists
 - Animation: none
 
 ## In-Game Role
@@ -37,17 +38,19 @@
 
 - Transparent background: yes
 - No anti-aliasing: yes
+- Perspective / view rule: use Stardew's slight top-down / 3/4-ish machine perspective with a readable top face; do not render the battery as a flat cabinet front
+- Width / silhouette discipline: soft target `10-13 px` for the main battery body on most rows, with small terminals or trim allowed to flare slightly wider; avoid a full-width `16 px` slab
 - Pixel readability requirements: charge-storage identity should read in one glance
-- Edge / connection requirements: stay within `16x32`
+- Edge / connection requirements: stay within `16x32` and preserve plausible cable adjacency on left/right/up/down sides of the machine body
 - Forbidden output mistakes: modern photoreal battery decals, huge glowing indicators, clutter that overwhelms the silhouette
 
 ## Assumptions
 
-- The battery has no dynamic charged/uncharged art state in code today.
+- The battery has no dynamic charged/uncharged art state in code today, but the art contract should prepare `low` and `charged` variants now.
 - The visual quality step between basic and iridium should be obvious without changing footprint.
 
 ## Done Criteria
 
 - Reads as a battery at vanilla gameplay scale.
 - Pairs cleanly with `IridiumBattery` as the lower-tier member.
-- Can replace the current sprite without extra runtime handling.
+- Low and charged variants keep the same attachment-compatible footprint and perspective.

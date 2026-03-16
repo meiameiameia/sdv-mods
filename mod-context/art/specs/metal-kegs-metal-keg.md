@@ -13,6 +13,7 @@
 - Canvas size: `16x32`
 - Layout: single big-craftable sprite
 - State variants: none
+- State deliverable convention: single-state only for now; no powered/unpowered companion deliverable is required yet
 - Animation: none
 
 ## In-Game Role
@@ -37,13 +38,16 @@
 
 - Transparent background: yes
 - No anti-aliasing: yes
+- Perspective / view rule: preserve vanilla keg-style slight top-down / 3/4-ish perspective with a readable top ellipse; do not render it as a flat front-on barrel
+- Width / silhouette discipline: soft target `11-14 px` for the main barrel/body mass on most rows, with hoops or handles allowed to flare slightly; avoid squaring it into a full-width `16 px` slab
 - Pixel readability requirements: still reads as keg-family machinery, not a furnace or chest
-- Edge / connection requirements: stay within `16x32`
+- Edge / connection requirements: stay within `16x32` and preserve plausible left/right/up/down cable adjacency around the keg body
 - Forbidden output mistakes: modern polished brewery realism, noisy rivet spam, losing the keg family silhouette entirely
 
 ## Assumptions
 
 - The sprite is static in code.
+- A powered/unpowered visual split is not justified enough yet to require multi-state art deliverables.
 - Gameplay equivalence to the vanilla keg makes immediate keg recognition more important than novelty.
 
 ## Done Criteria

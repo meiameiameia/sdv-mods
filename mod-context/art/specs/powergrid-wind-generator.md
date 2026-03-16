@@ -12,7 +12,8 @@
 
 - Canvas size: `16x32`
 - Layout: single big-craftable sprite
-- State variants: none
+- State variants: `idle`, `generating`
+- State deliverable convention: review-ready separate files `WindGenerator__idle.png` and `WindGenerator__generating.png`; current shipped path stays `WindGenerator.png` until runtime switching exists
 - Animation: none
 
 ## In-Game Role
@@ -37,17 +38,19 @@
 
 - Transparent background: yes
 - No anti-aliasing: yes
+- Perspective / view rule: keep a slight top-down / 3/4-ish read on the generator base so the top face is visible; do not make it a flat front-on pole sign
+- Width / silhouette discipline: keep the base/main machine mass near a soft `10-13 px` body width on most rows; upper vane or rotor structure may narrow above that, but should not disappear into thread-thin lines
 - Pixel readability requirements: rotor or vane cue must read immediately without becoming thin noise
-- Edge / connection requirements: remain inside `16x32` and preserve grounded placement
+- Edge / connection requirements: remain inside `16x32`, preserve grounded placement, and keep plausible cable adjacency on left/right/up/down sides of the base
 - Forbidden output mistakes: giant modern turbine proportions, spinning FX, sci-fi neon, overly delicate lines that vanish in game
 
 ## Assumptions
 
-- The code currently uses one static sprite only.
+- The code currently uses one static sprite only, but the art contract should prepare `idle` and `generating` variants now.
 - Weather/output variation is mechanical, not visual.
 
 ## Done Criteria
 
 - Reads as a passive generator rather than a decorative weather vane.
 - Distinguishes itself from `SteamGenerator` while staying in the same family.
-- Fits vanilla big-craftable readability.
+- Idle and generating variants keep the same attachment-compatible footprint and perspective.

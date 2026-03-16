@@ -13,6 +13,7 @@
 - Canvas size:
 - Layout:
 - State variants:
+- State deliverable convention:
 - Animation:
 
 ## In-Game Role
@@ -37,6 +38,8 @@
 
 - Transparent background:
 - No anti-aliasing:
+- Perspective / view rule:
+- Width / silhouette discipline:
 - Pixel readability requirements:
 - Edge / connection requirements:
 - Forbidden output mistakes:

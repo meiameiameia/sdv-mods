@@ -12,7 +12,8 @@
 
 - Canvas size: `16x32`
 - Layout: single big-craftable sprite
-- State variants: none
+- State variants: `unpaired`, `linked`
+- State deliverable convention: review-ready separate files `PowerConduit__unpaired.png` and `PowerConduit__linked.png`; current shipped path stays `PowerConduit.png` until runtime switching exists
 - Animation: none
 
 ## In-Game Role
@@ -37,17 +38,19 @@
 
 - Transparent background: yes
 - No anti-aliasing: yes
+- Perspective / view rule: use Stardew's slight top-down / 3/4-ish machine perspective with a visible top face or cap; do not render it as a flat front-on panel or sign
+- Width / silhouette discipline: soft target `10-13 px` for the main conduit body on most rows, with specialized relay details allowed to extend slightly; avoid a full-width `16 px` block
 - Pixel readability requirements: one clear relay/link cue such as paired antenna, coupler ring, or signal node
-- Edge / connection requirements: stay within `16x32`
+- Edge / connection requirements: stay within `16x32` and preserve plausible cable adjacency on left/right/up/down sides of the device
 - Forbidden output mistakes: magical portal device, oversized antenna forest, visual effects that imply animation not present in code
 
 ## Assumptions
 
-- Link state is not rendered through alternate sprites today.
+- Link state is not rendered through alternate sprites today, but the art contract should prepare `unpaired` and `linked` variants now.
 - The conduit should still feel grounded in Stardew’s crafted-machine language.
 
 ## Done Criteria
 
 - Reads as a special link device at vanilla scale.
 - Stands apart from batteries and generators without leaving the same visual world.
-- Drops into the current file path unchanged.
+- Unpaired and linked variants keep the same attachment-compatible footprint and perspective.

@@ -78,6 +78,20 @@ In short:
 - [sprite-spec-template.md](C:/Users/darth/Projects/sdv-mod/mod-context/art/templates/sprite-spec-template.md)
 - [external-generator-prompt-template.md](C:/Users/darth/Projects/sdv-mod/mod-context/art/templates/external-generator-prompt-template.md)
 
+## Reference Assets
+
+Reference-only workflow docs live under:
+
+- [references/README.md](C:/Users/darth/Projects/sdv-mod/mod-context/art/references/README.md)
+
+The workflow docs and mapping files belong in Git.
+
+Raw reference images under `mod-context/art/references/` are local-only support files and should remain ignored by Git unless a later workflow change makes a specific tracked image materially necessary.
+
 ## Current Specs
 
 See `specs/` for locked asset requirements and `prompts/` for matching ready-to-paste external prompts.
+
+For exact prompt + upload file lists per sprite target, use:
+
+- [reference-map.md](C:/Users/darth/Projects/sdv-mod/mod-context/art/reference-map.md)

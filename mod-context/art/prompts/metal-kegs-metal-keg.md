@@ -16,6 +16,7 @@ Output filename: MetalKeg.png
 Canvas: 16x32 pixels
 Layout: single big-craftable sprite
 State variants: none
+Single-state only for now. Do not prepare powered/unpowered companion files yet.
 Animation: none
 
 Use attached references in this priority order:
@@ -32,6 +33,9 @@ Technical requirements:
 - no mockup, no scene, no UI frame
 - no anti-aliasing or blurred edges
 - clean readable silhouette at gameplay scale
+- preserve vanilla keg-style slight top-down / 3/4-ish perspective so the top ellipse is readable; do not render it flat front-on
+- keep the main barrel/body mass near a soft `11-14 px` width on most rows, with hoops or handles allowed to flare slightly wider
+- leave plausible cable attachment zones on the left, right, top, and bottom adjacency sides; do not let hoops, taps, or overhangs imply that a neighboring cable cannot connect
 - grounded lower edge
 - stay strictly inside the exact canvas
 
@@ -39,6 +43,8 @@ Family consistency rules:
 - preserve keg-family identity first
 - differentiate through metal material, trim, and reinforcement rather than a new machine class silhouette
 - keep it less premium than HardIridiumKeg
+- keep the body rounded and vanilla-keg sized instead of squaring it into a full-width block
+- keep this asset single-state for now; do not invent powered/unpowered cues in the deliverable
 
 Do not:
 - output multiple options

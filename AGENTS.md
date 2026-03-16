@@ -9,7 +9,7 @@ Future AI agents should treat this file as the router, not as a second documenta
 Read these files first:
 
 1. `mod-context/README.md`
-2. `mod-context/intent/current-intent.md`
+2. `mod-context/roadmap.md`
 3. `mod-context/architecture.md`
 4. `mod-context/architectural-audit.md`
 
@@ -21,8 +21,9 @@ Read:
 1. `mod-context/modpack-overview.md`
 2. `mod-context/mod-list.md`
 3. `mod-context/api-surface.md`
-4. the relevant file under `mod-context/integrations/`
-5. the relevant file under `mod-context/systems/`
+4. `mod-context/frameworks.md`
+5. the relevant file under `mod-context/integrations/`
+6. the relevant file under `mod-context/systems/`
 
 ### If the task is about one of this repo's mods
 Read:
