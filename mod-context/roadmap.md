@@ -1,21 +1,21 @@
 # Roadmap
 
-## Direction
+## Ecosystem Direction
 
 This repository is building toward a machine/infrastructure ecosystem for Stardew Valley with:
 
-- `PowerGrid` as optional energy infrastructure
-- `Metal Kegs` as machine content that can integrate with `PowerGrid`
-- `FishSmoker Recipe` as a lightweight balance/content tweak
-- `Farm Terminal` as a read-only monitoring dashboard over `PowerGrid`
+- `PowerGrid` as the core systems/energy layer.
+- `Metal Kegs` as a powered consumer module on standard machine data contracts.
+- `Farm Terminal` as a read-only observability surface over PowerGrid snapshots.
+- `FishSmoker Recipe` as a small progression/balance module.
 
-## Current Stable Baseline
+## Current Stable Pillars
 
-- Phase 1 completed: shared API introduced and `PowerGrid` no longer hard-codes `Metal Kegs`.
-- Phase 1.5 completed: `Metal Kegs` owns its `PowerGrid` tuning and GMCM surface.
-- Phase 2 completed: `PowerGrid` exposes read-only snapshot/query services.
-- Runtime validation is in a usable state for local networks, lifecycle transitions, exact-name filtering, and conduit-linked Farm/FarmHouse merged reporting.
-- `Farm Terminal` MVP exists as a separate read-only StardewUI shell over `PowerGrid` snapshots.
+- `PowerGrid` exposes stable read-only snapshots for networks, consumers, generators, and batteries.
+- `PowerGrid` runtime behavior has a validated baseline for local networks, lifecycle transitions, exact-name filtering, and conduit-linked Farm/FarmHouse merged reporting.
+- `Metal Kegs` is integrated as a powered consumer module through the current PowerGrid contract.
+- `Farm Terminal` MVP is live as a separate StardewUI read-only shell over PowerGrid snapshots.
+- The sprite workflow is mature enough to support one-sprite generation with explicit specs, prompt mapping, and state-aware art contracts.
 
 ## Working Principles
 
@@ -25,20 +25,27 @@ This repository is building toward a machine/infrastructure ecosystem for Starde
 4. Preserve compatibility with the broader machine-heavy modpack.
 5. Keep sandbox validation as the main runtime gate.
 
-## Near-Term Roadmap
+## Near-Term Productization
 
-### Maintain
+- Keep the current stable gameplay/runtime baseline intact while tightening compatibility and observability quality.
+- Implement PowerGrid runtime sprite state transition support aligned to the current art contract for:
+  - `SteamGenerator` (`off`, `on`)
+  - `WindGenerator` (`idle`, `generating`)
+  - `BasicBattery` (`low`, `charged`)
+  - `IridiumBattery` (`low`, `charged`)
+  - `PowerConduit` (`unpaired`, `linked`)
+- Require safe fallback to the current single default sprite whenever a state variant asset is missing, invalid, or not yet shipped.
+- Keep `Metal Kegs` single-state for now; do not add powered/unpowered visuals unless later runtime value is clearly justified.
+- Keep `Farm Terminal` read-only in the near term; no control/automation ownership work in this horizon.
 
-- Keep `PowerGrid`, `Metal Kegs`, and `Farm Terminal` behavior stable under the existing sandbox workflow.
-- Prefer narrow compatibility and observability improvements over feature sprawl.
+## Next Ecosystem Expansion
 
-### Extend Carefully
+- Expand PowerGrid consumer coverage for additional machine families through the existing API/modData integration path.
+- Improve Farm Terminal observability depth (module quality, drill-down quality, bounded refresh behavior) while staying read-focused.
+- Strengthen compatibility confidence for machine-heavy stacks via focused sandbox validations.
 
-- Grow `Farm Terminal` only as a read-focused system surface unless a stronger control contract is justified.
-- Keep future machine integrations on the shared API/modData path rather than reintroducing cross-mod hard-coupling.
+## Later / Optional
 
-### Avoid
-
-- Broad framework churn.
-- Speculative abstractions without a concrete consumer.
-- Feature work that outruns runtime validation.
+- Revisit broader Farm Terminal control workflows only if a clear contract and ownership boundary is justified.
+- Add richer policy/simulation features only when there is a concrete validated consumer and test coverage.
+- Evaluate additional UI/system unification only after near-term runtime and productization goals are stable.
