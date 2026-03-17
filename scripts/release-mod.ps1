@@ -193,6 +193,72 @@ function Package-Mod([hashtable]$modDef, [string]$version, [string]$outputDir) {
     return $zipPath
 }
 
+function Get-ArchiveOutputDir([string]$outputDir) {
+    $parent = Split-Path -Parent $outputDir
+    $leaf = Split-Path -Leaf $outputDir
+    if ([string]::IsNullOrWhiteSpace($leaf)) {
+        throw "Could not derive archive folder name from output dir '$outputDir'."
+    }
+
+    return Join-Path $parent ($leaf + "-archive")
+}
+
+function Get-PackagedZipInfo([System.IO.FileInfo]$file) {
+    if ($file.Name -notmatch '^(?<prefix>.+)-(?<version>\d+\.\d+\.\d+)\.zip$') {
+        return $null
+    }
+
+    return [pscustomobject]@{
+        File = $file
+        Prefix = $Matches.prefix
+        Version = $Matches.version
+        SortVersion = [version]$Matches.version
+    }
+}
+
+function Sync-ZipArchive([string]$outputDir) {
+    if (-not (Test-Path -LiteralPath $outputDir)) {
+        return
+    }
+
+    $archiveDir = Get-ArchiveOutputDir -outputDir $outputDir
+    $zipInfos = Get-ChildItem -LiteralPath $outputDir -File -Filter *.zip |
+        ForEach-Object { Get-PackagedZipInfo -file $_ } |
+        Where-Object { $null -ne $_ }
+
+    $archived = New-Object System.Collections.Generic.List[string]
+
+    foreach ($group in ($zipInfos | Group-Object Prefix)) {
+        $sorted = $group.Group | Sort-Object -Property @(
+            @{ Expression = { $_.SortVersion }; Descending = $true },
+            @{ Expression = { $_.File.LastWriteTimeUtc }; Descending = $true }
+        )
+        $toArchive = $sorted | Select-Object -Skip 2
+
+        foreach ($entry in $toArchive) {
+            if (-not (Test-Path -LiteralPath $archiveDir)) {
+                New-Item -ItemType Directory -Path $archiveDir | Out-Null
+            }
+
+            $destPath = Join-Path $archiveDir $entry.File.Name
+            if (Test-Path -LiteralPath $destPath) {
+                Remove-Item -LiteralPath $destPath -Force
+            }
+
+            Move-Item -LiteralPath $entry.File.FullName -Destination $destPath -Force
+            $archived.Add($entry.File.Name) | Out-Null
+        }
+    }
+
+    if ($archived.Count -gt 0) {
+        Write-Host ""
+        Write-Host "Archived older zip(s) to ${archiveDir}:"
+        $archived | Sort-Object | ForEach-Object {
+            Write-Host "- $_"
+        }
+    }
+}
+
 $repoRoot = Get-RepoRoot
 if ([string]::IsNullOrWhiteSpace($OutputDir)) {
     $OutputDir = Join-Path $repoRoot "artifacts\mod-zips"
@@ -236,6 +302,8 @@ foreach ($modName in $Mods) {
         ZipPath = $zipPath
     }) | Out-Null
 }
+
+Sync-ZipArchive -outputDir $OutputDir
 
 Write-Host ""
 Write-Host "Release summary:"

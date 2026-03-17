@@ -91,6 +91,6 @@ powergrid_status
 
 ## Notes For The Human Running It
 
-- Older zip files can remain in `artifacts/mod-zips/`; pick the newest version for each mod.
+- `artifacts/mod-zips/` should normally contain only the newest and immediate previous zip per mod; if you need older repo-built packages, check `artifacts/mod-zips-archive/`.
 - `FishSmoker Recipe` has no special migration behavior beyond loading under the new content-pack ID.
 - Do not expand into query-harness validation during this smoke pass unless startup or save continuity already fails.

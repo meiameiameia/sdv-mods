@@ -40,12 +40,18 @@ This script performs the smallest required release tasks:
 1. bumps `manifest.json` version (`patch`/`minor`/`major` or `-SetVersion`),
 2. syncs C# project version metadata from the manifest version,
 3. builds C# mods,
-4. writes installable zip packages.
+4. writes installable zip packages,
+5. keeps only the newest and immediate previous zip per mod in the active package folder and archives older zips outside it.
 
 Zip output directory:
 
 - default: `artifacts/mod-zips/`
 - override with `-OutputDir`
+
+Zip archive directory:
+
+- default sibling archive: `artifacts/mod-zips-archive/`
+- if `-OutputDir` is overridden, archive zips are moved to a sibling folder named `[OutputDirLeaf]-archive`
 
 ### Examples
 
@@ -77,7 +83,7 @@ No bump is needed for non-deployable-only repo edits (for example, internal docs
 After any mod-changing work:
 
 1. run `scripts/release-mod.ps1` for changed deployable mods,
-2. let it handle version bump + sync + build + zip,
+2. let it handle version bump + sync + build + zip retention/archive,
 3. attach/use zip(s) from `artifacts/mod-zips/`.
 
 This remains intentionally lightweight: no CI, no tags, no changelog framework.
