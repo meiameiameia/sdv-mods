@@ -3,26 +3,20 @@ using Microsoft.Xna.Framework.Graphics;
 using StardewValley;
 using StardewValley.Menus;
 using Darth.PowerGrid.Core;
+using DarthMods.API.Power;
 
 namespace Darth.PowerGrid.UI;
 
 internal sealed class PowerMonitorMenu : IClickableMenu
 {
     private readonly GameLocation location;
-    private readonly PowerManager powerMgr;
-    private readonly BatteryStateManager batteryState;
-    private readonly FuelManager fuelMgr;
-    private readonly ConduitManager conduitMgr;
-    private readonly ModConfig config;
-
-    private readonly List<PowerNetwork> networks;
+    private readonly PowerQueryService powerQuery;
     private int scrollOffset;
     private readonly int maxVisibleLines = 18;
 
     private readonly List<string> lines = new();
 
-    public PowerMonitorMenu(GameLocation location, PowerManager powerMgr, BatteryStateManager batteryState,
-        FuelManager fuelMgr, ConduitManager conduitMgr, ModConfig config)
+    public PowerMonitorMenu(GameLocation location, PowerQueryService powerQuery)
         : base(
             (int)(Game1.uiViewport.Width * 0.1f),
             (int)(Game1.uiViewport.Height * 0.05f),
@@ -31,13 +25,7 @@ internal sealed class PowerMonitorMenu : IClickableMenu
             showUpperRightCloseButton: true)
     {
         this.location = location;
-        this.powerMgr = powerMgr;
-        this.batteryState = batteryState;
-        this.fuelMgr = fuelMgr;
-        this.conduitMgr = conduitMgr;
-        this.config = config;
-
-        networks = powerMgr.GetNetworks(location);
+        this.powerQuery = powerQuery;
         BuildLines();
     }
 
@@ -45,6 +33,11 @@ internal sealed class PowerMonitorMenu : IClickableMenu
     {
         lines.Clear();
         string locName = location.NameOrUniqueName;
+        IReadOnlyList<PowerNetworkSnapshot> networks = powerQuery.GetNetworkSnapshots(locName);
+        IReadOnlyList<PowerConsumerSnapshot> consumers = powerQuery.GetConsumerSnapshots(locName);
+        IReadOnlyList<PowerGeneratorSnapshot> generators = powerQuery.GetGeneratorSnapshots(locName);
+        IReadOnlyList<PowerBatterySnapshot> batteries = powerQuery.GetBatterySnapshots(locName);
+
         lines.Add($"=== Power Monitor: {locName} ===");
         lines.Add("");
 
@@ -55,68 +48,76 @@ internal sealed class PowerMonitorMenu : IClickableMenu
             return;
         }
 
-        foreach (var net in networks)
+        foreach (PowerNetworkSnapshot net in networks.OrderBy(net => net.NetworkId))
         {
             lines.Add($"--- Network #{net.NetworkId} ---");
-            lines.Add($"Generators: {net.Generators.Count}  |  Cables: {net.Cables.Count}  |  Batteries: {net.Batteries.Count}  |  Consumers: {net.Consumers.Count}");
-            lines.Add($"Generation: {net.TotalGenerationPerTick()} EU/tick  |  Demand: {net.TotalDemandPerTick()} EU/tick");
+            lines.Add($"Generators: {net.GeneratorCount}  |  Cables: {net.CableCount}  |  Batteries: {net.BatteryCount}  |  Consumers: {net.ConsumerCount}");
+            lines.Add($"Generation: {net.TotalGenerationPerTick} EU/tick  |  Demand: {net.TotalDemandPerTick} EU/tick");
 
-            string throughput = net.MinCableThroughput == int.MaxValue ? "unlimited" : $"{net.MinCableThroughput} EU";
+            string throughput = net.CableThroughputCap <= 0 ? "unlimited" : $"{net.CableThroughputCap} EU";
             lines.Add($"Cable Throughput Cap: {throughput}");
-            lines.Add($"Battery Capacity: {net.TotalBatteryCapacity()} EU");
+            lines.Add($"Battery Capacity: {net.TotalBatteryCapacity} EU");
             lines.Add("");
 
-            // Battery details
-            foreach (var bat in net.Batteries)
+            foreach (PowerBatterySnapshot bat in batteries
+                .Where(bat => bat.NetworkId == net.NetworkId)
+                .OrderBy(bat => bat.TileY)
+                .ThenBy(bat => bat.TileX))
             {
-                int charge = batteryState.GetCharge(bat);
-                float pct = bat.Capacity > 0 ? (float)charge / bat.Capacity * 100f : 0f;
-                lines.Add($"  Battery ({bat.Tile.X},{bat.Tile.Y}): {charge}/{bat.Capacity} EU ({pct:F0}%)");
+                float pct = bat.Capacity > 0 ? (float)bat.Charge / bat.Capacity * 100f : 0f;
+                lines.Add($"  Battery ({bat.TileX},{bat.TileY}): {bat.Charge}/{bat.Capacity} EU ({pct:F0}%)");
             }
 
-            // Generator details
-            foreach (var gen in net.Generators)
+            foreach (PowerGeneratorSnapshot gen in generators
+                .Where(gen => gen.NetworkId == net.NetworkId)
+                .OrderBy(gen => gen.TileY)
+                .ThenBy(gen => gen.TileX))
             {
                 string fuelInfo = gen.RequiresFuel
-                    ? $"Fuel ticks left: {fuelMgr.GetFuelTicksRemaining(gen.UniqueKey)}"
+                    ? $"Fuel ticks left: {gen.FuelTicksRemaining}"
                     : "Passive";
-                lines.Add($"  Generator ({gen.Tile.X},{gen.Tile.Y}): {gen.GenerationPerTick} EU/tick [{fuelInfo}]");
+                lines.Add($"  Generator ({gen.TileX},{gen.TileY}): {gen.GenerationPerTick} EU/tick [{fuelInfo}]");
             }
 
             lines.Add("");
 
-            // Last tick report
-            var reports = powerMgr.GetLastReports(locName);
-            var report = reports.Find(r => r.NetworkId == net.NetworkId);
-            if (report != null)
-            {
-                lines.Add($"Last Tick: Generated={report.TotalGenerated} EU, Batteries={report.TotalFromBatteries} EU, Consumed={report.TotalConsumed} EU, Stored={report.TotalStoredInBatteries} EU");
-                lines.Add("");
+            lines.Add($"Last Tick: Generated={net.LastTickGenerated} EU, Batteries={net.LastTickFromBatteries} EU, Consumed={net.LastTickConsumed} EU, Stored={net.LastTickStoredInBatteries} EU");
+            lines.Add("");
 
-                if (report.Allocations.Count > 0)
+            if (consumers.Any(consumer => consumer.NetworkId == net.NetworkId))
+            {
+                lines.Add("Consumers:");
+                foreach (PowerConsumerSnapshot consumer in consumers
+                    .Where(consumer => consumer.NetworkId == net.NetworkId)
+                    .OrderBy(consumer => consumer.TileY)
+                    .ThenBy(consumer => consumer.TileX))
                 {
-                    lines.Add("Active Consumers:");
-                    foreach (var alloc in report.Allocations)
-                    {
-                        string status = alloc.EUAllocated > 0 ? $"POWERED {alloc.SpeedupFraction:P0} speedup" : "UNPOWERED";
-                        lines.Add($"  ({alloc.Consumer.Tile.X},{alloc.Consumer.Tile.Y}) {alloc.Consumer.ItemId}: {alloc.EUAllocated}/{alloc.EUDemanded} EU [{status}]");
-                    }
+                    lines.Add($"  ({consumer.TileX},{consumer.TileY}) {consumer.DisplayName}: {FormatConsumerLine(consumer)}");
                 }
             }
 
             lines.Add("");
         }
+    }
 
-        // Conduit links
-        var conduitLinks = conduitMgr.GetAllLinks();
-        if (conduitLinks.Count > 0)
+    private static string FormatConsumerLine(PowerConsumerSnapshot consumer)
+    {
+        if (consumer.ProgressMode == "days" && !string.IsNullOrWhiteSpace(consumer.ProgressText))
         {
-            lines.Add("=== Conduit Links ===");
-            foreach (var link in conduitLinks)
-            {
-                lines.Add($"  {link.LocationA} ({link.TileA.X},{link.TileA.Y}) <-> {link.LocationB} ({link.TileB.X},{link.TileB.Y})");
-            }
+            string powerState = consumer.IsPowered ? "POWERED" : "DAY-BASED";
+            return $"{powerState}, EU {consumer.EUAllocated}/{consumer.DemandPerTick}, live speed {consumer.SpeedupFraction:P0}, {consumer.ProgressText}";
         }
+
+        if (consumer.IsProcessing)
+        {
+            string powerState = consumer.IsPowered ? "POWERED" : "UNPOWERED";
+            return $"{powerState}, EU {consumer.EUAllocated}/{consumer.DemandPerTick}, speed {consumer.SpeedupFraction:P0}, accel {consumer.MinutesAccelerated}m, about {consumer.MinutesRemaining}m remaining";
+        }
+
+        if (consumer.IsPowered)
+            return $"POWERED, EU {consumer.EUAllocated}/{consumer.DemandPerTick}, speed {consumer.SpeedupFraction:P0}, ready for work";
+
+        return $"IDLE/UNPOWERED on latest tick, EU {consumer.EUAllocated}/{consumer.DemandPerTick}";
     }
 
     public override void draw(SpriteBatch b)

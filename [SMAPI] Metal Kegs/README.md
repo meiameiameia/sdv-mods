@@ -1,7 +1,8 @@
 # [SMAPI] Metal Kegs
 
-Adds two new big craftable machines for Stardew Valley 1.6:
+Adds three new big craftable machines for Stardew Valley 1.6:
 
+- **Metal Cask**: an industrial cask that can age cask products in player-owned indoor spaces outside the cellar. It is slower than a vanilla cellar cask by default, but benefits strongly from PowerGrid when connected.
 - **Metal Keg**: behavior-identical to the vanilla **Keg**.
 - **Hard Iridium Keg**: behavior-identical to GOF's **Hardwood Keg** when Grapes of Ferngill (GOF) is installed.
 
@@ -28,6 +29,8 @@ Adds two new big craftable machines for Stardew Valley 1.6:
   - `fallbackVanillaKeg`: allows crafting **Hard Iridium Keg** even without GOF (it will behave like a vanilla Keg).
 - `EnablePowerGridIntegration`
   - `true` (default): registers Metal Kegs as PowerGrid consumers when PowerGrid is installed.
+- `MetalCaskEUPerMinute`, `MetalCaskMaxSpeedup`, `MetalCaskPriority`
+  - PowerGrid energy tuning for Metal Cask.
 - `MetalKegEUPerMinute`, `MetalKegMaxSpeedup`, `MetalKegPriority`
   - PowerGrid energy tuning for Metal Keg.
 - `HardIridiumKegEUPerMinute`, `HardIridiumKegMaxSpeedup`, `HardIridiumKegPriority`
@@ -36,10 +39,23 @@ Adds two new big craftable machines for Stardew Valley 1.6:
 If [Generic Mod Config Menu](https://www.nexusmods.com/stardewvalley/mods/5098) is installed, these settings can also be edited in-game.
 
 ## Unlocking Rules (existingProgress)
+- **Metal Cask**: unlock when you have a **Cellar** (final house upgrade).
 - **Metal Keg**: unlock when `FarmingLevel >= 8` OR you have crafted at least 1 vanilla Keg.
 - **Hard Iridium Keg**: unlock when you have a **Cellar** (final house upgrade) OR you've shipped at least **200** wines total.
 
 Recipes are granted on the next `DayStarted` after requirements are met (including the first day after installing the mod).
+
+## Metal Cask Behavior
+- Vanilla casks remain untouched.
+- Metal Cask is its own big craftable and does not remove vanilla cellar restrictions from vanilla casks.
+- Metal Cask uses vanilla cask processing rules as its base behavior.
+- If GOF edits the live cask machine rules, Metal Cask inherits those edits too, including fortified wine support when available.
+- Placement is limited to player-owned indoor spaces:
+  - Cellar
+  - FarmHouse / Cabin / IslandFarmHouse
+  - Shed
+  - Barn / Coop interiors and Slime Hutch
+  - Greenhouse
 
 ## Verification: Metal Keg vs Keg
 Test that Metal Keg matches vanilla Keg behavior:
@@ -70,6 +86,7 @@ Both machines are standard big craftable machines (held object + minutes until r
 - PowerGrid integration is optional.
 - Metal Kegs owns its own PowerGrid tuning values and registers them at runtime if PowerGrid is installed.
 - Legacy PowerGrid-owned Metal Keg settings are migrated once into Metal Kegs config when possible.
+- Metal Cask uses PowerGrid as an optional accelerated-aging bonus. Without PowerGrid, it still works as a slower industrial cask.
 
 ## Troubleshooting
 - **Hard Iridium Keg recipe missing**

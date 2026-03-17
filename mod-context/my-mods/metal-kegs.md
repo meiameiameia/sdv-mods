@@ -1,7 +1,8 @@
 ﻿# Metal Kegs
 
 ## Purpose
-`[SMAPI] Metal Kegs` introduces two keg-class machines:
+`[SMAPI] Metal Kegs` introduces three machine lines:
+- `Metal Cask` (industrial cask, slower than vanilla cellar aging by default, optional PowerGrid acceleration)
 - `Metal Keg` (vanilla Keg behavior clone)
 - `Hard Iridium Keg` (GOF Hardwood Keg behavior clone with configurable fallback)
 
@@ -13,17 +14,25 @@
 
 ### Data Injection
 - Edits `Data/BigCraftables`:
-  - clones template entries for Keg and optionally Hardwood Keg.
+  - clones template entries for Cask, Keg, and optionally Hardwood Keg.
 - Edits `Data/CraftingRecipes`:
-  - adds `Metal Keg` and `Hard Iridium Keg` recipes.
+  - adds `Metal Cask`, `Metal Keg`, and `Hard Iridium Keg` recipes.
 - Edits `Data/Machines`:
   - maps new IDs to existing machine behavior models for 1:1 processing logic.
+  - `Metal Cask` clones the live vanilla cask machine model and scales its aging multiplier down for slower baseline aging.
+
+### Runtime Hooks
+- Applies narrow Harmony hooks for `Metal Cask` only:
+  - placement replacement so the placed object is a real `Cask` instance with a custom item ID
+  - custom valid-location widening for player-owned indoor spaces
+  - optional PowerGrid-driven bonus aging during day updates
 
 ### Config and Unlock Logic
 - Config file: `ModConfig.cs` / `config.json`.
 - Keys:
   - `UnlockMode` (`existingProgress`, `always`)
   - `MissingGofMode` (`disable`, `fallbackVanillaKeg`)
+  - `MetalCaskEUPerMinute`, `MetalCaskMaxSpeedup`, `MetalCaskPriority`
 - Recipe grants happen on `SaveLoaded` and `DayStarted` based on progression checks.
 
 ### Tools and Diagnostics

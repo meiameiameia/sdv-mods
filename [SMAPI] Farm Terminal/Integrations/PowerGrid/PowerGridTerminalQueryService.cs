@@ -157,12 +157,8 @@ internal sealed class PowerGridTerminalQueryService
             GetConsumerStatus(consumer),
             $"{consumer.LocationName} @ ({consumer.TileX}, {consumer.TileY})",
             $"Demand {consumer.DemandPerTick} EU/tick",
-            $"Allocated {consumer.EUAllocated} EU, speedup {consumer.SpeedupFraction:P0}",
-            consumer.IsProcessing
-                ? $"Processing with about {consumer.MinutesRemaining} in-game minute(s) remaining."
-                : consumer.IsPowered
-                    ? "Powered and ready for work."
-                    : "Not receiving power from the latest snapshot."
+            BuildConsumerAllocationText(consumer),
+            BuildConsumerDetailText(consumer)
         )).ToList();
     }
 
@@ -276,6 +272,27 @@ internal sealed class PowerGridTerminalQueryService
         if (consumer.IsProcessing)
             return "Active";
         return "Idle";
+    }
+
+    private static string BuildConsumerAllocationText(PowerConsumerSnapshot consumer)
+    {
+        if (consumer.ProgressMode == "days")
+            return $"Allocated {consumer.EUAllocated} EU, live speedup {consumer.SpeedupFraction:P0}";
+
+        return $"Allocated {consumer.EUAllocated} EU, speedup {consumer.SpeedupFraction:P0}";
+    }
+
+    private static string BuildConsumerDetailText(PowerConsumerSnapshot consumer)
+    {
+        if (!string.IsNullOrWhiteSpace(consumer.ProgressText))
+            return consumer.ProgressText;
+
+        if (consumer.IsProcessing)
+            return $"Processing with about {consumer.MinutesRemaining} in-game minute(s) remaining.";
+
+        return consumer.IsPowered
+            ? "Powered and ready for work."
+            : "Not receiving power from the latest snapshot.";
     }
 
     private static string BuildUnpoweredConsumerDetail(IReadOnlyList<PowerConsumerSnapshot> consumers)

@@ -17,4 +17,6 @@ public sealed class PowerConsumerSnapshot
     public int MinutesRemaining { get; init; }
     public float MaxSpeedupFraction { get; init; }
     public int Priority { get; init; }
+    public string ProgressMode { get; init; } = "minutes";
+    public string ProgressText { get; init; } = "";
 }

@@ -2,6 +2,10 @@ namespace Darth.MetalKegs;
 
 internal sealed class ModConfig
 {
+    public const int DefaultMetalCaskEUPerMinute = 6;
+    public const float DefaultMetalCaskMaxSpeedup = 0.50f;
+    public const int DefaultMetalCaskPriority = 8;
+
     public const int DefaultMetalKegEUPerMinute = 2;
     public const float DefaultMetalKegMaxSpeedup = 0.20f;
     public const int DefaultMetalKegPriority = 10;
@@ -16,6 +20,10 @@ internal sealed class ModConfig
     // Optional PowerGrid integration. These settings are owned by Metal Kegs and
     // used when the PowerGrid API is present at runtime.
     public bool EnablePowerGridIntegration { get; set; } = true;
+    public int MetalCaskEUPerMinute { get; set; } = DefaultMetalCaskEUPerMinute;
+    public float MetalCaskMaxSpeedup { get; set; } = DefaultMetalCaskMaxSpeedup;
+    public int MetalCaskPriority { get; set; } = DefaultMetalCaskPriority;
+
     public int MetalKegEUPerMinute { get; set; } = DefaultMetalKegEUPerMinute;
     public float MetalKegMaxSpeedup { get; set; } = DefaultMetalKegMaxSpeedup;
     public int MetalKegPriority { get; set; } = DefaultMetalKegPriority;

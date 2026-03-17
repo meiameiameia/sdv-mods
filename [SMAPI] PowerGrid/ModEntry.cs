@@ -13,6 +13,7 @@ using StardewValley.Mods;
 using Darth.PowerGrid.Core;
 using Darth.PowerGrid.UI;
 using Darth.PowerGrid.Integrations;
+using DarthMods.API.Power;
 
 namespace Darth.PowerGrid;
 
@@ -502,7 +503,7 @@ internal sealed class ModEntry : Mod
                 itemId == PowerConstants.SteamGeneratorId || itemId == PowerConstants.WindGeneratorId ||
                 IsConsumerObject(obj)))
             {
-                var menu = new PowerMonitorMenu(loc, PowerMgr, BatteryState, FuelMgr, ConduitMgr, Config);
+                var menu = new PowerMonitorMenu(loc, PowerQuery);
                 Game1.activeClickableMenu = menu;
                 Helper.Input.Suppress(e.Button);
                 return;
@@ -905,7 +906,7 @@ internal sealed class ModEntry : Mod
                 .ThenBy(c => c.TileX)
                 .ThenBy(c => c.TileY))
             {
-                Monitor.Log($"    Consumer [{consumer.LocationName} @ {consumer.TileX},{consumer.TileY}] {consumer.ItemId}: {consumer.EUAllocated}/{consumer.DemandPerTick} EU, speedup={consumer.SpeedupFraction:P0}, accel={consumer.MinutesAccelerated}min, remaining={consumer.MinutesRemaining}min", LogLevel.Info);
+                Monitor.Log($"    Consumer [{consumer.LocationName} @ {consumer.TileX},{consumer.TileY}] {consumer.ItemId}: {consumer.EUAllocated}/{consumer.DemandPerTick} EU, speedup={consumer.SpeedupFraction:P0}, accel={consumer.MinutesAccelerated}min, {FormatConsumerProgress(consumer)}", LogLevel.Info);
             }
         }
     }
@@ -966,7 +967,7 @@ internal sealed class ModEntry : Mod
 
         foreach (var consumer in consumers)
         {
-            Monitor.Log($"  Consumer [{consumer.LocationName} @ {consumer.TileX},{consumer.TileY}] {consumer.DisplayName}: processing={consumer.IsProcessing}, powered={consumer.IsPowered}, alloc={consumer.EUAllocated}/{consumer.DemandPerTick}, speedup={consumer.SpeedupFraction:P0}, remaining={consumer.MinutesRemaining}", LogLevel.Info);
+            Monitor.Log($"  Consumer [{consumer.LocationName} @ {consumer.TileX},{consumer.TileY}] {consumer.DisplayName}: processing={consumer.IsProcessing}, powered={consumer.IsPowered}, alloc={consumer.EUAllocated}/{consumer.DemandPerTick}, speedup={consumer.SpeedupFraction:P0}, {FormatConsumerProgress(consumer)}", LogLevel.Info);
         }
 
         foreach (var generator in generators)
@@ -978,6 +979,14 @@ internal sealed class ModEntry : Mod
         {
             Monitor.Log($"  Battery [{battery.LocationName} @ {battery.TileX},{battery.TileY}] {battery.DisplayName}: charge={battery.Charge}/{battery.Capacity}, drained={battery.DrainedThisTick}, stored={battery.StoredThisTick}", LogLevel.Info);
         }
+    }
+
+    private static string FormatConsumerProgress(PowerConsumerSnapshot consumer)
+    {
+        if (consumer.ProgressMode == "days" && !string.IsNullOrWhiteSpace(consumer.ProgressText))
+            return $"progress=\"{consumer.ProgressText}\"";
+
+        return $"remaining={consumer.MinutesRemaining}min";
     }
 
     private static readonly string[] PowerGridRecipeKeys = new[]
@@ -1070,7 +1079,7 @@ internal sealed class ModEntry : Mod
         if (Game1.activeClickableMenu != null)
             return;
 
-        Game1.activeClickableMenu = new PowerTabMenu(PowerMgr, BatteryState, FuelMgr, ConduitMgr);
+        Game1.activeClickableMenu = new PowerTabMenu(PowerMgr, PowerQuery, BatteryState, FuelMgr, ConduitMgr);
     }
 
     private static bool IsSupportedGeneratorFuel(StardewValley.Object fuel)

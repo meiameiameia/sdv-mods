@@ -4,12 +4,14 @@ using Microsoft.Xna.Framework.Input;
 using StardewValley;
 using StardewValley.Menus;
 using Darth.PowerGrid.Core;
+using DarthMods.API.Power;
 
 namespace Darth.PowerGrid.UI;
 
 internal sealed class PowerTabMenu : IClickableMenu
 {
     private readonly PowerManager powerMgr;
+    private readonly PowerQueryService powerQuery;
     private readonly BatteryStateManager batteryState;
     private readonly FuelManager fuelMgr;
     private readonly ConduitManager conduitMgr;
@@ -27,7 +29,7 @@ internal sealed class PowerTabMenu : IClickableMenu
         public Vector2 Tile { get; init; }
     }
 
-    public PowerTabMenu(PowerManager powerMgr, BatteryStateManager batteryState, FuelManager fuelMgr, ConduitManager conduitMgr)
+    public PowerTabMenu(PowerManager powerMgr, PowerQueryService powerQuery, BatteryStateManager batteryState, FuelManager fuelMgr, ConduitManager conduitMgr)
         : base(
             (int)(Game1.uiViewport.Width * 0.08f),
             (int)(Game1.uiViewport.Height * 0.05f),
@@ -36,6 +38,7 @@ internal sealed class PowerTabMenu : IClickableMenu
             showUpperRightCloseButton: true)
     {
         this.powerMgr = powerMgr;
+        this.powerQuery = powerQuery;
         this.batteryState = batteryState;
         this.fuelMgr = fuelMgr;
         this.conduitMgr = conduitMgr;
@@ -73,39 +76,29 @@ internal sealed class PowerTabMenu : IClickableMenu
         conduitsByKey.Clear();
 
         var locations = CollectLocations();
-        int totalNetworks = 0;
-        int totalGenerators = 0;
-        int totalCables = 0;
-        int totalBatteries = 0;
-        int totalConsumers = 0;
-        int totalConduits = 0;
-        int totalGeneration = 0;
-        int totalDemand = 0;
-        int totalCapacity = 0;
-        int activeLocations = 0;
+        IReadOnlyList<PowerNetworkSnapshot> networkSnapshots = powerQuery.GetNetworkSnapshots();
+        IReadOnlyList<PowerConsumerSnapshot> consumerSnapshots = powerQuery.GetConsumerSnapshots();
+        IReadOnlyList<PowerGeneratorSnapshot> generatorSnapshots = powerQuery.GetGeneratorSnapshots();
+        IReadOnlyList<PowerBatterySnapshot> batterySnapshots = powerQuery.GetBatterySnapshots();
 
-        var perLocation = new List<(GameLocation Location, string Name, List<PowerNetwork> Networks)>();
+        int totalNetworks = networkSnapshots.Count;
+        int totalGenerators = networkSnapshots.Sum(net => net.GeneratorCount);
+        int totalCables = networkSnapshots.Sum(net => net.CableCount);
+        int totalBatteries = networkSnapshots.Sum(net => net.BatteryCount);
+        int totalConsumers = networkSnapshots.Sum(net => net.ConsumerCount);
+        int totalConduits = networkSnapshots.Sum(net => net.ConduitCount);
+        int totalGeneration = networkSnapshots.Sum(net => net.TotalGenerationPerTick);
+        int totalDemand = networkSnapshots.Sum(net => net.TotalDemandPerTick);
+        int totalCapacity = networkSnapshots.Sum(net => net.TotalBatteryCapacity);
+        int activeLocations = networkSnapshots
+            .SelectMany(net => net.LocationNames)
+            .Distinct(StringComparer.Ordinal)
+            .Count();
 
         foreach (GameLocation location in locations)
         {
-            List<PowerNetwork> networks = powerMgr.GetNetworks(location);
-            if (networks.Count > 0)
-                activeLocations++;
-
-            perLocation.Add((location, location.NameOrUniqueName, networks));
-
-            totalNetworks += networks.Count;
-            foreach (PowerNetwork net in networks)
+            foreach (PowerNetwork net in powerMgr.GetNetworks(location))
             {
-                totalGenerators += net.Generators.Count;
-                totalCables += net.Cables.Count;
-                totalBatteries += net.Batteries.Count;
-                totalConsumers += net.Consumers.Count;
-                totalConduits += net.Conduits.Count;
-                totalGeneration += net.TotalGenerationPerTick();
-                totalDemand += net.TotalDemandPerTick();
-                totalCapacity += net.TotalBatteryCapacity();
-
                 foreach (PowerNode conduit in net.Conduits)
                 {
                     string conduitKey = MakeConduitKey(conduit.LocationName, conduit.Tile);
@@ -133,51 +126,50 @@ internal sealed class PowerTabMenu : IClickableMenu
         lines.Add($"Battery charge tracked: {batteryState.TotalStoredEU()} EU");
         lines.Add("");
 
-        foreach ((GameLocation location, string name, List<PowerNetwork> networks) in perLocation.OrderBy(p => p.Name))
+        foreach (GameLocation location in locations.OrderBy(loc => loc.NameOrUniqueName, StringComparer.Ordinal))
         {
+            string name = location.NameOrUniqueName;
+            List<PowerNetworkSnapshot> networks = networkSnapshots
+                .Where(net => net.LocationNames.Contains(name, StringComparer.Ordinal))
+                .OrderBy(net => net.NetworkId)
+                .ToList();
+
             if (networks.Count == 0)
                 continue;
 
             lines.Add($"--- {name} ---");
-            foreach (PowerNetwork net in networks.OrderBy(n => n.NetworkId))
+            foreach (PowerNetworkSnapshot net in networks)
             {
-                string throughput = net.MinCableThroughput == int.MaxValue
-                    ? "unlimited"
-                    : $"{net.MinCableThroughput} EU";
-                lines.Add($"  Net #{net.NetworkId}: G={net.Generators.Count}, C={net.Cables.Count}, B={net.Batteries.Count}, U={net.Consumers.Count}, P={net.Conduits.Count}, Throughput={throughput}");
+                string throughput = net.CableThroughputCap <= 0 ? "unlimited" : $"{net.CableThroughputCap} EU";
+                string locationScope = net.IsCrossLocation ? $" [{string.Join(", ", net.LocationNames)}]" : "";
+                lines.Add($"  Net #{net.NetworkId}{locationScope}: G={net.GeneratorCount}, C={net.CableCount}, B={net.BatteryCount}, U={net.ConsumerCount}, P={net.ConduitCount}, Throughput={throughput}");
+                lines.Add($"    Last tick: gen={net.LastTickGenerated}, used={net.LastTickConsumed}, batteryOut={net.LastTickFromBatteries}, batteryIn={net.LastTickStoredInBatteries}");
 
-                TickReport? report = powerMgr.GetLastReports(name).Find(r => r.NetworkId == net.NetworkId);
-
-                foreach (PowerNode gen in net.Generators)
+                foreach (PowerGeneratorSnapshot gen in generatorSnapshots
+                    .Where(gen => gen.NetworkId == net.NetworkId && string.Equals(gen.LocationName, name, StringComparison.Ordinal))
+                    .OrderBy(gen => gen.TileY)
+                    .ThenBy(gen => gen.TileX))
                 {
-                    if (gen.LocationName != name)
-                        continue;
-
                     string fuelInfo = gen.RequiresFuel
-                        ? $"fuel ticks {fuelMgr.GetFuelTicksRemaining(gen.UniqueKey)}"
+                        ? $"fuel ticks {gen.FuelTicksRemaining}"
                         : "passive";
-                    lines.Add($"    Gen ({gen.Tile.X},{gen.Tile.Y}) {gen.ItemId}: {gen.GenerationPerTick} EU/tick [{fuelInfo}]");
+                    lines.Add($"    Gen ({gen.TileX},{gen.TileY}) {gen.DisplayName}: {gen.GenerationPerTick} EU/tick [{fuelInfo}]");
                 }
 
-                foreach (PowerNode consumer in net.Consumers)
+                foreach (PowerConsumerSnapshot consumer in consumerSnapshots
+                    .Where(c => c.NetworkId == net.NetworkId && string.Equals(c.LocationName, name, StringComparison.Ordinal))
+                    .OrderBy(c => c.TileY)
+                    .ThenBy(c => c.TileX))
                 {
-                    if (consumer.LocationName != name)
-                        continue;
+                    lines.Add($"    Cons ({consumer.TileX},{consumer.TileY}) {consumer.DisplayName}: {FormatConsumerLine(consumer)}");
+                }
 
-                    AllocationResult? allocation = report?.Allocations.FirstOrDefault(a =>
-                        a.Consumer.LocationName == consumer.LocationName && a.Consumer.Tile == consumer.Tile);
-
-                    StardewValley.Object? machine = location.getObjectAtTile((int)consumer.Tile.X, (int)consumer.Tile.Y);
-                    int machineMinutes = machine?.MinutesUntilReady ?? 0;
-
-                    if (allocation == null)
-                    {
-                        lines.Add($"    Cons ({consumer.Tile.X},{consumer.Tile.Y}) {consumer.ItemId}: connected, awaiting tick, now={machineMinutes}m");
-                        continue;
-                    }
-
-                    string powerState = allocation.EUAllocated > 0 ? "POWERED" : "UNPOWERED";
-                    lines.Add($"    Cons ({consumer.Tile.X},{consumer.Tile.Y}) {consumer.ItemId}: {powerState}, EU {allocation.EUAllocated}/{allocation.EUDemanded}, speed {allocation.SpeedupFraction:P0}, accel {allocation.MinutesAccelerated}m, now={machineMinutes}m");
+                foreach (PowerBatterySnapshot battery in batterySnapshots
+                    .Where(b => b.NetworkId == net.NetworkId && string.Equals(b.LocationName, name, StringComparison.Ordinal))
+                    .OrderBy(b => b.TileY)
+                    .ThenBy(b => b.TileX))
+                {
+                    lines.Add($"    Bat ({battery.TileX},{battery.TileY}) {battery.DisplayName}: {battery.Charge}/{battery.Capacity} EU");
                 }
             }
 
@@ -206,6 +198,26 @@ internal sealed class PowerTabMenu : IClickableMenu
             lines.Add(line);
             conduitLineToKey[lineIndex] = conduitKey;
         }
+    }
+
+    private static string FormatConsumerLine(PowerConsumerSnapshot consumer)
+    {
+        if (consumer.ProgressMode == "days" && !string.IsNullOrWhiteSpace(consumer.ProgressText))
+        {
+            string powerState = consumer.IsPowered ? "POWERED" : "DAY-BASED";
+            return $"{powerState}, EU {consumer.EUAllocated}/{consumer.DemandPerTick}, live speed {consumer.SpeedupFraction:P0}, {consumer.ProgressText}";
+        }
+
+        if (consumer.IsProcessing)
+        {
+            string powerState = consumer.IsPowered ? "POWERED" : "UNPOWERED";
+            return $"{powerState}, EU {consumer.EUAllocated}/{consumer.DemandPerTick}, speed {consumer.SpeedupFraction:P0}, accel {consumer.MinutesAccelerated}m, about {consumer.MinutesRemaining}m remaining";
+        }
+
+        if (consumer.IsPowered)
+            return $"POWERED, EU {consumer.EUAllocated}/{consumer.DemandPerTick}, speed {consumer.SpeedupFraction:P0}, ready for work";
+
+        return $"IDLE/UNPOWERED on latest tick, EU {consumer.EUAllocated}/{consumer.DemandPerTick}";
     }
 
     private void HandleConduitClick(string conduitKey)

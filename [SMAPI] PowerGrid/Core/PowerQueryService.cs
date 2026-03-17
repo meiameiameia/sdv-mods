@@ -1,10 +1,21 @@
 using DarthMods.API.Power;
 using StardewValley;
+using StardewValley.Objects;
+using System.Globalization;
+using System.Reflection;
 
 namespace Darth.PowerGrid.Core;
 
 internal sealed class PowerQueryService
 {
+    private const string MetalCaskItemId = "darth.MetalKegs_MetalCask";
+    private const string MetalCaskMarkerKey = "meiameiameia.MetalKegs/MetalCask";
+    private const string MetalCaskPowerModeKey = "meiameiameia.MetalKegs/PowerMode";
+    private const string MetalCaskObservedPowerStateKey = "meiameiameia.MetalKegs/ObservedPowerState";
+    private const string MetalCaskLastAppliedBonusDaysKey = "meiameiameia.MetalKegs/LastAppliedBonusDays";
+    private const string MetalCaskLastAppliedDateKey = "meiameiameia.MetalKegs/LastAppliedDate";
+    private static readonly FieldInfo? CaskDaysToMatureField = typeof(Cask).GetField("daysToMature", BindingFlags.Instance | BindingFlags.NonPublic);
+
     private readonly PowerManager powerManager;
     private readonly BatteryStateManager batteryState;
     private readonly FuelManager fuelManager;
@@ -85,6 +96,9 @@ internal sealed class PowerQueryService
 
                 StardewValley.Object? obj = location.getObjectAtTile((int)consumer.Tile.X, (int)consumer.Tile.Y);
                 allocations.TryGetValue(consumer.UniqueKey, out AllocationResult? allocation);
+                string progressMode = GetProgressMode(obj, consumer);
+                string progressText = BuildProgressText(obj, consumer, allocation, progressMode);
+                bool isProcessing = GetIsProcessing(obj, progressMode);
 
                 snapshots.Add(new PowerConsumerSnapshot
                 {
@@ -94,7 +108,7 @@ internal sealed class PowerQueryService
                     TileY = (int)consumer.Tile.Y,
                     ItemId = consumer.ItemId,
                     DisplayName = GetConsumerDisplayName(obj, consumer),
-                    IsProcessing = obj?.MinutesUntilReady > 0,
+                    IsProcessing = isProcessing,
                     IsPowered = (allocation?.EUAllocated ?? 0) > 0,
                     DemandPerTick = consumer.DemandPerTick,
                     EUAllocated = allocation?.EUAllocated ?? 0,
@@ -102,7 +116,9 @@ internal sealed class PowerQueryService
                     MinutesAccelerated = allocation?.MinutesAccelerated ?? 0,
                     MinutesRemaining = allocation?.MinutesRemaining ?? (obj?.MinutesUntilReady ?? 0),
                     MaxSpeedupFraction = consumer.MaxSpeedupFraction,
-                    Priority = consumer.Priority
+                    Priority = consumer.Priority,
+                    ProgressMode = progressMode,
+                    ProgressText = progressText
                 });
             }
         }
@@ -258,6 +274,99 @@ internal sealed class PowerQueryService
             return definition.DisplayName;
 
         return consumer.ItemId;
+    }
+
+    private static string GetProgressMode(StardewValley.Object? obj, PowerNode consumer)
+    {
+        if (obj != null
+            && obj.modData.TryGetValue(MetalCaskPowerModeKey, out string? mode)
+            && string.Equals(mode, "days", StringComparison.Ordinal))
+        {
+            return "days";
+        }
+
+        if (consumer.ItemId == MetalCaskItemId)
+            return "days";
+
+        return "minutes";
+    }
+
+    private static bool GetIsProcessing(StardewValley.Object? obj, string progressMode)
+    {
+        if (progressMode == "days" && obj is Cask cask)
+        {
+            if (cask.heldObject.Value == null)
+                return false;
+
+            if (TryGetCaskDaysToMature(cask, out float daysRemaining))
+                return daysRemaining > 0f;
+
+            return true;
+        }
+
+        return obj?.MinutesUntilReady > 0;
+    }
+
+    private static string BuildProgressText(StardewValley.Object? obj, PowerNode consumer, AllocationResult? allocation, string progressMode)
+    {
+        if (progressMode != "days")
+            return "";
+
+        if (obj is not Cask cask || !IsMetalCask(cask, consumer))
+            return "Day-based machine. Minute ETA not applicable.";
+
+        if (cask.heldObject.Value == null)
+            return "Day-based aging machine. Empty right now.";
+
+        string daysText = TryGetCaskDaysToMature(cask, out float daysRemaining)
+            ? $"{daysRemaining:0.##} day(s) to next quality"
+            : "next-quality timing unavailable";
+
+        string powerState = cask.modData.TryGetValue(MetalCaskObservedPowerStateKey, out string? stateText)
+            ? stateText ?? "unknown"
+            : "unknown";
+        string lastBonusDays = cask.modData.TryGetValue(MetalCaskLastAppliedBonusDaysKey, out string? bonusText)
+            ? bonusText ?? "0"
+            : "0";
+        string lastBonusDate = cask.modData.TryGetValue(MetalCaskLastAppliedDateKey, out string? dateText)
+            ? dateText ?? "n/a"
+            : "n/a";
+
+        if (daysRemaining <= 0f)
+            return "Day-based aging complete. Ready to collect.";
+
+        string livePowerText = (allocation?.EUAllocated ?? 0) > 0
+            ? $"Powered now at {(allocation?.SpeedupFraction ?? 0f):P0}; overnight bonus applies on day change."
+            : powerState == "powergrid-unavailable"
+                ? "PowerGrid API unavailable; no overnight bonus can be confirmed."
+                : "Not powered for the next overnight bonus.";
+
+        if (float.TryParse(lastBonusDays, NumberStyles.Float, CultureInfo.InvariantCulture, out float parsedBonus) && parsedBonus > 0f)
+            return $"Day-based aging: {daysText}. {livePowerText} Last overnight bonus: {parsedBonus:0.##} day(s) on {lastBonusDate}.";
+
+        return $"Day-based aging: {daysText}. {livePowerText}";
+    }
+
+    private static bool IsMetalCask(Cask cask, PowerNode consumer)
+    {
+        return consumer.ItemId == MetalCaskItemId
+            || cask.QualifiedItemId == "(BC)" + MetalCaskItemId
+            || cask.modData.ContainsKey(MetalCaskMarkerKey);
+    }
+
+    private static bool TryGetCaskDaysToMature(Cask cask, out float daysRemaining)
+    {
+        daysRemaining = 0f;
+        object? value = CaskDaysToMatureField?.GetValue(cask);
+        if (value == null)
+            return false;
+
+        PropertyInfo? valueProperty = value.GetType().GetProperty("Value");
+        if (valueProperty?.GetValue(value) is not float boxed)
+            return false;
+
+        daysRemaining = boxed;
+        return true;
     }
 
     private static string[] GetInvolvedLocationNames(PowerNetwork network)
