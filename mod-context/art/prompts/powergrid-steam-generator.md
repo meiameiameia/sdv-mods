@@ -25,7 +25,7 @@ Use attached references in this priority order:
 4. master_64.txt is palette discipline only.
 
 Subject brief:
-Create a compact fuel-burning generator that reads as a handcrafted farm-tech machine. It should imply heat, pressure, and mechanical power generation, with one strong boiler or vent cue and a grounded base. It should not look like a straight Furnace recolor.
+Create a compact industrial boiler/furnace/generator machine that reads as a real enclosed power device. It should imply heat, pressure, and mechanical power generation through a broad main housing with one strong boiler or furnace cue. It should not read like a narrow post, totem, shrine, cabinet, or ladder-like pipe stack.
 
 Technical requirements:
 - transparent background
@@ -34,7 +34,8 @@ Technical requirements:
 - clean readable silhouette at gameplay scale
 - use Stardew's slight top-down / 3/4-ish machine perspective; the top plane should be clearly readable at `1x` instead of flat front-on or reduced to a token sliver
 - keep the dominant machine body near a soft `11-14 px` width on most rows, with only small accents allowed to flare slightly wider
-- give the lower body enough mass that the generator reads as sturdy and grounded instead of thin, spindly, or top-heavy
+- give the lower body enough mass that the generator reads as a broad sturdy machine housing instead of a thin, spindly, or top-heavy object
+- make the front machine face read as real enclosed machinery; the chimney or pipe should be secondary, not the whole silhouette
 - leave plausible cable attachment zones on the left, right, top, and bottom adjacency sides; do not use bulk that makes one side look non-connectable
 - lowest visible base/body pixels should touch or nearly touch the bottom row so the machine does not feel like it is levitating
 - stay strictly inside the exact canvas
@@ -52,4 +53,6 @@ Do not:
 - make it photoreal or modern-industrial
 - overload it with pipes or gauges
 - turn it into a furnace clone with only a recolor
+- make it read like a post, totem, shrine, cabinet, or ladder stack
+- let the chimney, vent, or pipe become the main silhouette instead of the machine body
 ```

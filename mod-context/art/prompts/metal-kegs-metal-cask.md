@@ -26,7 +26,7 @@ Use attached references in this priority order:
 4. master_64.txt is palette discipline only.
 
 Subject brief:
-Create an industrial aging cask that still reads immediately as part of Stardew's cask lineage. It should feel like a reinforced metal-supported cask or aging vessel, not a generic machine cabinet and not just a recolored keg. Preserve cask readability first, then add reinforced machine-like construction cues second.
+Create a closed industrial aging cask that still reads immediately as part of Stardew's cask lineage. It should feel like a reinforced sealed aging vessel for wine or cheese, not an open basin, bowl, cauldron, chalice, or pedestal vat. Preserve cask readability first, then add reinforced machine-like construction cues second.
 
 Technical requirements:
 - transparent background
@@ -37,6 +37,7 @@ Technical requirements:
 - keep the main cask/body mass near a soft `12-14 px` width on most rows
 - give the lower body enough mass that the cask reads as sturdy and grounded instead of thin, spindly, or top-heavy
 - lowest visible body/base pixels should touch or nearly touch the bottom row so the cask does not feel like it is floating
+- show a clearly enclosed storage body with a lid, cap, hatch, or sealed top treatment; do not imply an open liquid surface
 - leave plausible cable attachment zones on the left, right, top, and bottom adjacency sides without making the cask read like a relay or battery machine
 - stay strictly inside the exact canvas
 
@@ -44,11 +45,14 @@ Family consistency rules:
 - preserve cask-family identity first
 - use reinforced metal bands, braces, trim, or housing details to sell the industrial upgrade
 - keep it more cask-like than keg-like
+- avoid pedestal, hoop-on-stand, goblet, or basin silhouettes
 - keep it grounded in vanilla big-craftable readability rather than modern realistic brewery art
 - do not invent powered/unpowered variants in this run
 
 Do not:
 - output multiple options
+- make it look like an open-top basin, bowl, cauldron, chalice, or hoop on a stand
+- show visible liquid, exposed contents, or an empty open vessel mouth
 - make it look like a generic barrel, chest, or machine cabinet
 - make it too thin or too tall for 16x32
 - add sci-fi glow, tech panels, or magical effects
