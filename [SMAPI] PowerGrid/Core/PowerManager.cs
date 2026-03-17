@@ -73,6 +73,7 @@ internal sealed class PowerManager
     private const string MdPartnerTile = MdPrefix + "partnerTile";
 
     private const string MdPowered = MdPrefix + "powered";
+    private const string MdEnergized = MdPrefix + "energized";
     private const string MdEuAllocated = MdPrefix + "euAllocated";
     private const string MdEuDemanded = MdPrefix + "euDemanded";
     private const string MdSpeedup = MdPrefix + "speedupFraction";
@@ -87,7 +88,7 @@ internal sealed class PowerManager
         MdEuPerTick, MdGeneratedThisTick, MdRequiresFuel, MdFuelTicksRemaining, MdOnline,
         MdCharge, MdCapacity, MdChargePercent, MdDrainedThisTick, MdStoredThisTick,
         MdLinked, MdPartnerLocation, MdPartnerTile,
-        MdPowered, MdEuAllocated, MdEuDemanded, MdSpeedup, MdMinutesAccelerated, MdMinutesRemaining, MdLastTickTime
+        MdPowered, MdEnergized, MdEuAllocated, MdEuDemanded, MdSpeedup, MdMinutesAccelerated, MdMinutesRemaining, MdLastTickTime
     };
 
     private ConduitManager? conduitMgr;
@@ -434,6 +435,8 @@ internal sealed class PowerManager
         // Step 4: Allocate EU to consumers deterministically by priority
         int totalConsumed = 0;
         var allocationsByConsumerKey = new Dictionary<string, AllocationResult>(StringComparer.Ordinal);
+        bool networkEnergized = availableEU > 0;
+
         foreach (PowerNode consumer in sortedConsumers)
         {
             // Look up the machine in its own location
@@ -459,7 +462,7 @@ internal sealed class PowerManager
                 report.Allocations.Add(allocation);
                 allocationsByConsumerKey[consumer.UniqueKey] = allocation;
                 if (machineObj != null)
-                    SetConsumerMetadata(machineObj, network.NetworkId, allocation);
+                    SetConsumerMetadata(machineObj, network.NetworkId, allocation, networkEnergized);
                 continue;
             }
 
@@ -488,7 +491,7 @@ internal sealed class PowerManager
 
             report.Allocations.Add(activeAllocation);
             allocationsByConsumerKey[consumer.UniqueKey] = activeAllocation;
-            SetConsumerMetadata(machineObj, network.NetworkId, activeAllocation);
+            SetConsumerMetadata(machineObj, network.NetworkId, activeAllocation, networkEnergized);
         }
         report.TotalConsumed = totalConsumed;
 
@@ -516,6 +519,7 @@ internal sealed class PowerManager
             network,
             locations,
             seenMetadataTileKeys,
+            networkEnergized,
             generatorOutputByKey,
             batteryDrainByKey,
             batteryStoredByKey,
@@ -607,10 +611,11 @@ internal sealed class PowerManager
         obj.modData[MdLastTickTime] = Game1.timeOfDay.ToString(CultureInfo.InvariantCulture);
     }
 
-    private static void SetConsumerMetadata(StardewValley.Object machineObj, int networkId, AllocationResult allocation)
+    private static void SetConsumerMetadata(StardewValley.Object machineObj, int networkId, AllocationResult allocation, bool energized)
     {
         SetNetworkMetadata(machineObj, "Consumer", networkId);
         machineObj.modData[MdPowered] = allocation.EUAllocated > 0 ? "1" : "0";
+        machineObj.modData[MdEnergized] = energized ? "1" : "0";
         machineObj.modData[MdEuAllocated] = allocation.EUAllocated.ToString(CultureInfo.InvariantCulture);
         machineObj.modData[MdEuDemanded] = allocation.EUDemanded.ToString(CultureInfo.InvariantCulture);
         machineObj.modData[MdSpeedup] = allocation.SpeedupFraction.ToString("0.####", CultureInfo.InvariantCulture);
@@ -622,6 +627,7 @@ internal sealed class PowerManager
         PowerNetwork network,
         Dictionary<string, GameLocation> locations,
         HashSet<string> seenMetadataTileKeys,
+        bool networkEnergized,
         Dictionary<string, int> generatorOutputByKey,
         Dictionary<string, int> batteryDrainByKey,
         Dictionary<string, int> batteryStoredByKey,
@@ -703,12 +709,13 @@ internal sealed class PowerManager
 
             if (allocationsByConsumerKey.TryGetValue(consumer.UniqueKey, out AllocationResult? allocation))
             {
-                SetConsumerMetadata(obj, network.NetworkId, allocation);
+                SetConsumerMetadata(obj, network.NetworkId, allocation, networkEnergized);
             }
             else
             {
                 SetNetworkMetadata(obj, "Consumer", network.NetworkId);
                 obj.modData[MdPowered] = "0";
+                obj.modData[MdEnergized] = networkEnergized ? "1" : "0";
                 obj.modData[MdEuAllocated] = "0";
                 obj.modData[MdEuDemanded] = consumer.DemandPerTick.ToString(CultureInfo.InvariantCulture);
                 obj.modData[MdSpeedup] = "0";
@@ -758,6 +765,7 @@ internal sealed class PowerManager
                 SetNetworkMetadata(obj, "Standalone", -1);
                 obj.modData[MdLinked] = (obj.ItemId ?? "") == PowerConstants.PowerConduitId && conduitMgr?.GetPartner(location.NameOrUniqueName, tile) != null ? "1" : "0";
                 obj.modData[MdPowered] = "0";
+                obj.modData[MdEnergized] = "0";
                 obj.modData[MdEuAllocated] = "0";
                 obj.modData[MdEuDemanded] = "0";
                 obj.modData[MdSpeedup] = "0";

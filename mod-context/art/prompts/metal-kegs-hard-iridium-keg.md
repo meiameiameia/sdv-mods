@@ -5,7 +5,7 @@ Attach these references if available before generation:
 - Vanilla big-craftable reference from `Craftables.png`
 - Repo vanilla lineage reference: `[SMAPI] Metal Kegs/assets/templates/VanillaKeg.png`
 - Repo compatibility reference: `[SMAPI] Metal Kegs/assets/templates/HardwoodKeg.png`
-- Current repo sprites: `[SMAPI] Metal Kegs/assets/HardIridiumKeg.png` and `[SMAPI] Metal Kegs/assets/MetalKeg.png`
+- Current repo sprites: `[SMAPI] Metal Kegs/assets/HardIridiumKeg.png`, `[SMAPI] Metal Kegs/assets/HardIridiumKeg__unpowered.png`, `[SMAPI] Metal Kegs/assets/HardIridiumKeg__powered.png`, and `[SMAPI] Metal Kegs/assets/MetalKeg.png`
 - Optional reinforced cask references
 - `master_64.txt`
 
@@ -16,13 +16,13 @@ Asset name: Hard Iridium Keg
 Output filename: HardIridiumKeg.png
 Canvas: 16x32 pixels
 Layout: single big-craftable sprite
-State variants: none
-Single-state only for now. Do not prepare powered/unpowered companion files yet.
+State variants: `unpowered`, `powered`
+If multiple states are requested, deliver separate review files named `HardIridiumKeg__unpowered.png` and `HardIridiumKeg__powered.png` while keeping the same footprint and cable-adjacency zones.
 Animation: none
 
 Use attached references in this priority order:
 1. Vanilla Stardew Valley Craftables references and the vanilla keg template are the style authority.
-2. The repo HardwoodKeg template and current HardIridiumKeg and MetalKeg sprites are compatibility references only. Preserve gameplay identity and lineage cues, but do not preserve off-style rendering if it conflicts with vanilla readability.
+2. The repo HardwoodKeg template and current HardIridiumKeg and MetalKeg sprite sets are compatibility references only. Preserve gameplay identity and lineage cues, but do not preserve off-style rendering if it conflicts with vanilla readability.
 3. External reinforced cask or premium brewing-vessel references are inspiration only.
 4. master_64.txt is palette discipline only.
 
@@ -34,18 +34,19 @@ Technical requirements:
 - no mockup, no scene, no UI frame
 - no anti-aliasing or blurred edges
 - clean readable silhouette at gameplay scale
-- preserve vanilla keg-style slight top-down / 3/4-ish perspective so the top ellipse is readable; do not render it flat front-on
-- keep the main barrel/body mass near a soft `11-14 px` width on most rows, with reinforced trim allowed to flare slightly wider
+- preserve vanilla keg-style slight top-down / 3/4-ish perspective so the top ellipse or lid plane is clearly readable; do not render it flat front-on
+- keep the main barrel/body mass near a soft `12-14 px` width on most rows, with reinforced trim allowed to flare slightly wider
+- give the lower body enough mass that the keg reads as a sturdy reinforced vessel instead of a thin barrel shell
 - leave plausible cable attachment zones on the left, right, top, and bottom adjacency sides; do not let reinforced trim or side hardware imply that a neighboring cable cannot connect
-- grounded lower edge
+- lowest visible body/base pixels should touch or nearly touch the bottom row so the keg does not feel like it is floating
 - stay strictly inside the exact canvas
 
 Family consistency rules:
 - must still read as a keg-family machine first
 - should look clearly more premium than MetalKeg
 - use iridium cues with restraint; quality comes from finish and reinforcement, not VFX
-- keep the body rounded and keg-sized instead of broadening into a square full-width block
-- keep this asset single-state for now; do not invent powered/unpowered cues in the deliverable
+- keep the body rounded and keg-sized instead of broadening into a square full-width block or thinning into a weak barrel strip
+- keep unpowered and powered variants silhouette-compatible, with state change coming from restrained powered trim or indicator cues rather than shape drift
 
 Do not:
 - output multiple options

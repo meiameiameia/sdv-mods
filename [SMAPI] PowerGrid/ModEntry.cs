@@ -1139,7 +1139,7 @@ internal sealed class ModEntry : Mod
             {
                 harmony.Patch(
                     drawTarget,
-                    prefix: new HarmonyMethod(typeof(ModEntry), nameof(StatefulConduitTileDrawPrefix)),
+                    prefix: new HarmonyMethod(typeof(ModEntry), nameof(StatefulPowerGridTileDrawPrefix)),
                     postfix: new HarmonyMethod(typeof(ModEntry), nameof(StatefulObjectTileDrawPostfix)));
             }
 
@@ -1182,21 +1182,30 @@ internal sealed class ModEntry : Mod
         }
     }
 
-    private static bool StatefulConduitTileDrawPrefix(StardewValley.Object __instance, object[] __args)
+    private static bool StatefulPowerGridTileDrawPrefix(StardewValley.Object __instance, object[] __args)
     {
-        if (Instance == null || __instance?.ItemId != PowerConstants.PowerConduitId || __args.Length < 4 || __args[0] is not SpriteBatch spriteBatch)
+        if (Instance == null || __instance == null || __args.Length < 4 || __args[0] is not SpriteBatch spriteBatch)
+            return true;
+
+        if (IsCableItem(__instance.ItemId))
+            return false;
+
+        if (!IsStatefulPowerGridItem(__instance.ItemId))
             return true;
 
         if (__args[1] is not int tileX || __args[2] is not int tileY)
             return true;
 
         float alpha = __args[3] is float drawAlpha ? drawAlpha : 1f;
-        return !Instance.TryDrawConduitTileReplacement(__instance, spriteBatch, tileX, tileY, alpha, "tile-prefix");
+        return !Instance.TryDrawStatefulTileReplacement(__instance, spriteBatch, tileX, tileY, alpha, "tile-prefix");
     }
 
     private static void StatefulObjectTileDrawPostfix(StardewValley.Object __instance, object[] __args)
     {
         if (Instance == null || __args.Length < 4 || __args[0] is not SpriteBatch spriteBatch)
+            return;
+
+        if (__instance == null || IsStatefulPowerGridItem(__instance.ItemId))
             return;
 
         if (__args[1] is not int tileX || __args[2] is not int tileY)
@@ -1284,7 +1293,7 @@ internal sealed class ModEntry : Mod
             layerDepth);
     }
 
-    private bool TryDrawConduitTileReplacement(StardewValley.Object obj, SpriteBatch spriteBatch, int tileX, int tileY, float alpha, string source)
+    private bool TryDrawStatefulTileReplacement(StardewValley.Object obj, SpriteBatch spriteBatch, int tileX, int tileY, float alpha, string source)
     {
         if (!Context.IsWorldReady || Game1.currentLocation == null || Game1.currentLocation.getObjectAtTile(tileX, tileY) != obj)
             return false;
@@ -1301,6 +1310,22 @@ internal sealed class ModEntry : Mod
         LogConduitRenderDiagnostic(obj, source, new object[] { tileX, tileY, alpha, stateSpriteName! });
         DrawStatefulTexture(spriteBatch, texture!, screenPos, alpha, layerDepth);
         return true;
+    }
+
+    private static bool IsStatefulPowerGridItem(string? itemId)
+    {
+        return itemId == PowerConstants.SteamGeneratorId
+            || itemId == PowerConstants.WindGeneratorId
+            || itemId == PowerConstants.BasicBatteryId
+            || itemId == PowerConstants.IridiumBatteryId
+            || itemId == PowerConstants.PowerConduitId;
+    }
+
+    private static bool IsCableItem(string? itemId)
+    {
+        return itemId == PowerConstants.CopperCableId
+            || itemId == PowerConstants.IronCableId
+            || itemId == PowerConstants.IridiumCableId;
     }
 
     private bool TryGetStatefulSpriteName(StardewValley.Object obj, Vector2 tile, out string? stateSpriteName)

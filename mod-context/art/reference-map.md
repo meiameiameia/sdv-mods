@@ -115,7 +115,9 @@ Paths under `mod-context/art/references/` are the canonical local-only locations
 - `mod-context/art/references/vanilla/craftables-machine-authority-b.png`
 - `mod-context/art/references/compatibility/VanillaKeg-template.png`
 - `[SMAPI] Metal Kegs/assets/MetalKeg.png`
-- Optional compatibility reference: `mod-context/art/references/compatibility/HardwoodKeg-template.png`
+- `[SMAPI] Metal Kegs/assets/MetalKeg__unpowered.png`
+- `[SMAPI] Metal Kegs/assets/MetalKeg__powered.png`
+- Optional compatibility reference: `[SMAPI] Metal Kegs/assets/HardIridiumKeg.png`
 - Do not upload unrelated refs: flooring modular sheets, PowerGrid cable/battery references.
 
 ## HardIridiumKeg
@@ -126,9 +128,21 @@ Paths under `mod-context/art/references/` are the canonical local-only locations
 - `mod-context/art/references/compatibility/VanillaKeg-template.png`
 - `mod-context/art/references/compatibility/HardwoodKeg-template.png`
 - `[SMAPI] Metal Kegs/assets/HardIridiumKeg.png`
+- `[SMAPI] Metal Kegs/assets/HardIridiumKeg__unpowered.png`
+- `[SMAPI] Metal Kegs/assets/HardIridiumKeg__powered.png`
 - `[SMAPI] Metal Kegs/assets/MetalKeg.png`
 - Optional compatibility reference: `mod-context/art/references/vanilla/craftables-machine-authority-c.png`
 - Do not upload unrelated refs: flooring modular sheets, PowerGrid cable/battery references.
+
+## MetalCask
+
+- Use prompt: `mod-context/art/prompts/metal-kegs-metal-cask.md`
+- Upload these references:
+- `mod-context/art/references/vanilla/craftables-machine-authority-b.png`
+- `[SMAPI] Metal Kegs/assets/MetalKeg.png`
+- `[SMAPI] Metal Kegs/assets/HardIridiumKeg.png`
+- Optional compatibility reference: a local vanilla cask crop prepared from `Craftables.png` if available; this is not currently stored in-repo.
+- Do not upload unrelated refs: flooring modular sheets, PowerGrid cable/battery references, keg powered-state sheets unless you are intentionally borrowing metal finish cues.
 
 ## Global Optional Input
 

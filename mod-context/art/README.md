@@ -33,6 +33,7 @@ Repo-owned mods with current sprite targets:
   - `IridiumBattery.png`
   - `PowerConduit.png`
 - `Metal Kegs`
+  - `MetalCask.png`
   - `MetalKeg.png`
   - `HardIridiumKeg.png`
 
@@ -47,6 +48,8 @@ Repo-owned mods with no current sprite target:
 - `Farm Terminal` MVP
 
 No spec or prompt should be created for a new asset family unless the repo actually needs that shipped file.
+
+`MetalCask.png` is now a real repo need even though final generated art is not shipped yet. Keep its spec/prompt current with gameplay/runtime identity.
 
 ## Workflow
 

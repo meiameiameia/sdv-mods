@@ -33,17 +33,18 @@ Technical requirements:
 - no mockup, no scene, no UI frame
 - no anti-aliasing or blurred edges
 - clean readable silhouette at gameplay scale
-- use Stardew's slight top-down / 3/4-ish machine perspective; the top face should be visibly readable instead of a flat front panel
-- keep the main battery body near a soft `10-13 px` width on most rows, with small terminals or trim allowed to flare slightly wider
+- use Stardew's slight top-down / 3/4-ish machine perspective; the top plane should be clearly readable instead of a flat front panel
+- keep the main battery body near a soft `11-14 px` width on most rows, with small terminals or trim allowed to flare slightly wider
+- give the lower body enough mass that the battery reads as a sturdy grounded cabinet instead of a thin front strip
 - leave plausible cable attachment zones on the left, right, top, and bottom adjacency sides; do not use overhangs that visually block a neighboring cable
-- grounded lower edge
+- lowest visible base/body pixels should touch or nearly touch the bottom row so the cabinet does not feel like it is floating
 - stay strictly inside the exact canvas
 
 Family consistency rules:
 - should read as a sibling to the IridiumBattery
 - lower-tier identity should come from simpler material and trim
 - keep the silhouette clean and big-craftable readable
-- keep the battery cabinet narrower than the full canvas so it stays vanilla-machine sized
+- keep the battery cabinet narrower than the full canvas so it stays vanilla-machine sized, but do not let it drift into a thin spindly locker
 - keep low and charged states silhouette-compatible, with state change coming from restrained charge-window or indicator cues
 
 Do not:

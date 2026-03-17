@@ -40,6 +40,8 @@
 - No anti-aliasing:
 - Perspective / view rule:
 - Width / silhouette discipline:
+- Body-mass / sturdiness rule:
+- Grounding / floor-contact rule:
 - Pixel readability requirements:
 - Edge / connection requirements:
 - Forbidden output mistakes:

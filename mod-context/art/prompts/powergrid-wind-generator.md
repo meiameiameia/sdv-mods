@@ -32,16 +32,17 @@ Technical requirements:
 - no mockup, no scene, no UI frame
 - no anti-aliasing or blurred edges
 - clean readable silhouette at gameplay scale
-- use Stardew's slight top-down / 3/4-ish machine perspective on the base; the top face should read instead of looking flat front-on
-- keep the base/main machine mass near a soft `10-13 px` width on most rows; the upper vane or rotor can narrow above it but should stay readable
+- use Stardew's slight top-down / 3/4-ish machine perspective on the base; the top plane should read clearly instead of looking flat front-on
+- keep the base/main machine mass near a soft `11-14 px` width on most rows; the upper vane or rotor can narrow above it but should stay readable
+- make the lower body feel sturdy and grounded instead of like a thin signpost carrying a rotor
 - leave plausible cable attachment zones on the left, right, top, and bottom adjacency sides of the base; do not block one side with asymmetrical bulk
-- grounded lower rows with a lighter upper structure
+- lowest visible base/body pixels should touch or nearly touch the bottom row, even though the upper structure is lighter
 - stay strictly inside the exact canvas
 
 Family consistency rules:
 - belongs to the same PowerGrid hardware family as the steam generator and batteries
 - lighter, cleaner, and more passive than SteamGenerator
-- keep detail readable instead of thin and fragile
+- keep detail readable instead of thin and fragile, and do not let the base collapse into a narrow front-on strip
 - keep the base vanilla-machine sized rather than turning it into a skinny signpost or a full-width slab
 - keep idle and generating states silhouette-compatible, with state change coming from controlled running cues rather than shape drift
 

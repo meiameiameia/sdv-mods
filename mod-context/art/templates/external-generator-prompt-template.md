@@ -37,8 +37,11 @@ Technical requirements:
 - no mockup, no scene, no UI frame
 - no anti-aliasing or blurred edges
 - clean readable silhouette at gameplay scale
-- for machine-like `16x32` big craftables, use Stardew's slight top-down / 3/4-ish read with a visible top face; do not render the object as a flat front-on rectangle
-- for machine-like `16x32` big craftables, keep the dominant body width within vanilla-feeling proportions instead of filling the full `16` px width on most rows
+- for machine-like `16x32` big craftables, use Stardew's slight top-down / 3/4-ish read with a clearly readable top plane; do not render the object as a flat front-on rectangle
+- for machine-like `16x32` big craftables, expose enough top-face area that it still reads at `1x`; do not reduce the top to a token sliver
+- for machine-like `16x32` big craftables, keep the dominant body width within vanilla-feeling proportions instead of filling the full `16` px width on most rows, but also avoid overly thin or spindly machine bodies unless explicitly intended
+- for machine-like `16x32` big craftables, give the lower body enough mass that the machine reads as sturdy and grounded beside vanilla big craftables
+- for machine-like `16x32` big craftables, keep the lowest visible base/body pixels touching or nearly touching the bottom row of the canvas unless floating is intentionally justified
 - for PowerGrid-adjacent machine sprites, leave visually plausible cable attachment zones on the left, right, top, and bottom adjacency sides; do not let overhangs or asymmetrical bulk imply that one side cannot connect
 - match vanilla Stardew Valley big-craftable or modular-tile readability as appropriate
 - stay strictly inside the exact canvas

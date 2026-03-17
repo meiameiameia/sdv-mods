@@ -12,8 +12,8 @@
 
 - Canvas size: `16x32`
 - Layout: single big-craftable sprite
-- State variants: none
-- State deliverable convention: single-state only for now; no powered/unpowered companion deliverable is required yet
+- State variants: `unpowered`, `powered`
+- State deliverable convention: review-ready separate files `MetalKeg__unpowered.png` and `MetalKeg__powered.png`; runtime loads those optional state files when present and otherwise falls back to `MetalKeg.png`
 - Animation: none
 
 ## In-Game Role
@@ -38,20 +38,21 @@
 
 - Transparent background: yes
 - No anti-aliasing: yes
-- Perspective / view rule: preserve vanilla keg-style slight top-down / 3/4-ish perspective with a readable top ellipse; do not render it as a flat front-on barrel
-- Width / silhouette discipline: soft target `11-14 px` for the main barrel/body mass on most rows, with hoops or handles allowed to flare slightly; avoid squaring it into a full-width `16 px` slab
+- Perspective / view rule: preserve vanilla keg-style slight top-down / 3/4-ish perspective with a clearly readable top ellipse or lid plane; do not render it as a flat front-on barrel
+- Width / silhouette discipline: soft target `12-14 px` for the main barrel/body mass on most rows, with hoops or handles allowed to flare slightly; avoid both thin/spindly barrel reads and a full-width `16 px` slab
+- Body-mass / sturdiness rule: the lower body should read as a sturdy metal brewing vessel with enough weight to feel grounded and industrial at `1x`
+- Grounding / floor-contact rule: the lowest visible body/base pixels should touch or nearly touch the bottom row; avoid empty air under the keg that makes it feel like it is floating
 - Pixel readability requirements: still reads as keg-family machinery, not a furnace or chest
 - Edge / connection requirements: stay within `16x32` and preserve plausible left/right/up/down cable adjacency around the keg body
 - Forbidden output mistakes: modern polished brewery realism, noisy rivet spam, losing the keg family silhouette entirely
 
 ## Assumptions
 
-- The sprite is static in code.
-- A powered/unpowered visual split is not justified enough yet to require multi-state art deliverables.
+- Runtime state switching now supports optional `unpowered` and `powered` sprites with base-sprite fallback when either state file is missing.
 - Gameplay equivalence to the vanilla keg makes immediate keg recognition more important than novelty.
 
 ## Done Criteria
 
 - Reads as a metal upgrade on the keg idea, not a different machine class.
 - Fits next to the vanilla keg without style clash.
-- Can replace the shipped file directly.
+- Unpowered and powered variants keep the same keg-family footprint and perspective while differing through restrained power cues rather than shape drift.

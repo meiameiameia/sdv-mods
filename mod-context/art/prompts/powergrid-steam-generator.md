@@ -32,17 +32,18 @@ Technical requirements:
 - no mockup, no scene, no UI frame
 - no anti-aliasing or blurred edges
 - clean readable silhouette at gameplay scale
-- use Stardew's slight top-down / 3/4-ish machine perspective; the top face should be visibly readable instead of flat front-on
-- keep the dominant machine body near a soft `10-13 px` width on most rows, with only small accents allowed to flare slightly wider
+- use Stardew's slight top-down / 3/4-ish machine perspective; the top plane should be clearly readable at `1x` instead of flat front-on or reduced to a token sliver
+- keep the dominant machine body near a soft `11-14 px` width on most rows, with only small accents allowed to flare slightly wider
+- give the lower body enough mass that the generator reads as sturdy and grounded instead of thin, spindly, or top-heavy
 - leave plausible cable attachment zones on the left, right, top, and bottom adjacency sides; do not use bulk that makes one side look non-connectable
-- strong grounded base in the lower rows
+- lowest visible base/body pixels should touch or nearly touch the bottom row so the machine does not feel like it is levitating
 - stay strictly inside the exact canvas
 
 Family consistency rules:
 - belongs to the same PowerGrid hardware family as the wind generator, batteries, and conduit
 - heavier and more fuel-driven than WindGenerator
 - machine detail should stay vanilla-readable and not become noisy
-- do not let the generator body balloon to full-canvas width or lose the readable top face
+- do not let the generator body balloon to full-canvas width, collapse into a thin center column, or lose the readable top face
 - keep the off and on states silhouette-compatible, with state change coming from controlled vent/indicator cues rather than shape drift
 
 Do not:

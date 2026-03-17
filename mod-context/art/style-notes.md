@@ -20,11 +20,13 @@ The sprite should look like it belongs beside vanilla big craftables at normal g
 For `16x32` machine-like sprites:
 
 - The object should feel grounded on the bottom rows.
+- The lowest visible base/body pixels should touch or nearly touch the bottom row of the `16x32` canvas; avoid obvious empty air under the object unless the family intentionally floats or hangs.
 - Use Stardew's slight top-down / 3/4-ish machine read, not a flat front-on elevation.
-- The top face should usually be visibly readable, even if it is only a thin `1-3 px` band.
+- The top face should be clearly readable at `1x`, not just hinted at by a token sliver. In most machine families, expose a readable top plane or lid band of roughly `2-4 px` where the family silhouette allows it.
 - Reserve the upper area for readable silhouette markers, not dense noise.
 - Use detail sparingly: one or two strong identity cues beat many tiny marks.
-- Avoid making the machine look too thin or top-heavy unless the in-game role depends on that.
+- Avoid making the machine look too thin, spindly, or top-heavy unless the in-game role depends on that.
+- Prefer sturdy body mass over narrow center columns or fragile-looking supports. If the family is supposed to feel industrial, it should still read as compact and solid at `1x`.
 
 ## Machine Perspective And Width
 
@@ -32,11 +34,13 @@ For machine-like `16x32` big craftables, derive perspective and width from the v
 
 - Prefer a slight top-down / 3/4-ish read where the front face and top face are both legible.
 - Avoid flat front-on boxes that read like a wall panel pasted onto the canvas.
+- Avoid machine bodies that collapse into a thin front strip with the top plane hidden; if the top is unreadable, the generation is drifting too front-on.
 - Keep the dominant machine body narrower than the full `16 px` canvas on most rows so side breathing room remains visible.
-- For compact boxy machines such as generators, batteries, and relay devices, use a soft target of roughly `10-13 px` for the main body on most rows.
-- For keg-family bodies, use a soft target of roughly `11-14 px` for the main barrel/body mass on most rows.
+- For compact boxy machines such as generators, batteries, and relay devices, use a soft target of roughly `11-14 px` for the main body on most rows. Avoid `8-10 px` bodies unless the design is intentionally slight.
+- For keg-family and cask-family bodies, use a soft target of roughly `12-14 px` for the main barrel/body mass on most rows.
 - Small accents may flare slightly wider than the main body, but the sprite should not read as a full-width `16 px` slab.
 - Width discipline is a soft target, not a rigid per-row hard cap. Preserve the family silhouette first, but default back toward vanilla width if the generation drifts too broad.
+- The bottom silhouette should carry enough width and weight that the sprite feels planted beside vanilla big craftables, not perched or lightly balancing on a narrow foot.
 
 ## PowerGrid Cable Attachment Compatibility
 
@@ -80,3 +84,4 @@ Examples:
 - `CopperCable` / `IronCable` / `IridiumCable` should read as the same cable family with different material tiers.
 - `BasicBattery` / `IridiumBattery` should read as related storage units with a clear quality step.
 - `MetalKeg` / `HardIridiumKeg` should read as related keg-family machines with distinct quality/material signals.
+- `MetalCask` should read as a hybrid industrial cask-family machine: preserve vanilla cask lineage first, then add reinforced machine-like mass and material cues.

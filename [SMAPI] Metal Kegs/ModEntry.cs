@@ -55,6 +55,7 @@ internal sealed class ModEntry : Mod
     private static readonly FieldInfo? CaskDaysToMatureField = AccessTools.Field(typeof(Cask), "daysToMature");
     private static readonly MethodInfo? CaskCheckForMaturityMethod = AccessTools.Method(typeof(Cask), "checkForMaturity");
     private static readonly MethodInfo? ResetParentSheetIndexMethod = AccessTools.Method(typeof(StardewValley.Object), "ResetParentSheetIndex");
+    private static readonly Rectangle BigCraftableSourceRect = new(0, 0, 16, 32);
 
     private string MetalCaskTextureAsset => $"Mods/{this.ModManifest.UniqueID}/MetalCask";
     private string MetalKegTextureAsset => $"Mods/{this.ModManifest.UniqueID}/MetalKeg";
@@ -64,6 +65,7 @@ internal sealed class ModEntry : Mod
     private ModConfig Config = new();
     private Harmony? harmony;
     private IPowerGridApi? PowerGridApi;
+    private readonly HashSet<string> invalidStateSpritesLogged = new(StringComparer.Ordinal);
 
     private bool GofDetectedByRegistry;
     private string? GofUniqueId;
@@ -1001,10 +1003,24 @@ internal sealed class ModEntry : Mod
             {
                 this.harmony.Patch(dayUpdateTarget, postfix: new HarmonyMethod(typeof(ModEntry), nameof(MetalCaskDayUpdatePostfix)));
             }
+
+            MethodInfo? drawTarget = typeof(StardewValley.Object).GetMethod(
+                "draw",
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
+                binder: null,
+                types: new[] { typeof(SpriteBatch), typeof(int), typeof(int), typeof(float) },
+                modifiers: null);
+            if (drawTarget != null)
+            {
+                this.harmony.Patch(
+                    drawTarget,
+                    prefix: new HarmonyMethod(typeof(ModEntry), nameof(StatefulMetalKegTileDrawPrefix)),
+                    postfix: new HarmonyMethod(typeof(ModEntry), nameof(StatefulMetalKegTileDrawPostfix)));
+            }
         }
         catch (Exception ex)
         {
-            this.Monitor.Log($"Failed to apply Metal Cask runtime patches: {ex}", LogLevel.Error);
+            this.Monitor.Log($"Failed to apply Metal Kegs runtime patches: {ex}", LogLevel.Error);
         }
     }
 
@@ -1060,6 +1076,30 @@ internal sealed class ModEntry : Mod
         Instance.ApplyMetalCaskPowerBonus(__instance, __instance.Location);
     }
 
+    private static bool StatefulMetalKegTileDrawPrefix(StardewValley.Object __instance, object[] __args)
+    {
+        if (Instance == null || __instance == null || !Instance.IsStatefulPoweredKeg(__instance) || __args.Length < 4 || __args[0] is not SpriteBatch spriteBatch)
+            return true;
+
+        if (__args[1] is not int tileX || __args[2] is not int tileY)
+            return true;
+
+        float alpha = __args[3] is float drawAlpha ? drawAlpha : 1f;
+        return !Instance.TryDrawStatefulKegReplacement(__instance, spriteBatch, tileX, tileY, alpha);
+    }
+
+    private static void StatefulMetalKegTileDrawPostfix(StardewValley.Object __instance, object[] __args)
+    {
+        if (Instance == null || __instance == null || !Instance.IsStatefulPoweredKeg(__instance) || __args.Length < 4 || __args[0] is not SpriteBatch spriteBatch)
+            return;
+
+        if (__args[1] is not int tileX || __args[2] is not int tileY)
+            return;
+
+        float alpha = __args[3] is float drawAlpha ? drawAlpha : 1f;
+        Instance.DrawPoweredKegProcessingOverlay(__instance, spriteBatch, tileX, tileY, alpha);
+    }
+
     private StardewValley.Object CreatePlacedMetalCask(Vector2 tile, StardewValley.Object placedObject)
     {
         Cask metalCask = new(tile);
@@ -1078,6 +1118,133 @@ internal sealed class ModEntry : Mod
     {
         return cask.QualifiedItemId == MetalCaskQualifiedItemId
             || (cask.modData?.ContainsKey(MetalCaskMarkerKey) ?? false);
+    }
+
+    private bool IsStatefulPoweredKeg(StardewValley.Object obj)
+    {
+        string qualifiedId = obj.QualifiedItemId ?? "";
+        return qualifiedId == MetalKegQualifiedItemId || qualifiedId == HardIridiumKegQualifiedItemId;
+    }
+
+    private bool TryDrawStatefulKegReplacement(StardewValley.Object obj, SpriteBatch spriteBatch, int tileX, int tileY, float alpha)
+    {
+        if (!Context.IsWorldReady || Game1.currentLocation == null || Game1.currentLocation.getObjectAtTile(tileX, tileY) != obj)
+            return false;
+
+        if (obj.MinutesUntilReady > 0)
+            return false;
+
+        if (!TryGetPoweredKegState(obj, out string? stateName, out string? stateSpriteName) || stateName == "processing-powered")
+            return false;
+
+        if (!TryLoadStateTextureForDraw(stateSpriteName!, out Texture2D? texture))
+            return false;
+
+        Vector2 screenPos = Game1.GlobalToLocal(Game1.viewport, new Vector2(tileX * 64, tileY * 64 - 64));
+        float layerDepth = Math.Max(0f, ((tileY + 1) * 64f - 24f) / 10000f + tileX / 1000000f);
+
+        spriteBatch.Draw(
+            texture!,
+            screenPos,
+            BigCraftableSourceRect,
+            Color.White * alpha,
+            0f,
+            Vector2.Zero,
+            4f,
+            SpriteEffects.None,
+            layerDepth);
+
+        return true;
+    }
+
+    private void DrawPoweredKegProcessingOverlay(StardewValley.Object obj, SpriteBatch spriteBatch, int tileX, int tileY, float alpha)
+    {
+        if (!Context.IsWorldReady || Game1.currentLocation == null || Game1.currentLocation.getObjectAtTile(tileX, tileY) != obj)
+            return;
+
+        if (obj.MinutesUntilReady <= 0)
+            return;
+
+        if (!TryGetPoweredKegState(obj, out string? stateName, out string? stateSpriteName) || stateName != "processing-powered")
+            return;
+
+        if (!TryLoadStateTextureForDraw(stateSpriteName!, out Texture2D? texture))
+            return;
+
+        Vector2 screenPos = Game1.GlobalToLocal(Game1.viewport, new Vector2(tileX * 64, tileY * 64 - 64));
+        float layerDepth = Math.Min(1f, Math.Max(0f, ((tileY + 1) * 64f - 24f) / 10000f + tileX / 1000000f) + 0.00001f);
+        float overlayAlpha = Math.Min(1f, alpha * 0.95f);
+
+        spriteBatch.Draw(
+            texture!,
+            screenPos,
+            BigCraftableSourceRect,
+            Color.White * overlayAlpha,
+            0f,
+            Vector2.Zero,
+            4f,
+            SpriteEffects.None,
+            layerDepth);
+    }
+
+    private bool TryGetPoweredKegState(StardewValley.Object obj, out string? stateName, out string? stateSpriteName)
+    {
+        stateName = null;
+        stateSpriteName = null;
+
+        bool hasEnergized = obj.modData.TryGetValue("darth.PowerGrid/energized", out string? energizedText);
+        bool hasPowered = obj.modData.TryGetValue("darth.PowerGrid/powered", out string? poweredText);
+
+        string? baseSpriteName = obj.QualifiedItemId switch
+        {
+            MetalKegQualifiedItemId => "MetalKeg",
+            HardIridiumKegQualifiedItemId => "HardIridiumKeg",
+            _ => null
+        };
+
+        if (string.IsNullOrWhiteSpace(baseSpriteName))
+            return false;
+
+        bool isPowered = hasEnergized
+            ? energizedText == "1"
+            : hasPowered
+                ? poweredText == "1"
+                : false;
+
+        stateName = isPowered
+            ? (obj.MinutesUntilReady > 0 ? "processing-powered" : "powered")
+            : "unpowered";
+
+        string spriteStateName = isPowered ? "powered" : "unpowered";
+        stateSpriteName = $"{baseSpriteName}__{spriteStateName}";
+        return true;
+    }
+
+    private bool TryLoadStateTextureForDraw(string stateSpriteName, out Texture2D? texture)
+    {
+        texture = null;
+
+        string relativePath = $"assets/{stateSpriteName}.png";
+        string fullPath = Path.Combine(this.Helper.DirectoryPath, relativePath.Replace('/', Path.DirectorySeparatorChar));
+        if (!File.Exists(fullPath))
+            return false;
+
+        try
+        {
+            texture = this.Helper.ModContent.Load<Texture2D>(relativePath);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            if (this.invalidStateSpritesLogged.Add(stateSpriteName))
+            {
+                this.Monitor.Log(
+                    $"Failed to load state sprite '{relativePath}'. Falling back to the base sprite. {ex.Message}",
+                    LogLevel.Warn);
+            }
+
+            return false;
+        }
     }
 
     private void ApplyMetalCaskIdentity(Cask cask, StardewValley.Object? sourceObject = null)

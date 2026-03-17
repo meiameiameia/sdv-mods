@@ -12,8 +12,8 @@
 
 - Canvas size: `16x32`
 - Layout: single big-craftable sprite
-- State variants: none
-- State deliverable convention: single-state only for now; no powered/unpowered companion deliverable is required yet
+- State variants: `unpowered`, `powered`
+- State deliverable convention: review-ready separate files `HardIridiumKeg__unpowered.png` and `HardIridiumKeg__powered.png`; runtime loads those optional state files when present and otherwise falls back to `HardIridiumKeg.png`
 - Animation: none
 
 ## In-Game Role
@@ -38,8 +38,10 @@
 
 - Transparent background: yes
 - No anti-aliasing: yes
-- Perspective / view rule: preserve vanilla keg-style slight top-down / 3/4-ish perspective with a readable top ellipse; do not render it as a flat front-on cask
-- Width / silhouette discipline: soft target `11-14 px` for the main barrel/body mass on most rows, with reinforced trim allowed to flare slightly; avoid a square full-width `16 px` slab
+- Perspective / view rule: preserve vanilla keg-style slight top-down / 3/4-ish perspective with a clearly readable top ellipse or lid plane; do not render it as a flat front-on cask
+- Width / silhouette discipline: soft target `12-14 px` for the main barrel/body mass on most rows, with reinforced trim allowed to flare slightly wider; avoid both thin/spindly barrel reads and a square full-width `16 px` slab
+- Body-mass / sturdiness rule: the keg should read as a dense reinforced premium vessel with enough lower-body mass to feel grounded and durable at `1x`
+- Grounding / floor-contact rule: the lowest visible body/base pixels should touch or nearly touch the bottom row; avoid empty air beneath the keg
 - Pixel readability requirements: premium variant must still read as a keg-family machine first
 - Edge / connection requirements: stay inside `16x32` and preserve plausible left/right/up/down cable adjacency around the keg body
 - Forbidden output mistakes: sci-fi glowing keg, purple neon overload, silhouette drift so large that it no longer reads as keg-related
@@ -47,11 +49,10 @@
 ## Assumptions
 
 - The GOF hardwood-keg lineage is a compatibility cue, not a style authority.
-- The sprite remains static regardless of installed integrations.
-- A powered/unpowered visual split is not justified enough yet to require multi-state art deliverables.
+- Runtime state switching now supports optional `unpowered` and `powered` sprites with base-sprite fallback when either state file is missing.
 
 ## Done Criteria
 
 - Reads as the premium sibling of `MetalKeg`.
 - Keeps keg-family identity while clearly stepping up in quality.
-- Fits the repo’s existing filename and runtime usage unchanged.
+- Unpowered and powered variants keep the same keg-family footprint and perspective while differing through restrained powered cues rather than shape drift.

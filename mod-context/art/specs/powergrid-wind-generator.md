@@ -38,8 +38,10 @@
 
 - Transparent background: yes
 - No anti-aliasing: yes
-- Perspective / view rule: keep a slight top-down / 3/4-ish read on the generator base so the top face is visible; do not make it a flat front-on pole sign
-- Width / silhouette discipline: keep the base/main machine mass near a soft `10-13 px` body width on most rows; upper vane or rotor structure may narrow above that, but should not disappear into thread-thin lines
+- Perspective / view rule: keep a slight top-down / 3/4-ish read on the generator base so the top plane is clearly visible; do not make it a flat front-on pole sign or hide the top in a token sliver
+- Width / silhouette discipline: keep the base/main machine mass near a soft `11-14 px` body width on most rows; upper vane or rotor structure may narrow above that, but should not collapse into thread-thin lines
+- Body-mass / sturdiness rule: even though the upper silhouette is lighter, the lower body should still feel sturdy and machine-like rather than a thin signpost on a stick
+- Grounding / floor-contact rule: the generator base should touch or nearly touch the bottom row so it reads planted instead of hovering above the floor
 - Pixel readability requirements: rotor or vane cue must read immediately without becoming thin noise
 - Edge / connection requirements: remain inside `16x32`, preserve grounded placement, and keep plausible cable adjacency on left/right/up/down sides of the base
 - Forbidden output mistakes: giant modern turbine proportions, spinning FX, sci-fi neon, overly delicate lines that vanish in game
@@ -53,4 +55,5 @@
 
 - Reads as a passive generator rather than a decorative weather vane.
 - Distinguishes itself from `SteamGenerator` while staying in the same family.
+- Base reads grounded and sturdy enough to sit beside vanilla machines without feeling spindly or levitating.
 - Idle and generating variants keep the same attachment-compatible footprint and perspective.
