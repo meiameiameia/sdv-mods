@@ -1,4 +1,5 @@
 using DarthMods.API.Power;
+using Netcode;
 using StardewValley;
 using StardewValley.Objects;
 using System.Globalization;
@@ -12,6 +13,7 @@ internal sealed class PowerQueryService
     private const string MetalCaskMarkerKey = "meiameiameia.MetalKegs/MetalCask";
     private const string MetalCaskPowerModeKey = "meiameiameia.MetalKegs/PowerMode";
     private const string MetalCaskObservedPowerStateKey = "meiameiameia.MetalKegs/ObservedPowerState";
+    private const string MetalCaskDaysToNextQualityKey = "meiameiameia.MetalKegs/DaysToNextQuality";
     private const string MetalCaskLastAppliedBonusDaysKey = "meiameiameia.MetalKegs/LastAppliedBonusDays";
     private const string MetalCaskLastAppliedDateKey = "meiameiameia.MetalKegs/LastAppliedDate";
     private static readonly FieldInfo? CaskDaysToMatureField = typeof(Cask).GetField("daysToMature", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -298,10 +300,11 @@ internal sealed class PowerQueryService
             if (cask.heldObject.Value == null)
                 return false;
 
-            if (TryGetCaskDaysToMature(cask, out float daysRemaining))
+            if (TryGetCaskDaysToMature(cask, out float daysRemaining) || TryGetMetalCaskDaysTelemetry(cask, out daysRemaining))
                 return daysRemaining > 0f;
 
-            return true;
+            return !cask.modData.TryGetValue(MetalCaskObservedPowerStateKey, out string? stateText)
+                || !string.Equals(stateText, "ready", StringComparison.Ordinal);
         }
 
         return obj?.MinutesUntilReady > 0;
@@ -318,7 +321,10 @@ internal sealed class PowerQueryService
         if (cask.heldObject.Value == null)
             return "Day-based aging machine. Empty right now.";
 
-        string daysText = TryGetCaskDaysToMature(cask, out float daysRemaining)
+        bool hasDaysRemaining = TryGetCaskDaysToMature(cask, out float daysRemaining)
+            || TryGetMetalCaskDaysTelemetry(cask, out daysRemaining);
+
+        string daysText = hasDaysRemaining
             ? $"{daysRemaining:0.##} day(s) to next quality"
             : "next-quality timing unavailable";
 
@@ -332,7 +338,10 @@ internal sealed class PowerQueryService
             ? dateText ?? "n/a"
             : "n/a";
 
-        if (daysRemaining <= 0f)
+        if (hasDaysRemaining && daysRemaining <= 0f)
+            return "Day-based aging complete. Ready to collect.";
+
+        if (!hasDaysRemaining && string.Equals(powerState, "ready", StringComparison.Ordinal))
             return "Day-based aging complete. Ready to collect.";
 
         string livePowerText = (allocation?.EUAllocated ?? 0) > 0
@@ -357,16 +366,18 @@ internal sealed class PowerQueryService
     private static bool TryGetCaskDaysToMature(Cask cask, out float daysRemaining)
     {
         daysRemaining = 0f;
-        object? value = CaskDaysToMatureField?.GetValue(cask);
-        if (value == null)
+        if (CaskDaysToMatureField?.GetValue(cask) is not NetFloat netFloat)
             return false;
 
-        PropertyInfo? valueProperty = value.GetType().GetProperty("Value");
-        if (valueProperty?.GetValue(value) is not float boxed)
-            return false;
-
-        daysRemaining = boxed;
+        daysRemaining = netFloat.Value;
         return true;
+    }
+
+    private static bool TryGetMetalCaskDaysTelemetry(Cask cask, out float daysRemaining)
+    {
+        daysRemaining = 0f;
+        return cask.modData.TryGetValue(MetalCaskDaysToNextQualityKey, out string? daysText)
+            && float.TryParse(daysText, NumberStyles.Float, CultureInfo.InvariantCulture, out daysRemaining);
     }
 
     private static string[] GetInvolvedLocationNames(PowerNetwork network)

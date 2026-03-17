@@ -49,6 +49,7 @@ internal sealed class ModEntry : Mod
     private const string MetalCaskPowerModeKey = "meiameiameia.MetalKegs/PowerMode";
     private const string MetalCaskObservedPowerStateKey = "meiameiameia.MetalKegs/ObservedPowerState";
     private const string MetalCaskObservedSpeedupKey = "meiameiameia.MetalKegs/ObservedSpeedupFraction";
+    private const string MetalCaskDaysToNextQualityKey = "meiameiameia.MetalKegs/DaysToNextQuality";
     private const string MetalCaskLastAppliedBonusDaysKey = "meiameiameia.MetalKegs/LastAppliedBonusDays";
     private const string MetalCaskLastAppliedDateKey = "meiameiameia.MetalKegs/LastAppliedDate";
     private static readonly FieldInfo? CaskDaysToMatureField = AccessTools.Field(typeof(Cask), "daysToMature");
@@ -1212,9 +1213,14 @@ internal sealed class ModEntry : Mod
 
         cask.modData[MetalCaskObservedSpeedupKey] = observedSpeedup.ToString("0.####", CultureInfo.InvariantCulture);
 
+        if (TryGetDaysToMature(cask, out float daysRemaining))
+            cask.modData[MetalCaskDaysToNextQualityKey] = daysRemaining.ToString("0.##", CultureInfo.InvariantCulture);
+        else
+            cask.modData.Remove(MetalCaskDaysToNextQualityKey);
+
         string state = cask.heldObject.Value == null
             ? "empty"
-            : !TryGetDaysToMature(cask, out float daysRemaining)
+            : !TryGetDaysToMature(cask, out daysRemaining)
                 ? "aging"
                 : daysRemaining <= 0f
                     ? "ready"
@@ -1425,7 +1431,7 @@ internal sealed class ModEntry : Mod
             string remaining = obj.modData.TryGetValue("darth.PowerGrid/minutesRemaining", out string? remainingText) ? remainingText : obj.MinutesUntilReady.ToString(CultureInfo.InvariantCulture);
 
             this.Monitor.Log(
-                $"{obj.DisplayName} [{location.NameOrUniqueName} @ {tile.X},{tile.Y}]: powered={(powered == "1" ? "yes" : "no")}, liveSpeedup={liveSpeedup:P0}, lastTickSpeedup={speedup}, lastTickAccel={accelerated} min, remaining={remaining} min",
+                $"{obj.DisplayName} [{location.NameOrUniqueName} @ {tile.X},{tile.Y}]: powered={(powered == "1" ? "yes" : "no")}, liveSpeedup={liveSpeedup:P0}, lastCompletedTickSpeedup={speedup}, lastCompletedTickAccel={accelerated} min, remaining={remaining} min",
                 LogLevel.Info);
         }
     }
