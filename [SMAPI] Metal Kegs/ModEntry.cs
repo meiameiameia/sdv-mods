@@ -55,7 +55,6 @@ internal sealed class ModEntry : Mod
     private static readonly FieldInfo? CaskDaysToMatureField = AccessTools.Field(typeof(Cask), "daysToMature");
     private static readonly MethodInfo? CaskCheckForMaturityMethod = AccessTools.Method(typeof(Cask), "checkForMaturity");
     private static readonly FieldInfo? ObjectShakeTimerField = AccessTools.Field(typeof(StardewValley.Object), "shakeTimer");
-    private static readonly FieldInfo? ObjectScaleField = AccessTools.Field(typeof(StardewValley.Object), "scale");
     private static readonly MethodInfo? ResetParentSheetIndexMethod = AccessTools.Method(typeof(StardewValley.Object), "ResetParentSheetIndex");
     private static readonly Rectangle BigCraftableSourceRect = new(0, 0, 16, 32);
 
@@ -1157,7 +1156,7 @@ internal sealed class ModEntry : Mod
             SpriteEffects.None,
             layerDepth);
 
-        DrawKegProcessingOverlay(obj, spriteBatch, tileX, tileY, alpha);
+        DrawReadyIndicator(obj, spriteBatch, tileX, tileY, alpha);
         return true;
     }
 
@@ -1166,31 +1165,90 @@ internal sealed class ModEntry : Mod
         return ObjectShakeTimerField?.GetValue(obj) is int shakeTimer ? shakeTimer : 0;
     }
 
-    private static float GetObjectScaleX(StardewValley.Object obj)
+    private static void DrawReadyIndicator(StardewValley.Object obj, SpriteBatch spriteBatch, int tileX, int tileY, float alpha)
     {
-        return ObjectScaleField?.GetValue(obj) is Vector2 scale ? scale.X : 0f;
-    }
-
-    private static void DrawKegProcessingOverlay(StardewValley.Object obj, SpriteBatch spriteBatch, int tileX, int tileY, float alpha)
-    {
-        if (obj.MinutesUntilReady <= 0 || Game1.objectSpriteSheet == null)
+        if (!obj.readyForHarvest.Value)
             return;
 
-        Vector2 overlayPosition = obj.getLocalPosition(Game1.viewport) + new Vector2(32f, 0f);
-        Rectangle overlaySource = Game1.getSourceRectForStandardTileSheet(Game1.objectSpriteSheet, 435, 16, 16);
-        float overlayScale = 4f;
-        float overlayLayerDepth = Math.Max(0f, ((tileY + 1) * 64f) / 10000f + 0.0001f + tileX * 0.00001f);
+        float bubbleLayerDepth = ((tileY + 1) * 64f) / 10000f + obj.TileLocation.X / 50000f;
+        float bobOffset = 4f * (float)Math.Round(Math.Sin(Game1.currentGameTime.TotalGameTime.TotalMilliseconds / 250d), 2);
 
         spriteBatch.Draw(
-            Game1.objectSpriteSheet,
-            overlayPosition,
-            overlaySource,
-            Color.White * alpha,
-            GetObjectScaleX(obj),
-            new Vector2(8f, 8f),
-            overlayScale,
+            Game1.mouseCursors,
+            Game1.GlobalToLocal(
+                Game1.viewport,
+                new Vector2(tileX * 64f - 8f, tileY * 64f - 112f + bobOffset)),
+            new Rectangle(141, 465, 20, 24),
+            Color.White * 0.75f,
+            0f,
+            Vector2.Zero,
+            4f,
             SpriteEffects.None,
-            overlayLayerDepth);
+            bubbleLayerDepth + 0.000001f);
+
+        StardewValley.Object? heldObject = obj.heldObject.Value;
+        if (heldObject == null)
+            return;
+
+        if (heldObject is ColoredObject coloredObject)
+        {
+            coloredObject.drawInMenu(
+                spriteBatch,
+                Game1.GlobalToLocal(
+                    Game1.viewport,
+                    new Vector2(tileX * 64f, tileY * 64f - 104f + bobOffset)),
+                1f,
+                0.75f,
+                bubbleLayerDepth + 0.000011f);
+            return;
+        }
+
+        var heldData = ItemRegistry.GetDataOrErrorItem(heldObject.QualifiedItemId);
+        Texture2D heldTexture = heldData.GetTexture();
+        Rectangle heldSource = heldData.GetSourceRect(0);
+        Vector2 iconPosition = Game1.GlobalToLocal(
+            Game1.viewport,
+            new Vector2(tileX * 64f + 32f, tileY * 64f - 72f + bobOffset));
+
+        spriteBatch.Draw(
+            heldTexture,
+            iconPosition,
+            heldSource,
+            Color.White * 0.75f,
+            0f,
+            new Vector2(8f, 8f),
+            4f,
+            SpriteEffects.None,
+            bubbleLayerDepth + 0.00001f);
+
+        if (heldObject.Stack > 1)
+        {
+            heldObject.DrawMenuIcons(
+                spriteBatch,
+                Game1.GlobalToLocal(
+                    Game1.viewport,
+                    new Vector2(tileX * 64f, tileY * 64f - 96f + bobOffset - 4f)),
+                1f,
+                1f,
+                bubbleLayerDepth + 0.000012f,
+                StackDrawType.Draw,
+                Color.White);
+            return;
+        }
+
+        if (heldObject.Quality > 0)
+        {
+            heldObject.DrawMenuIcons(
+                spriteBatch,
+                Game1.GlobalToLocal(
+                    Game1.viewport,
+                    new Vector2(tileX * 64f, tileY * 64f - 96f + bobOffset - 4f)),
+                1f,
+                1f,
+                bubbleLayerDepth + 0.000012f,
+                StackDrawType.HideButShowQuality,
+                Color.White);
+        }
     }
 
     private bool TryGetPoweredKegState(StardewValley.Object obj, out string? stateName, out string? stateSpriteName)
