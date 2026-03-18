@@ -1,7 +1,7 @@
 {
   "Name": "[SMAPI] PowerGrid",
   "Author": "darth",
-  "Version": "1.0.15",
+  "Version": "1.0.16",
   "Description": "Cable-based electrical power network for Stardew Valley. Generators, cables, batteries, and consumers provide speed boosts to machines.",
   "UniqueID": "meiameiameia.PowerGrid",
   "EntryDll": "PowerGrid.dll",

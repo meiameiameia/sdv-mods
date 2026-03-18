@@ -6,6 +6,7 @@ using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewUI.Framework;
 using StardewValley;
+using StardewValley.Menus;
 
 namespace Darth.FarmTerminal;
 
@@ -20,6 +21,7 @@ internal sealed class ModEntry : Mod
     private ModConfig config = new();
     private IViewEngine? viewEngine;
     private TerminalViewModel? terminalViewModel;
+    private IClickableMenu? activeTerminalMenu;
 
     public override void Entry(IModHelper helper)
     {
@@ -31,6 +33,8 @@ internal sealed class ModEntry : Mod
             this.CmdOpenTerminal);
 
         helper.Events.GameLoop.GameLaunched += this.OnGameLaunched;
+        helper.Events.GameLoop.TimeChanged += this.OnTimeChanged;
+        helper.Events.Display.MenuChanged += this.OnMenuChanged;
         helper.Events.Input.ButtonPressed += this.OnButtonPressed;
     }
 
@@ -79,6 +83,23 @@ internal sealed class ModEntry : Mod
         this.OpenTerminal();
     }
 
+    private void OnTimeChanged(object? sender, TimeChangedEventArgs e)
+    {
+        if (!Context.IsWorldReady || this.terminalViewModel == null || this.activeTerminalMenu == null)
+            return;
+
+        if (!ReferenceEquals(Game1.activeClickableMenu, this.activeTerminalMenu))
+            return;
+
+        this.terminalViewModel.Refresh();
+    }
+
+    private void OnMenuChanged(object? sender, MenuChangedEventArgs e)
+    {
+        if (this.activeTerminalMenu != null && !ReferenceEquals(e.NewMenu, this.activeTerminalMenu))
+            this.activeTerminalMenu = null;
+    }
+
     private void OpenTerminal()
     {
         if (this.viewEngine == null)
@@ -94,6 +115,7 @@ internal sealed class ModEntry : Mod
         }
 
         this.terminalViewModel.Refresh();
-        Game1.activeClickableMenu = this.viewEngine.CreateMenuFromAsset(ShellAssetName, this.terminalViewModel);
+        this.activeTerminalMenu = this.viewEngine.CreateMenuFromAsset(ShellAssetName, this.terminalViewModel);
+        Game1.activeClickableMenu = this.activeTerminalMenu;
     }
 }

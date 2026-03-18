@@ -163,7 +163,7 @@ internal sealed class TerminalViewModel : BindableBase
         : "";
 
     public string ConsumersEmptyText => this.Consumers.Count == 0
-        ? "No powered consumers were reported. Load powered machines or refresh after the next PowerGrid tick."
+        ? "No consumer snapshots were reported. Load powered machines or refresh after the next PowerGrid tick."
         : "";
 
     public string SourcesEmptyText => this.Sources.Count == 0
@@ -209,13 +209,14 @@ internal sealed class TerminalViewModel : BindableBase
 
     private string BuildConsumerModuleSummary()
     {
-        int active = this.Consumers.Count(consumer => string.Equals(consumer.StatusText, "Active", StringComparison.Ordinal));
-        int idle = this.Consumers.Count(consumer => string.Equals(consumer.StatusText, "Idle", StringComparison.Ordinal));
-        int unpowered = this.Consumers.Count(consumer => string.Equals(consumer.StatusText, "Unpowered", StringComparison.Ordinal));
+        int waiting = this.Consumers.Count(consumer => string.Equals(consumer.StatusText, "Waiting For Power", StringComparison.Ordinal));
+        int active = this.Consumers.Count(consumer => string.Equals(consumer.StatusText, "Powered / Active", StringComparison.Ordinal));
+        int standby = this.Consumers.Count(consumer => string.Equals(consumer.StatusText, "Powered / Ready", StringComparison.Ordinal));
+        int idleUnpowered = this.Consumers.Count(consumer => string.Equals(consumer.StatusText, "Idle / Unpowered", StringComparison.Ordinal));
 
         return this.Consumers.Count == 0
             ? "No consumer details are available yet."
-            : $"{active} active, {idle} idle, {unpowered} unpowered consumer(s).";
+            : $"{waiting} waiting for power, {active} active, {standby} standby, {idleUnpowered} idle and unpowered consumer(s).";
     }
 
     private string BuildSourceModuleSummary()

@@ -54,6 +54,8 @@ internal sealed class ModEntry : Mod
     private const string MetalCaskLastAppliedDateKey = "meiameiameia.MetalKegs/LastAppliedDate";
     private static readonly FieldInfo? CaskDaysToMatureField = AccessTools.Field(typeof(Cask), "daysToMature");
     private static readonly MethodInfo? CaskCheckForMaturityMethod = AccessTools.Method(typeof(Cask), "checkForMaturity");
+    private static readonly FieldInfo? ObjectShakeTimerField = AccessTools.Field(typeof(StardewValley.Object), "shakeTimer");
+    private static readonly FieldInfo? ObjectScaleField = AccessTools.Field(typeof(StardewValley.Object), "scale");
     private static readonly MethodInfo? ResetParentSheetIndexMethod = AccessTools.Method(typeof(StardewValley.Object), "ResetParentSheetIndex");
     private static readonly Rectangle BigCraftableSourceRect = new(0, 0, 16, 32);
 
@@ -1017,6 +1019,7 @@ internal sealed class ModEntry : Mod
                     prefix: new HarmonyMethod(typeof(ModEntry), nameof(StatefulMetalKegTileDrawPrefix)),
                     postfix: new HarmonyMethod(typeof(ModEntry), nameof(StatefulMetalKegTileDrawPostfix)));
             }
+
         }
         catch (Exception ex)
         {
@@ -1090,14 +1093,7 @@ internal sealed class ModEntry : Mod
 
     private static void StatefulMetalKegTileDrawPostfix(StardewValley.Object __instance, object[] __args)
     {
-        if (Instance == null || __instance == null || !Instance.IsStatefulPoweredKeg(__instance) || __args.Length < 4 || __args[0] is not SpriteBatch spriteBatch)
-            return;
-
-        if (__args[1] is not int tileX || __args[2] is not int tileY)
-            return;
-
-        float alpha = __args[3] is float drawAlpha ? drawAlpha : 1f;
-        Instance.DrawPoweredKegProcessingOverlay(__instance, spriteBatch, tileX, tileY, alpha);
+        return;
     }
 
     private StardewValley.Object CreatePlacedMetalCask(Vector2 tile, StardewValley.Object placedObject)
@@ -1131,60 +1127,70 @@ internal sealed class ModEntry : Mod
         if (!Context.IsWorldReady || Game1.currentLocation == null || Game1.currentLocation.getObjectAtTile(tileX, tileY) != obj)
             return false;
 
-        if (obj.MinutesUntilReady > 0)
-            return false;
-
-        if (!TryGetPoweredKegState(obj, out string? stateName, out string? stateSpriteName) || stateName == "processing-powered")
+        if (!TryGetPoweredKegState(obj, out _, out string? stateSpriteName))
             return false;
 
         if (!TryLoadStateTextureForDraw(stateSpriteName!, out Texture2D? texture))
             return false;
 
-        Vector2 screenPos = Game1.GlobalToLocal(Game1.viewport, new Vector2(tileX * 64, tileY * 64 - 64));
+        Vector2 drawScale = obj.getScale() * 4f;
+        Vector2 localPosition = Game1.GlobalToLocal(Game1.viewport, new Vector2(tileX * 64, tileY * 64 - 64));
+        int shakeTimer = GetObjectShakeTimer(obj);
+        int shakeX = shakeTimer > 0 ? Game1.random.Next(-1, 2) : 0;
+        int shakeY = shakeTimer > 0 ? Game1.random.Next(-1, 2) : 0;
+
+        Rectangle destination = new(
+            (int)(localPosition.X - drawScale.X / 2f) + shakeX,
+            (int)(localPosition.Y - drawScale.Y / 2f) + shakeY,
+            Math.Max(1, (int)(64f + drawScale.X)),
+            Math.Max(1, (int)(128f + drawScale.Y / 2f)));
+
         float layerDepth = Math.Max(0f, ((tileY + 1) * 64f - 24f) / 10000f + tileX / 1000000f);
 
         spriteBatch.Draw(
             texture!,
-            screenPos,
+            destination,
             BigCraftableSourceRect,
             Color.White * alpha,
             0f,
             Vector2.Zero,
-            4f,
             SpriteEffects.None,
             layerDepth);
 
+        DrawKegProcessingOverlay(obj, spriteBatch, tileX, tileY, alpha);
         return true;
     }
 
-    private void DrawPoweredKegProcessingOverlay(StardewValley.Object obj, SpriteBatch spriteBatch, int tileX, int tileY, float alpha)
+    private static int GetObjectShakeTimer(StardewValley.Object obj)
     {
-        if (!Context.IsWorldReady || Game1.currentLocation == null || Game1.currentLocation.getObjectAtTile(tileX, tileY) != obj)
+        return ObjectShakeTimerField?.GetValue(obj) is int shakeTimer ? shakeTimer : 0;
+    }
+
+    private static float GetObjectScaleX(StardewValley.Object obj)
+    {
+        return ObjectScaleField?.GetValue(obj) is Vector2 scale ? scale.X : 0f;
+    }
+
+    private static void DrawKegProcessingOverlay(StardewValley.Object obj, SpriteBatch spriteBatch, int tileX, int tileY, float alpha)
+    {
+        if (obj.MinutesUntilReady <= 0 || Game1.objectSpriteSheet == null)
             return;
 
-        if (obj.MinutesUntilReady <= 0)
-            return;
-
-        if (!TryGetPoweredKegState(obj, out string? stateName, out string? stateSpriteName) || stateName != "processing-powered")
-            return;
-
-        if (!TryLoadStateTextureForDraw(stateSpriteName!, out Texture2D? texture))
-            return;
-
-        Vector2 screenPos = Game1.GlobalToLocal(Game1.viewport, new Vector2(tileX * 64, tileY * 64 - 64));
-        float layerDepth = Math.Min(1f, Math.Max(0f, ((tileY + 1) * 64f - 24f) / 10000f + tileX / 1000000f) + 0.00001f);
-        float overlayAlpha = Math.Min(1f, alpha * 0.95f);
+        Vector2 overlayPosition = obj.getLocalPosition(Game1.viewport) + new Vector2(32f, 0f);
+        Rectangle overlaySource = Game1.getSourceRectForStandardTileSheet(Game1.objectSpriteSheet, 435, 16, 16);
+        float overlayScale = 4f;
+        float overlayLayerDepth = Math.Max(0f, ((tileY + 1) * 64f) / 10000f + 0.0001f + tileX * 0.00001f);
 
         spriteBatch.Draw(
-            texture!,
-            screenPos,
-            BigCraftableSourceRect,
-            Color.White * overlayAlpha,
-            0f,
-            Vector2.Zero,
-            4f,
+            Game1.objectSpriteSheet,
+            overlayPosition,
+            overlaySource,
+            Color.White * alpha,
+            GetObjectScaleX(obj),
+            new Vector2(8f, 8f),
+            overlayScale,
             SpriteEffects.None,
-            layerDepth);
+            overlayLayerDepth);
     }
 
     private bool TryGetPoweredKegState(StardewValley.Object obj, out string? stateName, out string? stateSpriteName)

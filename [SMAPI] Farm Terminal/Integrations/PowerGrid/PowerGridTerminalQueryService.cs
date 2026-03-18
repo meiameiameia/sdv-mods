@@ -29,8 +29,11 @@ internal sealed class PowerGridTerminalQueryService
             .ToArray();
         IReadOnlyList<PowerConsumerSnapshot> consumers = api.GetConsumerSnapshots()
             .OrderBy(consumer => GetConsumerSortOrder(consumer))
-            .ThenBy(consumer => consumer.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(consumer => consumer.NetworkId)
             .ThenBy(consumer => consumer.LocationName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(consumer => consumer.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(consumer => consumer.TileY)
+            .ThenBy(consumer => consumer.TileX)
             .ToArray();
         IReadOnlyList<PowerGeneratorSnapshot> generators = api.GetGeneratorSnapshots()
             .OrderBy(generator => generator.LocationName, StringComparer.OrdinalIgnoreCase)
@@ -102,13 +105,15 @@ internal sealed class PowerGridTerminalQueryService
         if (networks.Count == 0)
             return "No loaded power networks were reported. Place or load PowerGrid equipment, wait for the next 10-minute tick, and refresh.";
 
-        int activeConsumers = consumers.Count(consumer => consumer.IsProcessing && consumer.IsPowered);
-        int unpoweredConsumers = consumers.Count(consumer => !consumer.IsPowered);
+        int activeConsumers = consumers.Count(IsConsumerActive);
+        int standbyConsumers = consumers.Count(IsConsumerStandby);
+        int waitingConsumers = consumers.Count(IsConsumerWaitingForPower);
+        int idleUnpoweredConsumers = consumers.Count(IsConsumerIdleAndUnpowered);
         int onlineGenerators = generators.Count(generator => generator.IsOnline);
         int totalStored = batteries.Sum(battery => battery.Charge);
         int totalCapacity = batteries.Sum(battery => battery.Capacity);
 
-        return $"{networks.Count} network(s) online, {activeConsumers} active consumer(s), {unpoweredConsumers} unpowered consumer(s), {onlineGenerators} online source(s), {totalStored}/{Math.Max(totalCapacity, 0)} EU stored, {alerts.Count} alert(s).";
+        return $"{networks.Count} network(s) online, {activeConsumers} active consumer(s), {standbyConsumers} standby consumer(s), {waitingConsumers} waiting for power, {idleUnpoweredConsumers} idle and unpowered, {onlineGenerators} online source(s), {totalStored}/{Math.Max(totalCapacity, 0)} EU stored, {alerts.Count} alert(s).";
     }
 
     private static List<TerminalSummaryCard> BuildOverviewCards(
@@ -122,16 +127,17 @@ internal sealed class PowerGridTerminalQueryService
         int totalDemand = networks.Sum(network => network.TotalDemandPerTick);
         int totalStored = batteries.Sum(battery => battery.Charge);
         int totalCapacity = batteries.Sum(battery => battery.Capacity);
-        int activeConsumers = consumers.Count(consumer => consumer.IsProcessing && consumer.IsPowered);
-        int idleConsumers = consumers.Count(consumer => !consumer.IsProcessing && consumer.IsPowered);
-        int unpoweredConsumers = consumers.Count(consumer => !consumer.IsPowered);
+        int activeConsumers = consumers.Count(IsConsumerActive);
+        int standbyConsumers = consumers.Count(IsConsumerStandby);
+        int waitingConsumers = consumers.Count(IsConsumerWaitingForPower);
+        int idleUnpoweredConsumers = consumers.Count(IsConsumerIdleAndUnpowered);
         int onlineGenerators = generators.Count(generator => generator.IsOnline);
 
         return new List<TerminalSummaryCard>
         {
             new("Networks", networks.Count.ToString(), $"{networks.Count(network => network.IsCrossLocation)} conduit-linked across locations."),
             new("Power", $"{totalGeneration} / {totalDemand} EU/tick", $"{onlineGenerators} online source(s) feeding {consumers.Count} consumer(s)."),
-            new("Consumers", $"{activeConsumers} active", $"{idleConsumers} idle, {unpoweredConsumers} unpowered."),
+            new("Consumers", $"{activeConsumers} active", $"{standbyConsumers} standby, {waitingConsumers} waiting for power, {idleUnpoweredConsumers} idle and unpowered."),
             new("Storage", totalCapacity > 0 ? $"{totalStored} / {totalCapacity} EU" : "No batteries", $"{batteries.Count} battery node(s) reported."),
             new("Alerts", alerts.Count.ToString(), alerts.Count == 0 ? "All clear on the latest snapshot." : "Review the Alerts module for warnings and low-reserve notices.")
         };
@@ -155,8 +161,8 @@ internal sealed class PowerGridTerminalQueryService
         return consumers.Select(consumer => new TerminalConsumerSummary(
             consumer.DisplayName,
             GetConsumerStatus(consumer),
-            $"{consumer.LocationName} @ ({consumer.TileX}, {consumer.TileY})",
-            $"Demand {consumer.DemandPerTick} EU/tick",
+            $"Network {consumer.NetworkId} · {consumer.LocationName} @ ({consumer.TileX}, {consumer.TileY})",
+            $"Demand {consumer.DemandPerTick} EU/tick · Priority {consumer.Priority}",
             BuildConsumerAllocationText(consumer),
             BuildConsumerDetailText(consumer)
         )).ToList();
@@ -258,28 +264,35 @@ internal sealed class PowerGridTerminalQueryService
 
     private static int GetConsumerSortOrder(PowerConsumerSnapshot consumer)
     {
-        if (!consumer.IsPowered)
+        if (IsConsumerWaitingForPower(consumer))
             return 0;
-        if (consumer.IsProcessing)
+        if (IsConsumerActive(consumer))
             return 1;
-        return 2;
+        if (IsConsumerStandby(consumer))
+            return 2;
+        return 3;
     }
 
     private static string GetConsumerStatus(PowerConsumerSnapshot consumer)
     {
-        if (!consumer.IsPowered)
-            return "Unpowered";
-        if (consumer.IsProcessing)
-            return "Active";
-        return "Idle";
+        if (IsConsumerWaitingForPower(consumer))
+            return "Waiting For Power";
+        if (IsConsumerActive(consumer))
+            return "Powered / Active";
+        if (IsConsumerStandby(consumer))
+            return "Powered / Ready";
+        return "Idle / Unpowered";
     }
 
     private static string BuildConsumerAllocationText(PowerConsumerSnapshot consumer)
     {
-        if (consumer.ProgressMode == "days")
-            return $"Allocated {consumer.EUAllocated} EU, live speedup {consumer.SpeedupFraction:P0}";
+        if (!consumer.IsPowered)
+            return $"Latest tick: {consumer.EUAllocated}/{consumer.DemandPerTick} EU allocated.";
 
-        return $"Allocated {consumer.EUAllocated} EU, speedup {consumer.SpeedupFraction:P0}";
+        if (consumer.ProgressMode == "days")
+            return $"Latest tick: {consumer.EUAllocated}/{consumer.DemandPerTick} EU, live speedup {consumer.SpeedupFraction:P0}";
+
+        return $"Latest tick: {consumer.EUAllocated}/{consumer.DemandPerTick} EU, speedup {consumer.SpeedupFraction:P0}";
     }
 
     private static string BuildConsumerDetailText(PowerConsumerSnapshot consumer)
@@ -287,12 +300,35 @@ internal sealed class PowerGridTerminalQueryService
         if (!string.IsNullOrWhiteSpace(consumer.ProgressText))
             return consumer.ProgressText;
 
-        if (consumer.IsProcessing)
-            return $"Processing with about {consumer.MinutesRemaining} in-game minute(s) remaining.";
+        if (IsConsumerActive(consumer))
+            return $"Powered on the latest snapshot and accelerating. About {consumer.MinutesRemaining} in-game minute(s) remain.";
 
-        return consumer.IsPowered
-            ? "Powered and ready for work."
-            : "Not receiving power from the latest snapshot.";
+        if (IsConsumerWaitingForPower(consumer))
+            return $"Work is present, but the latest snapshot did not allocate power. About {consumer.MinutesRemaining} in-game minute(s) remain once power resumes.";
+
+        return IsConsumerStandby(consumer)
+            ? "Powered on the latest snapshot and ready for work."
+            : "Idle on the latest snapshot and not receiving power.";
+    }
+
+    private static bool IsConsumerActive(PowerConsumerSnapshot consumer)
+    {
+        return consumer.IsPowered && consumer.IsProcessing;
+    }
+
+    private static bool IsConsumerStandby(PowerConsumerSnapshot consumer)
+    {
+        return consumer.IsPowered && !consumer.IsProcessing;
+    }
+
+    private static bool IsConsumerWaitingForPower(PowerConsumerSnapshot consumer)
+    {
+        return !consumer.IsPowered && consumer.IsProcessing;
+    }
+
+    private static bool IsConsumerIdleAndUnpowered(PowerConsumerSnapshot consumer)
+    {
+        return !consumer.IsPowered && !consumer.IsProcessing;
     }
 
     private static string BuildUnpoweredConsumerDetail(IReadOnlyList<PowerConsumerSnapshot> consumers)
