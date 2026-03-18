@@ -34,6 +34,7 @@ The medium-term direction is to grow this into a deeper infrastructure ecosystem
 6. Add new powered gameplay only when it creates a meaningful late-game decision.
 7. Prefer staged machine-line expansion over trying to electrify every artisan machine at once.
 8. Keep machine-family identity local to the mod that owns that family; do not overload `Metal Kegs` with unrelated artisan lines.
+9. Treat config parity as part of product hardening: shipped mods with meaningful player-facing config should expose that config cleanly through GMCM.
 
 ## Phase 1: Harden The Current Core
 
@@ -49,6 +50,10 @@ The medium-term direction is to grow this into a deeper infrastructure ecosystem
   - `PowerGrid`
   - `Metal Kegs`
   - `Farm Terminal`
+- Close obvious config-surface hardening gaps in shipped mods:
+  - preserve `PowerGrid` GMCM support
+  - bring `Metal Kegs` to GMCM parity
+  - bring `Farm Terminal` keybind/config surface to GMCM parity
 - Treat current art/runtime work as good-enough productization, not as a reason to stall gameplay progress indefinitely.
 
 ## Phase 2: Productize Farm Terminal
@@ -61,7 +66,37 @@ The medium-term direction is to grow this into a deeper infrastructure ecosystem
 - Get Farm Terminal to a point where broader machine expansion is easy to observe and validate.
 - Continue strengthening compatibility confidence for machine-heavy stacks via focused sandbox validations.
 
-## Phase 3: Electronic Artisan Line (Wave 1)
+## Phase 3: Ecosystem Contract Hardening
+
+Insert one small contract pass before the next major machine-family wave so new powered machine mods can plug in cleanly without re-solving the same integration work.
+
+Scope:
+
+- machine self-description
+- consumer registration ownership in machine mods instead of ad hoc recognition
+- shared terminal-friendly telemetry conventions
+- a repeatable starter pattern for new powered machine-family mods
+- a lightweight validation matrix for new powered machine families:
+  - vanilla machine behavior parity
+  - PowerGrid acceleration
+  - Automate-compatible IO
+  - ready/processing render parity
+  - Farm Terminal observability
+
+This should stay small:
+
+- not a big framework rewrite
+- not a broad shared-core rewrite
+- just enough shared shape to make the next machine-family mod cheaper and more deterministic to build
+
+This phase should also finish current config-surface hardening:
+
+- `PowerGrid` remains the reference implementation for GMCM parity
+- `Metal Kegs` reaches GMCM parity
+- `Farm Terminal` reaches GMCM parity for its user-facing config
+- `FishSmoker Recipe` only grows GMCM/config support if a real preset/config surface is introduced later
+
+## Phase 4: Electronic Artisan Line (Wave 1)
 
 Add a small number of high-value powered artisan lines that make late-game production more interesting without turning the ecosystem into ancient-wine-only optimization.
 
@@ -84,7 +119,7 @@ Scope rules:
 - prefer a separate broader artisan-machine line rather than expanding `Metal Kegs` into a catch-all machine pack
 - preserve normal machine IO behavior; power should improve throughput, availability, or constraints rather than replacing standard machine rules
 
-## Phase 4: Electronic Artisan Line (Wave 2+)
+## Phase 5: Electronic Artisan Line (Wave 2+)
 
 Once Wave 1 is stable, expand into more electronic artisan variants in additional waves rather than a single all-at-once release.
 
@@ -102,7 +137,7 @@ This is where the long-term goal of "electronic versions of all artisan machines
 - after the current core is hardened
 - after Farm Terminal is good enough to observe a larger machine ecosystem
 
-## Phase 5: Depth Layer
+## Phase 6: Depth Layer
 
 Add more system depth only after there are enough powered consumers to justify it.
 
@@ -125,7 +160,7 @@ Or equivalent shared module classes such as:
 
 This should aim for the feel of deeper machine sandbox mods without front-loading too much complexity into the early ecosystem.
 
-## Phase 6: Deeper PowerGrid Systems
+## Phase 7: Deeper PowerGrid Systems
 
 After the consumer base and terminal surfaces are stable, expand the infrastructure layer itself.
 
@@ -141,7 +176,7 @@ Depth should come from interacting systems, not just from adding more placeable 
 
 ## Recommended Next Consumer
 
-If the current core is hardened enough for the next gameplay expansion, the best first non-keg consumer is:
+If the ecosystem contract phase is in place and the current core is hardened enough for the next gameplay expansion, the best first non-keg consumer is:
 
 - `Industrial Preserves Jar`
 

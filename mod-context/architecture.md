@@ -59,6 +59,42 @@ Define a unified machine ecosystem where your mods participate cleanly in the br
 3. Keep acceleration/energy constraints in PowerGrid.
 4. Use shared UI/config channels (GMCM now, StardewUI for Farm Terminal) for observability.
 
+## Near-Term Ecosystem Contract
+
+Before adding the next major machine-family wave, the ecosystem should converge on a small repeatable powered-machine pattern instead of continuing with ad hoc integration.
+
+The minimum useful shared shape is:
+
+- display name
+- machine family
+- qualified item id
+- demand per tick
+- speedup cap
+- priority
+- progress mode
+- optional progress text / summary formatter
+
+The ownership rule should be:
+
+- machine mods self-register as `PowerGrid` consumers
+- `PowerGrid` consumes traits and telemetry, not hard-coded machine-family knowledge
+- `Farm Terminal` consumes stable snapshots and summary text instead of machine-specific assumptions
+
+This is intentionally not a large framework rewrite. It is a small contract-hardening step so future powered machine mods are cheaper and more deterministic to build.
+
+## Config Productization
+
+Config parity should be treated as part of product hardening, not as a later polish-only task.
+
+Near-term expectation for shipped mods:
+
+- `PowerGrid` remains the reference implementation for GMCM support
+- `Metal Kegs` should reach GMCM parity for its current config surface
+- `Farm Terminal` should expose its current user-facing config surface through GMCM
+- `FishSmoker Recipe` only needs GMCM/config parity if it grows a real player-facing preset/config surface later
+
+This keeps the ecosystem more consistent before the next machine-family expansion.
+
 ## Forward-Compatible Concept
 A farm terminal style mod can aggregate:
 - machine state (`MinutesUntilReady`, machine rule origin),
