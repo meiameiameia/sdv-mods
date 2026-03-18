@@ -9,6 +9,13 @@ This repository is building toward a machine/infrastructure ecosystem for Starde
 - `Farm Terminal` as a read-only observability surface over PowerGrid snapshots.
 - `FishSmoker Recipe` as a small progression/balance module.
 
+The medium-term direction is to grow this into a deeper infrastructure ecosystem in the style of machine-heavy sandbox mods, but at Stardew scale:
+
+- `PowerGrid` remains the energy/infrastructure backbone.
+- machine packs remain the place where gameplay value is introduced.
+- `Farm Terminal` remains the monitoring and optimization surface.
+- expansion happens in paced waves, not as a one-time feature dump.
+
 ## Current Stable Pillars
 
 - `PowerGrid` exposes stable read-only snapshots for networks, consumers, generators, and batteries.
@@ -24,28 +31,129 @@ This repository is building toward a machine/infrastructure ecosystem for Starde
 3. Use shared contracts only when they remove real coupling.
 4. Preserve compatibility with the broader machine-heavy modpack.
 5. Keep sandbox validation as the main runtime gate.
+6. Add new powered gameplay only when it creates a meaningful late-game decision.
+7. Prefer staged machine-line expansion over trying to electrify every artisan machine at once.
+8. Keep machine-family identity local to the mod that owns that family; do not overload `Metal Kegs` with unrelated artisan lines.
 
-## Near-Term Productization
+## Phase 1: Harden The Current Core
 
 - Keep the current stable gameplay/runtime baseline intact while tightening compatibility and observability quality.
-- Implement PowerGrid runtime sprite state transition support aligned to the current art contract for:
+- Keep the current state-aware PowerGrid art/runtime contract stable and fallback-safe for:
   - `SteamGenerator` (`off`, `on`)
   - `WindGenerator` (`idle`, `generating`)
   - `BasicBattery` (`low`, `charged`)
   - `IridiumBattery` (`low`, `charged`)
   - `PowerConduit` (`unpaired`, `linked`)
-- Require safe fallback to the current single default sprite whenever a state variant asset is missing, invalid, or not yet shipped.
-- Keep `Metal Kegs` single-state for now; do not add powered/unpowered visuals unless later runtime value is clearly justified.
 - Keep `Farm Terminal` read-only in the near term; no control/automation ownership work in this horizon.
+- Finish hardening the current ecosystem before broadening the consumer surface:
+  - `PowerGrid`
+  - `Metal Kegs`
+  - `Farm Terminal`
+- Treat current art/runtime work as good-enough productization, not as a reason to stall gameplay progress indefinitely.
 
-## Next Ecosystem Expansion
+## Phase 2: Productize Farm Terminal
 
-- Expand PowerGrid consumer coverage for additional machine families through the existing API/modData integration path.
-- Improve Farm Terminal observability depth (module quality, drill-down quality, bounded refresh behavior) while staying read-focused.
-- Strengthen compatibility confidence for machine-heavy stacks via focused sandbox validations.
+- Improve Farm Terminal readability, module quality, and drill-down usefulness while staying read-focused.
+- Keep terminal ownership narrow:
+  - monitoring first
+  - optimization visibility second
+  - no direct control/automation ownership yet
+- Get Farm Terminal to a point where broader machine expansion is easy to observe and validate.
+- Continue strengthening compatibility confidence for machine-heavy stacks via focused sandbox validations.
 
-## Later / Optional
+## Phase 3: Electronic Artisan Line (Wave 1)
+
+Add a small number of high-value powered artisan lines that make late-game production more interesting without turning the ecosystem into ancient-wine-only optimization.
+
+Wave 1 priorities:
+
+1. `Industrial Preserves Jar`
+2. `Powered Cheese Press`
+3. `Powered Oil Maker`
+4. continued `Metal Cask` / keg-family refinement where justified
+
+Rationale:
+
+- these machines broaden the value of artisan processing beyond wine loops
+- they create meaningful reasons to build and scale power infrastructure
+- they complement existing automation instead of replacing it
+
+Scope rules:
+
+- do not add every artisan machine at once
+- prefer a separate broader artisan-machine line rather than expanding `Metal Kegs` into a catch-all machine pack
+- preserve normal machine IO behavior; power should improve throughput, availability, or constraints rather than replacing standard machine rules
+
+## Phase 4: Electronic Artisan Line (Wave 2+)
+
+Once Wave 1 is stable, expand into more electronic artisan variants in additional waves rather than a single all-at-once release.
+
+Likely candidates:
+
+- `Loom`
+- `Mayonnaise Machine`
+- `Dehydrator`
+- `Fish Smoker`-adjacent powered processing
+- other artisan processors that gain real late-game value from throughput, batching, or reduced friction
+
+This is where the long-term goal of "electronic versions of all artisan machines" belongs:
+
+- as a staged roadmap program
+- after the current core is hardened
+- after Farm Terminal is good enough to observe a larger machine ecosystem
+
+## Phase 5: Depth Layer
+
+Add more system depth only after there are enough powered consumers to justify it.
+
+Preferred direction:
+
+- shared upgrade/module system first
+- machine-specific upgrade specialization later
+
+Good initial upgrade shape:
+
+- `Basic Control Chip`
+- `Advanced Control Chip`
+- `Iridium Control Chip`
+
+Or equivalent shared module classes such as:
+
+- speed
+- efficiency
+- stability / quality
+
+This should aim for the feel of deeper machine sandbox mods without front-loading too much complexity into the early ecosystem.
+
+## Phase 6: Deeper PowerGrid Systems
+
+After the consumer base and terminal surfaces are stable, expand the infrastructure layer itself.
+
+Examples:
+
+- new generator tiers
+- new storage tiers
+- category or policy-based allocation
+- reserve thresholds and grid-planning decisions
+- richer telemetry surfaces for future terminal modules
+
+Depth should come from interacting systems, not just from adding more placeable objects.
+
+## Recommended Next Consumer
+
+If the current core is hardened enough for the next gameplay expansion, the best first non-keg consumer is:
+
+- `Industrial Preserves Jar`
+
+Why:
+
+- it gives fruit and vegetable processing a meaningful late-game lane
+- it complements wine rather than duplicating it
+- it broadens the artisan economy in a clean way
+- it gives `PowerGrid` more value without requiring a huge new system surface
+
+## Deferred / Optional
 
 - Revisit broader Farm Terminal control workflows only if a clear contract and ownership boundary is justified.
-- Add richer policy/simulation features only when there is a concrete validated consumer and test coverage.
-- Evaluate additional UI/system unification only after near-term runtime and productization goals are stable.
+- Add richer power policy/simulation features only when there is a concrete validated consumer and test coverage.
+- Evaluate additional UI/system unification only after the current runtime and expansion phases are stable.
