@@ -18,8 +18,8 @@
 
 ## In-Game Role
 
-- What the player should immediately read this as: premium reinforced keg-family machine with iridium-quality finish
-- What must stay recognizable from the current gameplay identity: relationship to both keg lineage and the harder premium variant concept
+- What the player should immediately read this as: a premium reinforced keg-family brewing machine
+- What must stay recognizable from the current gameplay identity: keg lineage first, stronger premium construction second, not a plain barrel-only prop, generic machine cabinet, or magical-tech object
 
 ## Family Consistency Rules
 
@@ -40,11 +40,11 @@
 - No anti-aliasing: yes
 - Perspective / view rule: preserve vanilla keg-style slight top-down / 3/4-ish perspective with a clearly readable top ellipse or lid plane; do not render it as a flat front-on cask
 - Width / silhouette discipline: soft target `12-14 px` for the main barrel/body mass on most rows, with reinforced trim allowed to flare slightly wider; avoid both thin/spindly barrel reads and a square full-width `16 px` slab
-- Body-mass / sturdiness rule: the keg should read as a dense reinforced premium vessel with enough lower-body mass to feel grounded and durable at `1x`
+- Body-mass / sturdiness rule: the keg must read as a dense reinforced premium vessel with enough lower-body mass to feel grounded and durable at `1x`
 - Grounding / floor-contact rule: the lowest visible body/base pixels should touch or nearly touch the bottom row; avoid empty air beneath the keg
-- Pixel readability requirements: premium variant must still read as a keg-family machine first
+- Pixel readability requirements: premium variant must still read as a keg-family machine first, with enclosed keg volume and rounded mass still obvious
 - Edge / connection requirements: stay inside `16x32` and preserve plausible left/right/up/down cable adjacency around the keg body
-- Forbidden output mistakes: sci-fi glowing keg, purple neon overload, silhouette drift so large that it no longer reads as keg-related
+- Forbidden output mistakes: plain barrel-only silhouette, generic machine cabinet, sci-fi glowing keg, purple neon overload, silhouette drift so large that it no longer reads as keg-related
 
 ## Assumptions
 

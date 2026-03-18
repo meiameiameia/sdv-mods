@@ -18,8 +18,8 @@
 
 ## In-Game Role
 
-- What the player should immediately read this as: small entry-tier power storage unit
-- What must stay recognizable from the current gameplay identity: battery silhouette, stored-energy feel, lower-tier green/copper identity
+- What the player should immediately read this as: a compact entry-tier battery cabinet / storage unit
+- What must stay recognizable from the current gameplay identity: battery silhouette, stored-energy feel, lower-tier green/copper identity, not a pillar, torch, shrine, post, or decorative lamp
 
 ## Family Consistency Rules
 
@@ -40,11 +40,11 @@
 - No anti-aliasing: yes
 - Perspective / view rule: use Stardew's slight top-down / 3/4-ish machine perspective with a clearly readable top plane; do not render the battery as a flat cabinet front or hide the top in a token sliver
 - Width / silhouette discipline: soft target `11-14 px` for the main battery body on most rows, with small terminals or trim allowed to flare slightly wider; avoid both thin cabinet-strip reads and a full-width `16 px` slab
-- Body-mass / sturdiness rule: the battery should read as a compact, sturdy storage unit with enough lower-body mass to feel solid at `1x`
+- Body-mass / sturdiness rule: the battery must read as a compact, sturdy storage cabinet with enough lower-body mass to feel solid at `1x`
 - Grounding / floor-contact rule: the lowest visible base/body pixels should touch or nearly touch the bottom row; avoid empty air beneath the cabinet
-- Pixel readability requirements: charge-storage identity should read in one glance
+- Pixel readability requirements: battery identity must read in one glance, with a clear enclosed storage body rather than a pillar or shrine silhouette
 - Edge / connection requirements: stay within `16x32` and preserve plausible cable adjacency on left/right/up/down sides of the machine body
-- Forbidden output mistakes: modern photoreal battery decals, huge glowing indicators, clutter that overwhelms the silhouette
+- Forbidden output mistakes: torch-like post, shrine, obelisk, decorative pillar, lamp read, modern photoreal battery decals, huge glowing indicators, clutter that overwhelms the silhouette
 
 ## Assumptions
 
@@ -53,7 +53,7 @@
 
 ## Done Criteria
 
-- Reads as a battery at vanilla gameplay scale.
+- Reads as a battery cabinet at vanilla gameplay scale.
 - Pairs cleanly with `IridiumBattery` as the lower-tier member.
-- Top plane and grounded base remain readable at `1x` instead of drifting front-on or too thin.
+- Top plane and grounded base remain readable at `1x` instead of drifting front-on, too thin, or pillar-like.
 - Low and charged variants keep the same attachment-compatible footprint and perspective.

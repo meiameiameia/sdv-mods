@@ -19,7 +19,7 @@
 ## In-Game Role
 
 - What the player should immediately read this as: a closed industrial aging cask suitable for wine, cheese, and other sealed aging goods
-- What must stay recognizable from the current gameplay identity: cask-family aging role, heavier reinforced construction, usable outside the vanilla-cellar-only feel without becoming an open vat, bowl, or generic machine box
+- What must stay recognizable from the current gameplay identity: cask-family aging role first, reinforced industrial construction second, not an open vat, bowl, tank, or cabinet
 
 ## Family Consistency Rules
 
@@ -40,11 +40,11 @@
 - No anti-aliasing: yes
 - Perspective / view rule: preserve Stardew's slight top-down / 3/4-ish cask perspective with a clearly readable top ellipse or lid plane; do not render it flat front-on
 - Width / silhouette discipline: soft target `12-14 px` for the main cask/body mass on most rows; avoid both thin/spindly cask reads and a square full-width `16 px` slab
-- Body-mass / sturdiness rule: the lower body should read as a sturdy reinforced aging vessel with enough mass to feel grounded and durable at `1x`
+- Body-mass / sturdiness rule: the lower body must read as a sturdy reinforced aging vessel with enough mass to feel grounded and durable at `1x`
 - Grounding / floor-contact rule: the lowest visible body/base pixels should touch or nearly touch the bottom row; avoid empty air beneath the cask
-- Pixel readability requirements: must read as cask-family first, with industrial reinforcement second, and should show a clearly enclosed storage volume rather than an open container
+- Pixel readability requirements: must read as cask-family first, with industrial reinforcement second, and must show clearly enclosed storage volume rather than an open container
 - Edge / connection requirements: stay within `16x32` and preserve plausible left/right/up/down cable adjacency around the body without making the sprite feel like a cable machine first
-- Forbidden output mistakes: open-top basin, bowl, cauldron, chalice, pedestal-hoop silhouette, visible liquid surface, front-on barrel, generic machine cabinet, sci-fi fermenter, over-detailed steel drum, magical glow treatment
+- Forbidden output mistakes: open-top basin, bowl, cauldron, chalice, pedestal-hoop silhouette, visible liquid surface, storage tank read, generic machine cabinet, front-on barrel, sci-fi fermenter, over-detailed steel drum
 
 ## Assumptions
 
@@ -54,5 +54,5 @@
 ## Done Criteria
 
 - Reads clearly as a closed industrial aging cask at vanilla gameplay scale.
-- Feels grounded beside vanilla big craftables instead of floating, thin, front-on, or bowl-like.
+- Feels grounded beside vanilla big craftables instead of floating, thin, front-on, bowl-like, or tank-like.
 - Keeps cask lineage while still looking like a meaningful reinforced upgrade path inside `Metal Kegs`.

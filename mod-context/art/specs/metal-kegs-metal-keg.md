@@ -18,8 +18,8 @@
 
 ## In-Game Role
 
-- What the player should immediately read this as: a sturdier metal-bodied sibling of the vanilla keg
-- What must stay recognizable from the current gameplay identity: keg lineage, brewing machine role, immediate distinction from the vanilla keg without confusion
+- What the player should immediately read this as: a sturdier metal-bodied keg-family brewing machine
+- What must stay recognizable from the current gameplay identity: keg lineage first, brewing-machine role second, immediate distinction from the vanilla keg without drifting into a plain barrel-only read or a generic machine-box read
 
 ## Family Consistency Rules
 
@@ -40,11 +40,11 @@
 - No anti-aliasing: yes
 - Perspective / view rule: preserve vanilla keg-style slight top-down / 3/4-ish perspective with a clearly readable top ellipse or lid plane; do not render it as a flat front-on barrel
 - Width / silhouette discipline: soft target `12-14 px` for the main barrel/body mass on most rows, with hoops or handles allowed to flare slightly; avoid both thin/spindly barrel reads and a full-width `16 px` slab
-- Body-mass / sturdiness rule: the lower body should read as a sturdy metal brewing vessel with enough weight to feel grounded and industrial at `1x`
+- Body-mass / sturdiness rule: the lower body must read as a sturdy metal brewing vessel with enough weight to feel grounded and industrial at `1x`
 - Grounding / floor-contact rule: the lowest visible body/base pixels should touch or nearly touch the bottom row; avoid empty air under the keg that makes it feel like it is floating
-- Pixel readability requirements: still reads as keg-family machinery, not a furnace or chest
+- Pixel readability requirements: must read as keg-family machinery first, with enclosed brewing volume and rounded keg mass still visible
 - Edge / connection requirements: stay within `16x32` and preserve plausible left/right/up/down cable adjacency around the keg body
-- Forbidden output mistakes: modern polished brewery realism, noisy rivet spam, losing the keg family silhouette entirely
+- Forbidden output mistakes: plain barrel-only silhouette, generic machine cabinet, furnace/chest read, boxy front-on machine, modern polished brewery realism, noisy rivet spam
 
 ## Assumptions
 

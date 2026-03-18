@@ -19,37 +19,38 @@ If multiple states are requested, deliver separate review files named `PowerCond
 Animation: none
 
 Use attached references in this priority order:
-1. Vanilla Stardew Valley Craftables references are the style authority.
-2. The current repo PowerConduit sprite is a compatibility reference only. Preserve gameplay identity, but do not preserve placeholder-style rendering if it conflicts with vanilla readability.
-3. External relay or coupler references are inspiration only.
+1. Vanilla Stardew Valley Craftables references are the style authority. Match their perspective, grounding, compact machine mass, and readable device logic first.
+2. The current repo PowerConduit sprite is a compatibility reference only. Keep gameplay identity. Do not copy placeholder weaknesses if they conflict with vanilla readability.
+3. External relay or coupler references are inspiration only. Use them for idea support, not style control.
 4. master_64.txt is palette discipline only.
 
-Subject brief:
-Create a compact relay device that reads as a special network-link object rather than a generic machine. It should suggest pairing, routing, or signal transfer through one strong relay-style visual cue while still fitting the handcrafted Stardew machine world.
+Identity first:
+- This must read as a compact relay / link device.
+- It must read as a special conduit device, not as a battery box, generator, sign, pedestal, or antenna tower.
+- It must preserve believable cable adjacency on the left, right, top, and bottom sides.
 
-Technical requirements:
+Hard requirements:
 - transparent background
 - no mockup, no scene, no UI frame
 - no anti-aliasing or blurred edges
 - clean readable silhouette at gameplay scale
-- use Stardew's slight top-down / 3/4-ish machine perspective; a top cap or top plane should be clearly visible instead of a flat front panel
-- keep the main conduit body near a soft `11-14 px` width on most rows, with specialized relay details allowed to extend slightly
-- give the lower body enough mass that the conduit reads as a grounded relay device instead of a thin post or sign
-- leave plausible cable attachment zones on the left, right, top, and bottom adjacency sides; do not let relay details imply that one side cannot connect
-- lowest visible base/body pixels should touch or nearly touch the bottom row so the device does not feel like it is floating
+- use Stardew's slight top-down / 3/4-ish machine perspective; a top cap or top plane must be clearly visible
+- keep the main conduit body near a soft `11-14 px` width on most rows
+- make the lower body read as a compact grounded device, not a thin post or pedestal
+- leave plausible cable attachment zones on the left, right, top, and bottom adjacency sides; no one-sided bulk that makes a cable neighbor look impossible
+- lowest visible base/body pixels should touch or nearly touch the bottom row
 - stay strictly inside the exact canvas
 
 Family consistency rules:
 - belongs to the same PowerGrid hardware family as generators and batteries
-- should feel more specialized and link-oriented than a storage or generation device
-- remain readable and grounded, not magical or portal-like
-- keep the main body vanilla-machine sized rather than a full-width monolith or a thin front-on pole
-- keep unpaired and linked states silhouette-compatible, with state change coming from restrained signal/link cues rather than shape drift
+- should feel more specialized and link-oriented than storage or generation devices
+- keep unpaired and linked states silhouette-compatible, with state change coming from restrained link cues rather than shape drift
 
 Do not:
 - output multiple options
+- make it read like a battery box, generator, sign, pedestal, or antenna tower
 - add portal effects, floating runes, lightning arcs, or animation cues
-- make it too tall or antenna-heavy for 16x32
-- let it read like a battery box
+- make it too tall, too thin, or too front-on
+- let one side look non-connectable
 - drift away from vanilla big-craftable style
 ```
