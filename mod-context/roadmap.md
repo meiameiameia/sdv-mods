@@ -100,6 +100,10 @@ This phase should also finish current config-surface hardening:
 
 Add a small number of high-value powered artisan lines that make late-game production more interesting without turning the ecosystem into ancient-wine-only optimization.
 
+Current design brief:
+
+- `my-mods/electronic-artisan-machines.md`
+
 Wave 1 priorities:
 
 1. `Industrial Preserves Jar`
