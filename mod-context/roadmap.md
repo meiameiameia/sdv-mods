@@ -8,6 +8,7 @@ This repository is building toward a machine/infrastructure ecosystem for Starde
 - `Metal Kegs` as a powered consumer module on standard machine data contracts.
 - `Farm Terminal` as a read-only observability surface over PowerGrid snapshots.
 - `FishSmoker Recipe` as a small progression/balance module.
+- `Electronic Artisan Machines` as a separate powered artisan machine line, currently paused after the first `Industrial Preserves Jar` slice.
 
 The medium-term direction is to grow this into a deeper infrastructure ecosystem in the style of machine-heavy sandbox mods, but at Stardew scale:
 
@@ -96,7 +97,23 @@ This phase should also finish current config-surface hardening:
 - `Farm Terminal` reaches GMCM parity for its user-facing config
 - `FishSmoker Recipe` only grows GMCM/config support if a real preset/config surface is introduced later
 
-## Phase 4: Electronic Artisan Line (Wave 1)
+## Phase 4: Perfection Advisor (Next Focus)
+
+Define and stage a new standalone assistant mod line focused on completion/perfection planning.
+
+Current product direction:
+
+- standalone first (`Perfection Advisor`)
+- spoiler/assist behavior
+- default-off guidance surfaces
+- no control ownership and no automatic gameplay actions
+- optional later summary integration into `Farm Terminal`, while keeping `Farm Terminal` read-only
+
+Routing brief:
+
+- `my-mods/perfection-advisor.md`
+
+## Phase 5: Electronic Artisan Line (Wave 1)
 
 Add a small number of high-value powered artisan lines that make late-game production more interesting without turning the ecosystem into ancient-wine-only optimization.
 
@@ -111,6 +128,11 @@ Wave 1 priorities:
 3. `Powered Oil Maker`
 4. continued `Metal Cask` / keg-family refinement where justified
 
+Current sequencing note:
+
+- expansion beyond `Industrial Preserves Jar` is deferred while `Perfection Advisor` is the immediate design/product focus
+- `Powered Cheese Press` is not the next implementation target right now
+
 Rationale:
 
 - these machines broaden the value of artisan processing beyond wine loops
@@ -123,7 +145,7 @@ Scope rules:
 - prefer a separate broader artisan-machine line rather than expanding `Metal Kegs` into a catch-all machine pack
 - preserve normal machine IO behavior; power should improve throughput, availability, or constraints rather than replacing standard machine rules
 
-## Phase 5: Electronic Artisan Line (Wave 2+)
+## Phase 6: Electronic Artisan Line (Wave 2+)
 
 Once Wave 1 is stable, expand into more electronic artisan variants in additional waves rather than a single all-at-once release.
 
@@ -141,7 +163,7 @@ This is where the long-term goal of "electronic versions of all artisan machines
 - after the current core is hardened
 - after Farm Terminal is good enough to observe a larger machine ecosystem
 
-## Phase 6: Depth Layer
+## Phase 7: Depth Layer
 
 Add more system depth only after there are enough powered consumers to justify it.
 
@@ -164,7 +186,7 @@ Or equivalent shared module classes such as:
 
 This should aim for the feel of deeper machine sandbox mods without front-loading too much complexity into the early ecosystem.
 
-## Phase 7: Deeper PowerGrid Systems
+## Phase 8: Deeper PowerGrid Systems
 
 After the consumer base and terminal surfaces are stable, expand the infrastructure layer itself.
 
@@ -178,18 +200,15 @@ Examples:
 
 Depth should come from interacting systems, not just from adding more placeable objects.
 
-## Recommended Next Consumer
+## Electronic Artisan Sequencing (Deferred)
 
-If the ecosystem contract phase is in place and the current core is hardened enough for the next gameplay expansion, the best first non-keg consumer is:
+`Electronic Artisan Machines` remains active, but follow-on Wave 1 machines are intentionally deferred.
 
-- `Industrial Preserves Jar`
+Near-term sequencing:
 
-Why:
-
-- it gives fruit and vegetable processing a meaningful late-game lane
-- it complements wine rather than duplicating it
-- it broadens the artisan economy in a clean way
-- it gives `PowerGrid` more value without requiring a huge new system surface
+- keep `Industrial Preserves Jar` as the first completed/validated machine slice for this line
+- do not treat `Powered Cheese Press` as the immediate next target
+- resume Wave 1 expansion only after `Perfection Advisor` reaches a stable standalone design/product baseline
 
 ## Deferred / Optional
 

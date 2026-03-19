@@ -9,6 +9,12 @@ Define a unified machine ecosystem where your mods participate cleanly in the br
 - **Farm Terminal (`meiameiameia.FarmTerminal`)**: read-only StardewUI observability layer over PowerGrid snapshot data.
 - **FishSmoker Recipe (`meiameiameia.FishSmokerRecipe`)**: progression/balance layer (`Data/CraftingRecipes` override).
 
+## Near-Term Product Boundary Update
+
+- `Electronic Artisan Machines` remains a separate machine-family line, but expansion beyond `Industrial Preserves Jar` is deferred for now.
+- The immediate next product/design focus is a new standalone `Perfection Advisor` line (spoiler/assist, default-off).
+- `Farm Terminal` remains read-only and should not absorb full advisor ownership in v1; at most, later summary integration can be added through existing snapshot/read surfaces.
+
 ## Conceptual Topology
 
 ```text

@@ -5,6 +5,12 @@ Define the first real implementation slice for `Industrial Preserves Jar` in a w
 
 This is a structure-and-integration plan, not a runtime implementation.
 
+Sequencing note:
+
+- this plan remains the baseline for the `Industrial Preserves Jar` slice
+- follow-on `Electronic Artisan Machines` expansion is currently deferred
+- `Powered Cheese Press` is not the immediate next implementation target at this time
+
 ## Decision: Start Mod Shell Now
 
 The repo is ready for the new mod shell now. A separate planning pass is not needed before creating the project.

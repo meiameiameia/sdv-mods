@@ -13,6 +13,11 @@ For concrete first-slice project/data/runtime planning, use:
 
 - `my-mods/electronic-artisan-machines-industrial-preserves-jar-implementation-plan.md`
 
+Sequencing note:
+
+- this machine remains the first `Electronic Artisan Machines` slice
+- additional machines in this line are currently deferred while `Perfection Advisor` is the immediate design/product focus
+
 ## Machine Role In The Product Line
 
 `Industrial Preserves Jar` should be the first powered artisan machine in the family because it gives the line a clear identity immediately:
@@ -161,4 +166,4 @@ When implementation begins, start with this machine before the rest of the famil
 2. fit it to the powered-machine descriptor / registration contract
 3. add `PowerGrid` speedup integration
 4. add truthful snapshot / `ProgressText` behavior
-5. validate the full small slice before moving to `Powered Cheese Press`
+5. validate the full small slice before resuming broader `Electronic Artisan Machines` expansion

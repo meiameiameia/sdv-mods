@@ -7,6 +7,11 @@ It should stay separate from `Metal Kegs` and start with vanilla artisan machine
 
 The mod's job is to introduce late-game powered artisan throughput upgrades that fit the repo's powered-machine contract from day one.
 
+Current sequencing status:
+
+- the line remains valid
+- expansion beyond `Industrial Preserves Jar` is deferred while the new standalone `Perfection Advisor` line is the immediate design/product focus
+
 ## Product Identity
 
 - working mod name: `Electronic Artisan Machines`
@@ -37,6 +42,10 @@ Why this subset:
 - it broadens late-game artisan value beyond wine loops
 - it creates meaningful `PowerGrid` demand across crop, animal, and oil processing
 - it keeps the first implementation/test matrix manageable
+
+Sequencing note:
+
+- `Powered Cheese Press` and `Powered Oil Maker` remain Wave 1 members, but are not immediate next implementation targets right now
 
 Recommended first implementation target:
 
@@ -156,10 +165,10 @@ Do not include these in the first release:
 - live chipset installation
 - remote control behavior
 
-## Recommended First Implementation Order
+## Recommended Implementation Order (When This Line Resumes)
 
 1. `Industrial Preserves Jar`
 2. `Powered Cheese Press`
 3. `Powered Oil Maker`
 
-That order keeps the first implementation aligned with the roadmap's highest-value non-keg consumer and limits early balance and compatibility noise.
+This order remains the intended in-line sequence once `Electronic Artisan Machines` expansion resumes.
