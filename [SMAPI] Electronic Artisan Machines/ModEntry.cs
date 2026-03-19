@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Darth.ElectronicArtisanMachines.Integrations;
 using DarthMods.API.Power;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
@@ -50,6 +51,11 @@ internal sealed class ModEntry : Mod
 
     private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
     {
+        GmcmIntegration.Register(this.Helper, this.ModManifest, this.Config, () =>
+        {
+            this.Config = this.Helper.ReadConfig<ModConfig>() ?? new ModConfig();
+        }, this.SyncPowerGridConsumer);
+
         this.SyncPowerGridConsumer();
     }
 

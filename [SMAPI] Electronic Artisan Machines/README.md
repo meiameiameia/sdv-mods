@@ -27,3 +27,5 @@ Out of scope in this release:
 - `IndustrialPreservesJarPriority`
 
 If PowerGrid is not installed, the machine still works with baseline machine behavior.
+
+If [Generic Mod Config Menu](https://www.nexusmods.com/stardewvalley/mods/5098) is installed, these settings can also be edited in-game.

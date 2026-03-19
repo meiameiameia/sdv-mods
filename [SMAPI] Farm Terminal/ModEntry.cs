@@ -1,4 +1,5 @@
 using Darth.FarmTerminal.Integrations.PowerGrid;
+using Darth.FarmTerminal.Integrations;
 using Darth.FarmTerminal.UI.ViewModels;
 using DarthMods.API.Power;
 using System.IO;
@@ -40,6 +41,11 @@ internal sealed class ModEntry : Mod
 
     private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
     {
+        GmcmIntegration.Register(this.Helper, this.ModManifest, this.config, () =>
+        {
+            this.config = this.Helper.ReadConfig<ModConfig>() ?? new ModConfig();
+        });
+
         this.viewEngine = this.Helper.ModRegistry.GetApi<IViewEngine>(StardewUiUniqueId);
         if (this.viewEngine == null)
         {

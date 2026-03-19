@@ -50,6 +50,27 @@ internal static class GmcmIntegration
             () => "If enabled, Metal Kegs registers power-consumer traits when PowerGrid is installed.");
 
         gmcmApi.AddNumberOption(manifest,
+            () => config.MetalCaskEUPerMinute,
+            value => config.MetalCaskEUPerMinute = value,
+            () => "Metal Cask EU/min",
+            () => "EU consumed per in-game minute while Metal Cask receives PowerGrid acceleration.",
+            min: 0, max: 40, interval: 1);
+
+        gmcmApi.AddNumberOption(manifest,
+            () => (int)(config.MetalCaskMaxSpeedup * 100),
+            value => config.MetalCaskMaxSpeedup = value / 100f,
+            () => "Metal Cask Speedup %",
+            () => "Maximum PowerGrid speedup percentage for Metal Cask.",
+            min: 0, max: 100, interval: 5);
+
+        gmcmApi.AddNumberOption(manifest,
+            () => config.MetalCaskPriority,
+            value => config.MetalCaskPriority = value,
+            () => "Metal Cask Priority",
+            () => "Lower values are allocated power first.",
+            min: 0, max: 100, interval: 1);
+
+        gmcmApi.AddNumberOption(manifest,
             () => config.MetalKegEUPerMinute,
             value => config.MetalKegEUPerMinute = value,
             () => "Metal Keg EU/min",

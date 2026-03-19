@@ -4,10 +4,10 @@
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>1.0.22</Version>
-    <AssemblyVersion>1.0.22.0</AssemblyVersion>
-    <FileVersion>1.0.22.0</FileVersion>
-    <InformationalVersion>1.0.22</InformationalVersion>
+    <Version>1.0.23</Version>
+    <AssemblyVersion>1.0.23.0</AssemblyVersion>
+    <FileVersion>1.0.23.0</FileVersion>
+    <InformationalVersion>1.0.23</InformationalVersion>
     <AssemblyName>MetalKegs</AssemblyName>
     <RootNamespace>Darth.MetalKegs</RootNamespace>
     <EnableModDeploy>false</EnableModDeploy>

@@ -1,7 +1,7 @@
 {
   "Name": "[SMAPI] Farm Terminal",
   "Author": "darth",
-  "Version": "1.0.6",
+  "Version": "1.0.7",
   "Description": "Read-only StardewUI dashboard for PowerGrid network snapshots.",
   "UniqueID": "meiameiameia.FarmTerminal",
   "EntryDll": "FarmTerminal.dll",
