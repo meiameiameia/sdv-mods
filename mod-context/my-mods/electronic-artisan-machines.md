@@ -41,6 +41,7 @@ Why this subset:
 Recommended first implementation target:
 
 - `Industrial Preserves Jar`
+- implementation-prep brief: `my-mods/electronic-artisan-machines-industrial-preserves-jar.md`
 
 ## Baseline Powered Behavior
 
