@@ -41,4 +41,4 @@ Not allowed in v1:
 
 - roadmap sequencing: `roadmap.md` (Phase 4)
 - ecosystem boundary: `architecture.md`
-- this brief is intentionally short until the first concrete advisor implementation brief is created
+- implementation prep brief: `my-mods/perfection-advisor-implementation-plan.md`
