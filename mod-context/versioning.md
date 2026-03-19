@@ -10,6 +10,7 @@ This repository keeps versions independent per deployable mod.
 - `[SMAPI] Metal Kegs/manifest.json`
 - `[SMAPI] Farm Terminal/manifest.json`
 - `[SMAPI] Electronic Artisan Machines/manifest.json`
+- `[SMAPI] Perfection Advisor/manifest.json`
 - `[CP] FishSmoker Recipe/manifest.json`
 
 ## C# Version Sync
@@ -27,6 +28,7 @@ Projects:
 - `[SMAPI] Metal Kegs/MetalKegs.csproj`
 - `[SMAPI] Farm Terminal/FarmTerminal.csproj`
 - `[SMAPI] Electronic Artisan Machines/ElectronicArtisanMachines.csproj`
+- `[SMAPI] Perfection Advisor/PerfectionAdvisor.csproj`
 - `shared/DarthMods.API/DarthMods.API.csproj`
 
 `DarthMods.API` is not a deployable mod zip target, but it stays explicit and aligned when C# mods are packaged.
@@ -67,6 +69,8 @@ Zip archive directory:
   - `.\scripts\release-mod.ps1 -Mods PowerGrid,MetalKegs -Bump patch`
 - Package Electronic Artisan Machines without changing its current version:
   - `.\scripts\release-mod.ps1 -Mods ElectronicArtisanMachines -Bump none`
+- Package Perfection Advisor without changing its current version:
+  - `.\scripts\release-mod.ps1 -Mods PerfectionAdvisor -Bump none`
 - Package Farm Terminal without changing its current version:
   - `.\scripts\release-mod.ps1 -Mods FarmTerminal -Bump none`
 

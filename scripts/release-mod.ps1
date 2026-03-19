@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("PowerGrid", "MetalKegs", "FishSmoker", "FarmTerminal", "ElectronicArtisanMachines")]
+    [ValidateSet("PowerGrid", "MetalKegs", "FishSmoker", "FarmTerminal", "ElectronicArtisanMachines", "PerfectionAdvisor")]
     [string[]]$Mods,
 
     [ValidateSet("none", "patch", "minor", "major")]
@@ -89,6 +89,15 @@ function Resolve-ModDefinition([string]$repoRoot, [string]$modName) {
                 ModDir = Join-Path $repoRoot "[SMAPI] Electronic Artisan Machines"
                 ManifestPath = Join-Path $repoRoot "[SMAPI] Electronic Artisan Machines\manifest.json"
                 CsprojPath = Join-Path $repoRoot "[SMAPI] Electronic Artisan Machines\ElectronicArtisanMachines.csproj"
+            }
+        }
+        "PerfectionAdvisor" {
+            return @{
+                Name = "PerfectionAdvisor"
+                FolderName = "[SMAPI] Perfection Advisor"
+                ModDir = Join-Path $repoRoot "[SMAPI] Perfection Advisor"
+                ManifestPath = Join-Path $repoRoot "[SMAPI] Perfection Advisor\manifest.json"
+                CsprojPath = Join-Path $repoRoot "[SMAPI] Perfection Advisor\PerfectionAdvisor.csproj"
             }
         }
         default {

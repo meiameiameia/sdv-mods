@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <InformationalVersion>1.0.0</InformationalVersion>
+    <AssemblyName>PerfectionAdvisor</AssemblyName>
+    <RootNamespace>Darth.PerfectionAdvisor</RootNamespace>
+    <EnableModDeploy>false</EnableModDeploy>
+    <EnableModZip>false</EnableModZip>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.4.0" PrivateAssets="all" />
+  </ItemGroup>
+  <Target Name="CopyBuildOutputsToModRoot" AfterTargets="Build">
+    <Copy SourceFiles="$(TargetDir)PerfectionAdvisor.dll" DestinationFiles="$(MSBuildProjectDirectory)\PerfectionAdvisor.dll" />
+    <Copy SourceFiles="$(TargetDir)PerfectionAdvisor.deps.json" DestinationFiles="$(MSBuildProjectDirectory)\PerfectionAdvisor.deps.json" Condition="Exists('$(TargetDir)PerfectionAdvisor.deps.json')" />
+  </Target>
+</Project>
