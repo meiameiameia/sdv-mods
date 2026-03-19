@@ -1,0 +1,11 @@
+{
+  "Name": "[SMAPI] Electronic Artisan Machines",
+  "Author": "darth",
+  "Version": "1.0.0",
+  "Description": "Adds powered artisan machine variants. First release includes Industrial Preserves Jar.",
+  "UniqueID": "meiameiameia.ElectronicArtisanMachines",
+  "EntryDll": "ElectronicArtisanMachines.dll",
+  "MinimumApiVersion": "4.0.0",
+  "UpdateKeys": [],
+  "Dependencies": []
+}

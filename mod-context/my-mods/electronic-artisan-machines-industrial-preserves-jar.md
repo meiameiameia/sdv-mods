@@ -9,6 +9,10 @@ It defines the intended first machine in the line:
 
 This note is a bridge from product direction into later implementation. It is not a runtime spec and it does not lock final balance numbers.
 
+For concrete first-slice project/data/runtime planning, use:
+
+- `my-mods/electronic-artisan-machines-industrial-preserves-jar-implementation-plan.md`
+
 ## Machine Role In The Product Line
 
 `Industrial Preserves Jar` should be the first powered artisan machine in the family because it gives the line a clear identity immediately:

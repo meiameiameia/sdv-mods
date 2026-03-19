@@ -1,0 +1,5 @@
+Drop `IndustrialPreservesJar.png` here to override the fallback vanilla preserves-jar texture.
+
+Optional future state sprites (not required for the first implementation slice):
+- `IndustrialPreservesJar__unpowered.png`
+- `IndustrialPreservesJar__powered.png`
