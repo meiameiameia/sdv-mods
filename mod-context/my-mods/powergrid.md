@@ -22,10 +22,10 @@
 - `ConduitManager`: cross-location network links.
 
 ### Integration Surfaces
-- Soft built-in consumer support for Metal Kegs via qualified IDs.
 - Public API: `IPowerGridApi` / `PowerGridApi`.
 - Telemetry contract: writes `darth.PowerGrid/*` keys to object `modData` and intentionally keeps that prefix stable for compatibility.
 - GMCM integration is implemented (`GmcmIntegration.cs`).
+- Directional contract: consumer registration should be machine-mod-owned. `PowerGrid` should consume traits/registration and generic telemetry rather than owning hard-coded machine-family knowledge long-term.
 
 ### UI Layer
 - `PowerTabMenu` (global overview + conduit linking).

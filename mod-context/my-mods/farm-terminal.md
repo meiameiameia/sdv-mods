@@ -18,6 +18,7 @@
   - generator snapshots,
   - battery snapshots.
 - Does not write back into PowerGrid or own any simulation state.
+- `ProgressText` should be treated as the canonical human-readable progress/status surface for machine progress in terminal views.
 
 ### Modules
 - `Overview`: high-level summary cards.
@@ -35,3 +36,4 @@
 - Add bounded auto-refresh on the same cadence as PowerGrid simulation ticks if the manual refresh model proves too stale.
 - Add location-scoped drill-downs once broader multi-system terminal modules exist.
 - Add dedicated tests or smoke docs once the UI shell has been runtime-smoked in-game.
+- Keep future terminal modules read-focused by trusting snapshot semantics first, especially `ProgressText`, instead of re-deriving machine progress ad hoc.

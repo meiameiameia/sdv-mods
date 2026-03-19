@@ -26,6 +26,11 @@
   - `Data/CraftingRecipes`
   - `Data/Machines`
 
+## Repo Contract Notes
+
+- `powered-machine-contract.md`: minimum ownership and registration rules for new powered machine-family mods.
+- `powered-machine-vocabulary.md`: lightweight descriptor and telemetry vocabulary for powered machines.
+
 ### FishSmoker Recipe
 - No machine runtime changes.
 - Only edits Fish Smoker crafting recipe input requirements.
@@ -43,3 +48,5 @@ This increases the importance of defensive integration style:
 - soft dependency checks,
 - no hard-coded assumptions on external machine keys,
 - explicit conflict checking on `Data/Machines` and `Data/CraftingRecipes`.
+
+For repo-owned powered machine mods, also use `testing/powered-machine-family-validation.md`.

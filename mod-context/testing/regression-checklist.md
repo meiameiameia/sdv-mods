@@ -41,3 +41,5 @@ If a change alters:
 then update `mod-context/decisions/` or `mod-context/testing/` before closing the task.
 
 If the change adds or modifies PowerGrid query/snapshot behavior, also run the focused checks in `testing/powergrid-query-api-validation.md`.
+
+If the change adds or materially changes a powered machine-family mod, also run `testing/powered-machine-family-validation.md`.
