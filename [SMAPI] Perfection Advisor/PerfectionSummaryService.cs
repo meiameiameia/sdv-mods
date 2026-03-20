@@ -7,6 +7,16 @@ namespace Darth.PerfectionAdvisor;
 
 internal sealed class PerfectionSummaryService
 {
+    private sealed class SeasonalCropCandidate
+    {
+        public string HarvestItemId { get; init; } = string.Empty;
+        public string SeedItemId { get; init; } = string.Empty;
+        public string HarvestName { get; init; } = string.Empty;
+        public string SeedName { get; init; } = string.Empty;
+        public int DaysToMature { get; init; }
+        public IReadOnlyList<Season> Seasons { get; init; } = Array.Empty<Season>();
+    }
+
     private readonly IModHelper helper;
 
     public PerfectionSummaryService(IModHelper helper)
@@ -23,6 +33,7 @@ internal sealed class PerfectionSummaryService
                 new[] { "Load a save to view advisor data." },
                 new[] { "No progress data available." },
                 new[] { "No blocker data available." },
+                new[] { "No seasonal data available." },
                 new[] { "Detailed spoilers are disabled." });
         }
 
@@ -96,11 +107,14 @@ internal sealed class PerfectionSummaryService
             detailLines.Add("Enable 'EnableDetailedSpoilers' and disable 'ShowOnlyCategorySummary' to view detail examples.");
         }
 
+        List<string> seasonalLines = this.BuildSeasonalCropLines(player, detailsEnabled);
+
         return new PerfectionAdvisorSnapshot(
             detailsEnabled ? "Detailed spoilers enabled" : "Summary-only mode",
             overviewLines,
             progressLines,
             blockerLines,
+            seasonalLines,
             detailLines);
     }
 
@@ -414,5 +428,173 @@ internal sealed class PerfectionSummaryService
 
         PropertyInfo? prop = source.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         return prop?.GetValue(source);
+    }
+
+    private static string ResolveObjectDisplayName(string objectItemId)
+    {
+        string qualifiedItemId = "(O)" + objectItemId;
+
+        try
+        {
+            Item created = ItemRegistry.Create(qualifiedItemId, allowNull: false);
+            if (!string.IsNullOrWhiteSpace(created.DisplayName))
+                return created.DisplayName;
+        }
+        catch
+        {
+            // Fall back to parsed item data.
+        }
+
+        try
+        {
+            var data = ItemRegistry.GetDataOrErrorItem(qualifiedItemId);
+            if (!string.IsNullOrWhiteSpace(data.DisplayName))
+                return data.DisplayName;
+        }
+        catch
+        {
+            // Final fallback below.
+        }
+
+        return objectItemId;
+    }
+
+    private List<string> BuildSeasonalCropLines(Farmer player, bool detailsEnabled)
+    {
+        List<string> lines = new();
+
+        try
+        {
+            Dictionary<string, StardewValley.GameData.Crops.CropData> cropDataBySeedId =
+                this.helper.GameContent.Load<Dictionary<string, StardewValley.GameData.Crops.CropData>>("Data/Crops");
+            Dictionary<string, StardewValley.GameData.Objects.ObjectData> objectDataById =
+                this.helper.GameContent.Load<Dictionary<string, StardewValley.GameData.Objects.ObjectData>>("Data/Objects");
+
+            Dictionary<string, SeasonalCropCandidate> bestByHarvestId = new(StringComparer.OrdinalIgnoreCase);
+            foreach (KeyValuePair<string, StardewValley.GameData.Crops.CropData> pair in cropDataBySeedId)
+            {
+                string seedItemId = pair.Key;
+                StardewValley.GameData.Crops.CropData cropData = pair.Value;
+
+                if (string.IsNullOrWhiteSpace(cropData.HarvestItemId))
+                    continue;
+                if (!objectDataById.TryGetValue(cropData.HarvestItemId, out StardewValley.GameData.Objects.ObjectData? harvestObjectData))
+                    continue;
+                if (!StardewValley.Object.isPotentialBasicShipped(cropData.HarvestItemId, harvestObjectData.Category, harvestObjectData.Type))
+                    continue;
+                if (player.basicShipped.ContainsKey(cropData.HarvestItemId))
+                    continue;
+
+                int daysToMature = cropData.DaysInPhase?.Where(days => days > 0).Sum() ?? 0;
+                if (daysToMature <= 0)
+                    continue;
+
+                IReadOnlyList<Season> seasons = cropData.Seasons?.ToArray() ?? Array.Empty<Season>();
+                string harvestName = ResolveObjectDisplayName(cropData.HarvestItemId);
+                string seedName = ResolveObjectDisplayName(seedItemId);
+
+                SeasonalCropCandidate candidate = new()
+                {
+                    HarvestItemId = cropData.HarvestItemId,
+                    SeedItemId = seedItemId,
+                    HarvestName = harvestName,
+                    SeedName = seedName,
+                    DaysToMature = daysToMature,
+                    Seasons = seasons
+                };
+
+                if (!bestByHarvestId.TryGetValue(candidate.HarvestItemId, out SeasonalCropCandidate? existing)
+                    || candidate.DaysToMature < existing.DaysToMature)
+                {
+                    bestByHarvestId[candidate.HarvestItemId] = candidate;
+                }
+            }
+
+            Season currentSeason = Game1.season;
+            int dayOfMonth = Game1.dayOfMonth;
+            int growthDaysLeftThisSeason = Math.Max(0, 28 - dayOfMonth);
+
+            List<SeasonalCropCandidate> missingCandidates = bestByHarvestId.Values
+                .OrderBy(candidate => candidate.HarvestName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            List<SeasonalCropCandidate> viableNow = new();
+            List<SeasonalCropCandidate> tooLateThisSeason = new();
+            List<SeasonalCropCandidate> notThisSeason = new();
+
+            foreach (SeasonalCropCandidate candidate in missingCandidates)
+            {
+                bool growsThisSeason = candidate.Seasons.Count == 0 || candidate.Seasons.Contains(currentSeason);
+                if (!growsThisSeason)
+                {
+                    notThisSeason.Add(candidate);
+                    continue;
+                }
+
+                if (candidate.DaysToMature <= growthDaysLeftThisSeason)
+                    viableNow.Add(candidate);
+                else
+                    tooLateThisSeason.Add(candidate);
+            }
+
+            lines.Add($"Season: {currentSeason} Day {dayOfMonth} (growth days left: {growthDaysLeftThisSeason})");
+            lines.Add($"Missing shippable crop outputs: {missingCandidates.Count}");
+            lines.Add($"Plant now + can mature this season: {viableNow.Count}");
+            lines.Add($"Plantable now but too late this season: {tooLateThisSeason.Count}");
+            lines.Add($"Not growable this season: {notThisSeason.Count}");
+
+            if (!detailsEnabled)
+            {
+                lines.Add(string.Empty);
+                lines.Add("Detailed crop names are hidden in summary-only mode.");
+                lines.Add("Enable detailed spoilers and disable category-summary lock to see exact crop recommendations.");
+                return lines;
+            }
+
+            AddSeasonalDetail(lines, "Plant now (viable this season)", viableNow.Take(8), includeTimeLeft: false, growthDaysLeftThisSeason);
+            AddSeasonalDetail(lines, "Too late this season", tooLateThisSeason.Take(8), includeTimeLeft: true, growthDaysLeftThisSeason);
+            AddSeasonalDetail(lines, "Not in current season", notThisSeason.Take(8), includeTimeLeft: false, growthDaysLeftThisSeason);
+        }
+        catch
+        {
+            lines.Add("Seasonal crop viability data unavailable.");
+            lines.Add("Could not load crop/object game data for this save.");
+        }
+
+        return lines;
+    }
+
+    private static void AddSeasonalDetail(
+        List<string> lines,
+        string title,
+        IEnumerable<SeasonalCropCandidate> candidates,
+        bool includeTimeLeft,
+        int growthDaysLeftThisSeason)
+    {
+        SeasonalCropCandidate[] values = candidates.ToArray();
+        lines.Add(string.Empty);
+        lines.Add(title);
+
+        if (values.Length == 0)
+        {
+            lines.Add("- none");
+            return;
+        }
+
+        foreach (SeasonalCropCandidate candidate in values)
+        {
+            string seasonText = candidate.Seasons.Count == 0
+                ? "any season"
+                : string.Join("/", candidate.Seasons.Select(season => season.ToString()));
+
+            if (includeTimeLeft)
+            {
+                lines.Add($"- {candidate.HarvestName} ({candidate.SeedName}) needs {candidate.DaysToMature}d, {growthDaysLeftThisSeason}d left");
+            }
+            else
+            {
+                lines.Add($"- {candidate.HarvestName} ({candidate.SeedName}) {candidate.DaysToMature}d ({seasonText})");
+            }
+        }
     }
 }
