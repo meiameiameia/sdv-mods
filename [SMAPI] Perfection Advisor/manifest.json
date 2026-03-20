@@ -1,7 +1,7 @@
 {
   "Name": "[SMAPI] Perfection Advisor",
   "Author": "darth",
-  "Version": "1.0.0",
+  "Version": "1.0.3",
   "Description": "Standalone read-only perfection planning helper. Spoiler assist is disabled by default.",
   "UniqueID": "meiameiameia.PerfectionAdvisor",
   "EntryDll": "PerfectionAdvisor.dll",

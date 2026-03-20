@@ -1,0 +1,24 @@
+namespace Darth.PerfectionAdvisor;
+
+internal sealed class PerfectionAdvisorSnapshot
+{
+    public string ModeLabel { get; }
+    public IReadOnlyList<string> OverviewLines { get; }
+    public IReadOnlyList<string> ProgressLines { get; }
+    public IReadOnlyList<string> BlockerLines { get; }
+    public IReadOnlyList<string> DetailLines { get; }
+
+    public PerfectionAdvisorSnapshot(
+        string modeLabel,
+        IReadOnlyList<string> overviewLines,
+        IReadOnlyList<string> progressLines,
+        IReadOnlyList<string> blockerLines,
+        IReadOnlyList<string> detailLines)
+    {
+        this.ModeLabel = modeLabel;
+        this.OverviewLines = overviewLines;
+        this.ProgressLines = progressLines;
+        this.BlockerLines = blockerLines;
+        this.DetailLines = detailLines;
+    }
+}

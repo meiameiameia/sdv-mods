@@ -14,24 +14,25 @@ internal sealed class PerfectionSummaryService
         this.helper = helper;
     }
 
-    public string BuildSummary(ModConfig config)
+    public PerfectionAdvisorSnapshot BuildSnapshot(ModConfig config)
     {
         if (!Context.IsWorldReady)
-            return "No save is loaded.";
+        {
+            return new PerfectionAdvisorSnapshot(
+                "No save loaded",
+                new[] { "Load a save to view advisor data." },
+                new[] { "No progress data available." },
+                new[] { "No blocker data available." },
+                new[] { "Detailed spoilers are disabled." });
+        }
 
         Farmer player = Game1.player;
-        List<string> lines = new()
-        {
-            "Perfection Advisor (v1)",
-            config.EnableDetailedSpoilers && !config.ShowOnlyCategorySummary
-                ? "Mode: detailed spoilers enabled"
-                : "Mode: summary-only (spoilers hidden)"
-        };
+        bool detailsEnabled = config.EnableDetailedSpoilers && !config.ShowOnlyCategorySummary;
 
-        int shippedUnique = CountPositiveValues(player.basicShipped);
-        int fishCaught = CountPositiveValues(player.fishCaught);
-        int cookedRecipes = CountPositiveValues(player.cookingRecipes);
-        int craftedRecipes = CountPositiveValues(player.craftingRecipes);
+        (int shippedUnique, int shippedTotal) = this.GetCanonicalShippedProgress(player);
+        int fishCaught = CountCollectionEntries(player.fishCaught);
+        int cookedRecipes = CountPlayerProgressEntries(player, "recipesCooked", player.cookingRecipes);
+        int craftedRecipes = CountPlayerProgressEntries(player, "recipesCrafted", player.craftingRecipes);
         int villagersAtEightHearts = CountFriendshipsAtLeastHearts(player.friendshipData, 8);
         int villagersAtTenHearts = CountFriendshipsAtLeastHearts(player.friendshipData, 10);
 
@@ -39,52 +40,68 @@ internal sealed class PerfectionSummaryService
         int? totalCookingRecipes = this.TryLoadCount("Data/CookingRecipes");
         int? totalCraftingRecipes = this.TryLoadCount("Data/CraftingRecipes");
 
-        lines.Add(string.Empty);
-        lines.Add("Progress");
-        lines.Add($"- Shipped items: {shippedUnique} unique");
-        lines.Add(FormatProgress("Fish caught", fishCaught, totalFish));
-        lines.Add(FormatProgress("Cooking recipes made", cookedRecipes, totalCookingRecipes));
-        lines.Add(FormatProgress("Crafting recipes made", craftedRecipes, totalCraftingRecipes));
-        lines.Add($"- Friendships 8+ hearts: {villagersAtEightHearts}");
-        lines.Add($"- Friendships 10+ hearts: {villagersAtTenHearts}");
+        List<string> overviewLines = new()
+        {
+            detailsEnabled ? "Detailed spoiler mode is ON." : "Summary-only mode is ON.",
+            config.ShowOnlyCategorySummary ? "Category summary lock is ON." : "Category summary lock is OFF.",
+            "Shipped progress mirrors Collections/perfection shipped-item semantics.",
+            "Read-only advisor. No automation or gameplay control actions."
+        };
+
+        List<string> progressLines = new()
+        {
+            FormatProgress("Shipped items", shippedUnique, shippedTotal, suffix: " unique"),
+            FormatProgress("Fish caught", fishCaught, totalFish),
+            FormatProgress("Cooking recipes made", cookedRecipes, totalCookingRecipes),
+            FormatProgress("Crafting recipes made", craftedRecipes, totalCraftingRecipes),
+            $"Friendships at 8+ hearts: {villagersAtEightHearts}",
+            $"Friendships at 10+ hearts: {villagersAtTenHearts}"
+        };
 
         List<(string Label, int Remaining)> blockers = new();
         AddBlockerIfKnown(blockers, "Fish collection", fishCaught, totalFish);
         AddBlockerIfKnown(blockers, "Cooking recipes", cookedRecipes, totalCookingRecipes);
         AddBlockerIfKnown(blockers, "Crafting recipes", craftedRecipes, totalCraftingRecipes);
 
-        lines.Add(string.Empty);
-        lines.Add("Top blockers");
-        if (blockers.Count == 0)
+        List<string> blockerLines = new();
+        List<(string Label, int Remaining)> topBlockers = blockers
+            .Where(p => p.Remaining > 0)
+            .OrderByDescending(p => p.Remaining)
+            .Take(3)
+            .ToList();
+
+        if (topBlockers.Count == 0)
         {
-            lines.Add("- No blocker estimate available yet.");
+            blockerLines.Add(blockers.Count == 0
+                ? "No blocker estimate available yet."
+                : "All tracked blocker categories are complete.");
         }
         else
         {
-            foreach ((string label, int remaining) in blockers
-                         .Where(p => p.Remaining > 0)
-                         .OrderByDescending(p => p.Remaining)
-                         .Take(3))
-            {
-                lines.Add($"- {label}: {remaining} remaining");
-            }
-
-            if (!blockers.Any(p => p.Remaining > 0))
-                lines.Add("- All tracked categories are complete.");
+            foreach ((string label, int remaining) in topBlockers)
+                blockerLines.Add($"{label}: {remaining} remaining");
         }
 
-        if (config.EnableDetailedSpoilers && !config.ShowOnlyCategorySummary)
+        List<string> detailLines = new();
+        if (detailsEnabled)
         {
-            AddDetailIfAny(lines, "Missing fish examples", this.GetMissingFishNames(maxItems: 3));
-            AddDetailIfAny(lines, "Missing cooking recipe examples", this.GetMissingCookingRecipeNames(maxItems: 3));
+            AddDetailIfAny(detailLines, "Missing fish examples", this.GetMissingFishNames(maxItems: 5));
+            AddDetailIfAny(detailLines, "Missing cooking recipe examples", this.GetMissingCookingRecipeNames(maxItems: 5));
+            if (detailLines.Count == 0)
+                detailLines.Add("No detailed spoiler items available right now.");
         }
         else
         {
-            lines.Add(string.Empty);
-            lines.Add("Detailed spoiler hints are disabled.");
+            detailLines.Add("Detailed spoiler hints are disabled.");
+            detailLines.Add("Enable 'EnableDetailedSpoilers' and disable 'ShowOnlyCategorySummary' to view detail examples.");
         }
 
-        return string.Join(Environment.NewLine, lines);
+        return new PerfectionAdvisorSnapshot(
+            detailsEnabled ? "Detailed spoilers enabled" : "Summary-only mode",
+            overviewLines,
+            progressLines,
+            blockerLines,
+            detailLines);
     }
 
     private static int CountPositiveValues(object? source)
@@ -97,6 +114,71 @@ internal sealed class PerfectionSummaryService
         }
 
         return count;
+    }
+
+    private static int CountCollectionEntries(object? source)
+    {
+        if (source == null)
+            return 0;
+
+        PropertyInfo? lengthProp = source.GetType().GetProperty("Length", BindingFlags.Instance | BindingFlags.Public);
+        if (lengthProp?.GetValue(source) is int lengthValue)
+            return lengthValue;
+
+        if (source is ICollection collection)
+            return collection.Count;
+
+        PropertyInfo? countProp = source.GetType().GetProperty("Count", BindingFlags.Instance | BindingFlags.Public);
+        if (countProp?.GetValue(source) is int countValue)
+            return countValue;
+
+        int count = 0;
+        foreach (KeyValuePair<string, object?> _ in EnumerateEntries(source))
+            count++;
+
+        return count;
+    }
+
+    private static int CountPlayerProgressEntries(Farmer player, string canonicalPropertyName, object fallbackSource)
+    {
+        object? canonical = GetPropertyValue(player, canonicalPropertyName);
+        if (canonical != null)
+            return CountCollectionEntries(canonical);
+
+        return CountPositiveValues(fallbackSource);
+    }
+
+    private (int ShippedUnique, int TotalShippable) GetCanonicalShippedProgress(Farmer player)
+    {
+        try
+        {
+            Dictionary<string, StardewValley.GameData.Objects.ObjectData> objectDataById =
+                this.helper.GameContent.Load<Dictionary<string, StardewValley.GameData.Objects.ObjectData>>("Data/Objects");
+
+            int shippedUnique = 0;
+            int totalShippable = 0;
+            foreach (KeyValuePair<string, StardewValley.GameData.Objects.ObjectData> pair in objectDataById)
+            {
+                string itemId = pair.Key;
+                StardewValley.GameData.Objects.ObjectData itemData = pair.Value;
+
+                if (itemData.Category == -7 || itemData.Category == -2)
+                    continue;
+
+                if (!StardewValley.Object.isPotentialBasicShipped(itemId, itemData.Category, itemData.Type))
+                    continue;
+
+                totalShippable++;
+                if (player.basicShipped.ContainsKey(itemId))
+                    shippedUnique++;
+            }
+
+            return (shippedUnique, totalShippable);
+        }
+        catch
+        {
+            return (CountCollectionEntries(player.basicShipped), 0);
+        }
     }
 
     private static int CountFriendshipsAtLeastHearts(object? source, int hearts)
@@ -178,8 +260,13 @@ internal sealed class PerfectionSummaryService
     private static string FormatProgress(string label, int current, int? total)
     {
         return total.HasValue
-            ? $"- {label}: {current}/{total.Value}"
-            : $"- {label}: {current}";
+            ? $"{label}: {current}/{total.Value}"
+            : $"{label}: {current}";
+    }
+
+    private static string FormatProgress(string label, int current, int total, string suffix)
+    {
+        return $"{label}: {current}/{total}{suffix}";
     }
 
     private static void AddBlockerIfKnown(List<(string Label, int Remaining)> blockers, string label, int current, int? total)
@@ -196,10 +283,10 @@ internal sealed class PerfectionSummaryService
         if (values.Length == 0)
             return;
 
-        lines.Add(string.Empty);
         lines.Add(title);
         foreach (string value in values)
             lines.Add($"- {value}");
+        lines.Add(string.Empty);
     }
 
     private static HashSet<string> GetPositiveKeys(object? source)
@@ -318,5 +405,14 @@ internal sealed class PerfectionSummaryService
             long longValue => (int)longValue,
             _ => null
         };
+    }
+
+    private static object? GetPropertyValue(object? source, string propertyName)
+    {
+        if (source == null)
+            return null;
+
+        PropertyInfo? prop = source.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        return prop?.GetValue(source);
     }
 }

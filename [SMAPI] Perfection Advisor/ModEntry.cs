@@ -1,8 +1,8 @@
 using Darth.PerfectionAdvisor.Integrations;
+using Darth.PerfectionAdvisor.UI;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
-using StardewValley.Menus;
 
 namespace Darth.PerfectionAdvisor;
 
@@ -76,7 +76,7 @@ internal sealed class ModEntry : Mod
             return;
         }
 
-        string summaryText = this.summaryService.BuildSummary(this.config);
-        Game1.activeClickableMenu = new DialogueBox(summaryText);
+        PerfectionAdvisorSnapshot snapshot = this.summaryService.BuildSnapshot(this.config);
+        Game1.activeClickableMenu = new PerfectionAdvisorMenu(snapshot);
     }
 }

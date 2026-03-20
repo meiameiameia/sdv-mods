@@ -4,7 +4,8 @@ Standalone read-only completion/perfection assistant.
 
 ## v1 Slice
 
-- Standalone summary UI entry point (`perfection_advisor_open` or configured keybind).
+- Standalone tabbed advisor menu (`perfection_advisor_open` or configured keybind).
+- Grouped sections: `Overview`, `Progress`, `Blockers`, `Details`.
 - Advisor is disabled by default.
 - Spoiler details are disabled by default.
 - Read-only progress summary only (no control/automation behavior).
