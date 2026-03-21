@@ -6,6 +6,7 @@ internal sealed class PerfectionAdvisorSnapshot
     public IReadOnlyList<string> OverviewLines { get; }
     public IReadOnlyList<string> ProgressLines { get; }
     public IReadOnlyList<string> BlockerLines { get; }
+    public IReadOnlyList<string> FriendshipLines { get; }
     public IReadOnlyList<string> SeasonalLines { get; }
     public IReadOnlyList<string> DetailLines { get; }
 
@@ -14,6 +15,7 @@ internal sealed class PerfectionAdvisorSnapshot
         IReadOnlyList<string> overviewLines,
         IReadOnlyList<string> progressLines,
         IReadOnlyList<string> blockerLines,
+        IReadOnlyList<string> friendshipLines,
         IReadOnlyList<string> seasonalLines,
         IReadOnlyList<string> detailLines)
     {
@@ -21,6 +23,7 @@ internal sealed class PerfectionAdvisorSnapshot
         this.OverviewLines = overviewLines;
         this.ProgressLines = progressLines;
         this.BlockerLines = blockerLines;
+        this.FriendshipLines = friendshipLines;
         this.SeasonalLines = seasonalLines;
         this.DetailLines = detailLines;
     }

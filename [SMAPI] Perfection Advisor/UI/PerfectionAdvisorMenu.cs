@@ -37,6 +37,7 @@ internal sealed class PerfectionAdvisorMenu : IClickableMenu
             new() { Name = "Overview", Lines = snapshot.OverviewLines },
             new() { Name = "Progress", Lines = snapshot.ProgressLines },
             new() { Name = "Blockers", Lines = snapshot.BlockerLines },
+            new() { Name = "Friendship", Lines = snapshot.FriendshipLines },
             new() { Name = "Seasonal", Lines = snapshot.SeasonalLines },
             new() { Name = "Details", Lines = snapshot.DetailLines }
         };
@@ -189,8 +190,7 @@ internal sealed class PerfectionAdvisorMenu : IClickableMenu
         for (int i = scroll; i < end; i++)
         {
             string line = wrappedLines[i];
-            Color color = line.StartsWith("-") ? new Color(45, 70, 105) : Color.Black;
-            b.DrawString(Game1.smallFont, line, new Vector2(this.contentArea.X + 14, y), color);
+            b.DrawString(Game1.smallFont, line, new Vector2(this.contentArea.X + 14, y), Color.Black);
             y += this.ContentLineHeight;
         }
 

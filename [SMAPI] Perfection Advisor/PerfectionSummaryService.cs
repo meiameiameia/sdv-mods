@@ -17,7 +17,19 @@ internal sealed class PerfectionSummaryService
         public IReadOnlyList<Season> Seasons { get; init; } = Array.Empty<Season>();
     }
 
+    private sealed class FriendshipTargetStatus
+    {
+        public NPC Npc { get; init; } = null!;
+        public string NpcName { get; init; } = string.Empty;
+        public int CurrentHearts { get; init; }
+        public int TargetHearts { get; init; }
+        public int HeartsRemaining { get; init; }
+    }
+
     private readonly IModHelper helper;
+    private readonly Dictionary<string, string> giftHintByNpcName = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly int GiftTasteLoveCode = GetNpcGiftTasteCode("gift_taste_love", fallback: 0);
+    private static readonly int GiftTasteLikeCode = GetNpcGiftTasteCode("gift_taste_like", fallback: 2);
 
     public PerfectionSummaryService(IModHelper helper)
     {
@@ -33,6 +45,7 @@ internal sealed class PerfectionSummaryService
                 new[] { "Load a save to view advisor data." },
                 new[] { "No progress data available." },
                 new[] { "No blocker data available." },
+                new[] { "No friendship data available." },
                 new[] { "No seasonal data available." },
                 new[] { "Detailed spoilers are disabled." });
         }
@@ -44,8 +57,7 @@ internal sealed class PerfectionSummaryService
         int fishCaught = CountCollectionEntries(player.fishCaught);
         int cookedRecipes = CountPlayerProgressEntries(player, "recipesCooked", player.cookingRecipes);
         int craftedRecipes = CountPlayerProgressEntries(player, "recipesCrafted", player.craftingRecipes);
-        int villagersAtEightHearts = CountFriendshipsAtLeastHearts(player.friendshipData, 8);
-        int villagersAtTenHearts = CountFriendshipsAtLeastHearts(player.friendshipData, 10);
+        List<string> friendshipLines = this.BuildFriendshipLines(player, detailsEnabled, out int completeFriendshipTargets, out int totalFriendshipTargets, out int totalHeartsRemaining);
 
         int? totalFish = this.TryLoadCount("Data/Fish");
         int? totalCookingRecipes = this.TryLoadCount("Data/CookingRecipes");
@@ -65,8 +77,8 @@ internal sealed class PerfectionSummaryService
             FormatProgress("Fish caught", fishCaught, totalFish),
             FormatProgress("Cooking recipes made", cookedRecipes, totalCookingRecipes),
             FormatProgress("Crafting recipes made", craftedRecipes, totalCraftingRecipes),
-            $"Friendships at 8+ hearts: {villagersAtEightHearts}",
-            $"Friendships at 10+ hearts: {villagersAtTenHearts}"
+            FormatProgress("Friendship targets maxed", completeFriendshipTargets, totalFriendshipTargets),
+            $"Friendship hearts remaining: {totalHeartsRemaining}"
         };
 
         List<(string Label, int Remaining)> blockers = new();
@@ -114,6 +126,7 @@ internal sealed class PerfectionSummaryService
             overviewLines,
             progressLines,
             blockerLines,
+            friendshipLines,
             seasonalLines,
             detailLines);
     }
@@ -193,21 +206,6 @@ internal sealed class PerfectionSummaryService
         {
             return (CountCollectionEntries(player.basicShipped), 0);
         }
-    }
-
-    private static int CountFriendshipsAtLeastHearts(object? source, int hearts)
-    {
-        int thresholdPoints = hearts * 250;
-        int count = 0;
-        foreach (KeyValuePair<string, object?> pair in EnumerateEntries(source))
-        {
-            object? friendshipObject = UnwrapValue(pair.Value);
-            int? points = GetIntProperty(friendshipObject, "Points");
-            if (points.HasValue && points.Value >= thresholdPoints)
-                count++;
-        }
-
-        return count;
     }
 
     private int? TryLoadCount(string assetName)
@@ -457,6 +455,254 @@ internal sealed class PerfectionSummaryService
         }
 
         return objectItemId;
+    }
+
+    private List<string> BuildFriendshipLines(Farmer player, bool detailsEnabled, out int completeTargets, out int totalTargets, out int totalHeartsRemaining)
+    {
+        List<string> lines = new();
+        List<FriendshipTargetStatus> targets = this.GetFriendshipTargets(player);
+
+        totalTargets = targets.Count;
+        List<FriendshipTargetStatus> incomplete = targets
+            .Where(target => target.HeartsRemaining > 0)
+            .OrderByDescending(target => target.HeartsRemaining)
+            .ThenBy(target => target.NpcName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        completeTargets = totalTargets - incomplete.Count;
+        totalHeartsRemaining = incomplete.Sum(target => target.HeartsRemaining);
+
+        lines.Add($"Friendship targets tracked: {totalTargets}");
+        lines.Add($"Targets complete: {completeTargets}");
+        lines.Add($"Targets incomplete: {incomplete.Count}");
+        lines.Add($"Total hearts remaining: {totalHeartsRemaining}");
+
+        if (totalTargets == 0)
+        {
+            lines.Add(string.Empty);
+            lines.Add("No friendship targets found in this save state.");
+            return lines;
+        }
+
+        if (incomplete.Count == 0)
+        {
+            lines.Add(string.Empty);
+            lines.Add("All tracked friendship targets are complete.");
+            return lines;
+        }
+
+        if (!detailsEnabled)
+        {
+            lines.Add(string.Empty);
+            lines.Add("Detailed NPC names and gift examples are hidden in summary-only mode.");
+            lines.Add("Enable detailed spoilers and disable category-summary lock to see exact friendship targets.");
+            return lines;
+        }
+
+        lines.Add(string.Empty);
+        lines.Add("Top incomplete friendship targets");
+        foreach (FriendshipTargetStatus target in incomplete)
+        {
+            string giftHint = this.GetGiftHintForNpc(target.Npc);
+            lines.Add($"- {target.NpcName}: {target.CurrentHearts}/{target.TargetHearts} hearts ({target.HeartsRemaining} remaining){giftHint}");
+        }
+
+        return lines;
+    }
+
+    private List<FriendshipTargetStatus> GetFriendshipTargets(Farmer player)
+    {
+        List<FriendshipTargetStatus> targets = new();
+        HashSet<string> seenNpcNames = new(StringComparer.OrdinalIgnoreCase);
+
+        IEnumerable<NPC> candidates = this.GetFriendshipCandidateNpcs(player);
+        foreach (NPC npc in candidates)
+        {
+            if (string.IsNullOrWhiteSpace(npc.Name))
+                continue;
+            if (!seenNpcNames.Add(npc.Name))
+                continue;
+
+            StardewValley.GameData.Characters.CharacterData? npcData = TryGetNpcData(npc);
+            if (!IsPerfectionFriendshipTarget(npc, npcData))
+                continue;
+
+            int targetHearts = GetPerfectionTargetHearts(npcData);
+            int currentHearts = Math.Clamp(player.getFriendshipHeartLevelForNPC(npc.Name), 0, targetHearts);
+
+            targets.Add(new FriendshipTargetStatus
+            {
+                Npc = npc,
+                NpcName = npc.displayName ?? npc.Name,
+                CurrentHearts = currentHearts,
+                TargetHearts = targetHearts,
+                HeartsRemaining = Math.Max(0, targetHearts - currentHearts)
+            });
+        }
+
+        return targets;
+    }
+
+    private IEnumerable<NPC> GetFriendshipCandidateNpcs(Farmer player)
+    {
+        HashSet<string> names = new(StringComparer.OrdinalIgnoreCase);
+        List<NPC> npcs = new();
+
+        try
+        {
+            foreach (Character character in Utility.getAllCharacters())
+            {
+                if (character is not NPC npc)
+                    continue;
+                if (!npc.IsVillager)
+                    continue;
+                if (string.IsNullOrWhiteSpace(npc.Name))
+                    continue;
+                if (names.Add(npc.Name))
+                    npcs.Add(npc);
+            }
+        }
+        catch
+        {
+            // Fallback to friendship keys below.
+        }
+
+        if (npcs.Count == 0)
+        {
+            foreach (string npcName in EnumerateEntries(player.friendshipData).Select(pair => pair.Key))
+            {
+                if (string.IsNullOrWhiteSpace(npcName))
+                    continue;
+                if (!names.Add(npcName))
+                    continue;
+
+                if (Game1.getCharacterFromName(npcName, mustBeVillager: true) is NPC npc)
+                    npcs.Add(npc);
+            }
+        }
+
+        return npcs;
+    }
+
+    private static StardewValley.GameData.Characters.CharacterData? TryGetNpcData(NPC npc)
+    {
+        try
+        {
+            return npc.GetData();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static bool IsPerfectionFriendshipTarget(NPC npc, StardewValley.GameData.Characters.CharacterData? npcData)
+    {
+        if (!npc.IsVillager || string.IsNullOrWhiteSpace(npc.Name))
+            return false;
+
+        if (npcData?.PerfectionScore != true)
+            return false;
+
+        if (!npc.CanReceiveGifts())
+            return false;
+
+        if (!npc.CanSocialize)
+            return false;
+
+        return true;
+    }
+
+    private static int GetPerfectionTargetHearts(StardewValley.GameData.Characters.CharacterData? npcData)
+    {
+        bool isDatable = npcData?.CanBeRomanced == true;
+
+        return isDatable ? 8 : 10;
+    }
+
+    private string GetGiftHintForNpc(NPC npc)
+    {
+        if (string.IsNullOrWhiteSpace(npc.Name))
+            return string.Empty;
+
+        if (this.giftHintByNpcName.TryGetValue(npc.Name, out string? cachedHint))
+            return cachedHint;
+
+        string hint = string.Empty;
+
+        try
+        {
+            Dictionary<string, StardewValley.GameData.Objects.ObjectData> objectDataById =
+                this.helper.GameContent.Load<Dictionary<string, StardewValley.GameData.Objects.ObjectData>>("Data/Objects");
+
+            List<string> loved = new();
+            List<string> liked = new();
+            HashSet<string> seenNames = new(StringComparer.OrdinalIgnoreCase);
+
+            foreach (string objectId in objectDataById.Keys.OrderBy(id => id, StringComparer.Ordinal))
+            {
+                Item? giftItem = null;
+                try
+                {
+                    giftItem = ItemRegistry.Create("(O)" + objectId, allowNull: true);
+                }
+                catch
+                {
+                    // Skip invalid object entries for gift checks.
+                }
+
+                if (giftItem == null)
+                    continue;
+
+                int taste = npc.getGiftTasteForThisItem(giftItem);
+                if (taste == GiftTasteLoveCode)
+                {
+                    string displayName = ResolveObjectDisplayName(objectId);
+                    if (seenNames.Add(displayName))
+                        loved.Add(displayName);
+                }
+                else if (taste == GiftTasteLikeCode)
+                {
+                    string displayName = ResolveObjectDisplayName(objectId);
+                    if (seenNames.Add(displayName))
+                        liked.Add(displayName);
+                }
+
+                if (loved.Count >= 2 && liked.Count >= 2)
+                    break;
+            }
+
+            if (loved.Count > 0)
+            {
+                hint = $" | gift ideas: {string.Join(", ", loved.Take(2))}";
+            }
+            else if (liked.Count > 0)
+            {
+                hint = $" | liked gifts: {string.Join(", ", liked.Take(2))}";
+            }
+        }
+        catch
+        {
+            // Keep friendship line without gift hints if gift data lookup fails.
+        }
+
+        this.giftHintByNpcName[npc.Name] = hint;
+        return hint;
+    }
+
+    private static int GetNpcGiftTasteCode(string fieldName, int fallback)
+    {
+        try
+        {
+            FieldInfo? field = typeof(NPC).GetField(fieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            if (field?.GetValue(null) is int value)
+                return value;
+        }
+        catch
+        {
+            // Keep fallback.
+        }
+
+        return fallback;
     }
 
     private List<string> BuildSeasonalCropLines(Farmer player, bool detailsEnabled)
