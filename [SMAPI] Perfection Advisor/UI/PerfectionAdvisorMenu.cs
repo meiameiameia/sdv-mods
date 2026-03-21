@@ -39,6 +39,7 @@ internal sealed class PerfectionAdvisorMenu : IClickableMenu
             new() { Name = "Blockers", Lines = snapshot.BlockerLines },
             new() { Name = "Friendship", Lines = snapshot.FriendshipLines },
             new() { Name = "Seasonal", Lines = snapshot.SeasonalLines },
+            new() { Name = "Today", Lines = snapshot.TodayLines },
             new() { Name = "Details", Lines = snapshot.DetailLines }
         };
         this.tabScrollOffsets = new int[this.pages.Count];

@@ -26,6 +26,17 @@ internal sealed class PerfectionSummaryService
         public int HeartsRemaining { get; init; }
     }
 
+    private sealed class SeasonalActionSnapshot
+    {
+        public int DayOfMonth { get; init; }
+        public Season CurrentSeason { get; init; }
+        public int GrowthDaysLeftThisSeason { get; init; }
+        public List<SeasonalCropCandidate> MissingCandidates { get; init; } = new();
+        public List<SeasonalCropCandidate> ViableNow { get; init; } = new();
+        public List<SeasonalCropCandidate> TooLateThisSeason { get; init; } = new();
+        public List<SeasonalCropCandidate> NotThisSeason { get; init; } = new();
+    }
+
     private readonly IModHelper helper;
     private readonly Dictionary<string, string> giftHintByNpcName = new(StringComparer.OrdinalIgnoreCase);
     private static readonly int GiftTasteLoveCode = GetNpcGiftTasteCode("gift_taste_love", fallback: 0);
@@ -47,6 +58,7 @@ internal sealed class PerfectionSummaryService
                 new[] { "No blocker data available." },
                 new[] { "No friendship data available." },
                 new[] { "No seasonal data available." },
+                new[] { "No daily-action data available." },
                 new[] { "Detailed spoilers are disabled." });
         }
 
@@ -120,6 +132,15 @@ internal sealed class PerfectionSummaryService
         }
 
         List<string> seasonalLines = this.BuildSeasonalCropLines(player, detailsEnabled);
+        List<string> todayLines = this.BuildTodayActionLines(
+            player,
+            detailsEnabled,
+            fishCaught,
+            totalFish,
+            cookedRecipes,
+            totalCookingRecipes,
+            craftedRecipes,
+            totalCraftingRecipes);
 
         return new PerfectionAdvisorSnapshot(
             detailsEnabled ? "Detailed spoilers enabled" : "Summary-only mode",
@@ -128,6 +149,7 @@ internal sealed class PerfectionSummaryService
             blockerLines,
             friendshipLines,
             seasonalLines,
+            todayLines,
             detailLines);
     }
 
@@ -705,10 +727,100 @@ internal sealed class PerfectionSummaryService
         return fallback;
     }
 
-    private List<string> BuildSeasonalCropLines(Farmer player, bool detailsEnabled)
+    private List<string> BuildTodayActionLines(
+        Farmer player,
+        bool detailsEnabled,
+        int fishCaught,
+        int? totalFish,
+        int cookedRecipes,
+        int? totalCookingRecipes,
+        int craftedRecipes,
+        int? totalCraftingRecipes)
     {
         List<string> lines = new();
 
+        List<FriendshipTargetStatus> incompleteFriendships = this.GetFriendshipTargets(player)
+            .Where(target => target.HeartsRemaining > 0)
+            .OrderByDescending(target => target.HeartsRemaining)
+            .ThenBy(target => target.NpcName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        SeasonalActionSnapshot? seasonal = this.TryBuildSeasonalActionSnapshot(player);
+
+        lines.Add($"Today: {Game1.season} Day {Game1.dayOfMonth}, time {Game1.timeOfDay:0000}");
+
+        if (seasonal != null)
+        {
+            lines.Add($"Season window: {seasonal.GrowthDaysLeftThisSeason} growth day(s) left in {seasonal.CurrentSeason}.");
+            if (seasonal.ViableNow.Count > 0)
+                lines.Add($"Time-sensitive crops: {seasonal.ViableNow.Count} missing crop outputs can still be planted today.");
+            else if (seasonal.TooLateThisSeason.Count > 0)
+                lines.Add("Time-sensitive crops: no remaining missing crop outputs can mature this season.");
+            else
+                lines.Add("Time-sensitive crops: no immediate crop shipping deadlines today.");
+        }
+        else
+        {
+            lines.Add("Time-sensitive crops: unavailable (crop data could not be loaded).");
+        }
+
+        if (incompleteFriendships.Count > 0)
+            lines.Add($"Friendship priority: {incompleteFriendships.Count} target(s) still need hearts. Talk + gift at least one target today.");
+        else
+            lines.Add("Friendship priority: all tracked perfection friendship targets are complete.");
+
+        int? missingFish = totalFish.HasValue ? Math.Max(0, totalFish.Value - fishCaught) : null;
+        int? missingCooking = totalCookingRecipes.HasValue ? Math.Max(0, totalCookingRecipes.Value - cookedRecipes) : null;
+        int? missingCrafting = totalCraftingRecipes.HasValue ? Math.Max(0, totalCraftingRecipes.Value - craftedRecipes) : null;
+
+        lines.Add(FormatRemainingCount("Missing fish", missingFish));
+        lines.Add(FormatRemainingCount("Missing cooked recipes", missingCooking));
+        lines.Add(FormatRemainingCount("Missing crafted recipes", missingCrafting));
+
+        if (!detailsEnabled)
+        {
+            lines.Add(string.Empty);
+            lines.Add("Detailed action targets are hidden in summary-only mode.");
+            lines.Add("Enable detailed spoilers and disable category-summary lock to see concrete today actions.");
+            return lines;
+        }
+
+        lines.Add(string.Empty);
+        lines.Add("Suggested actions today");
+
+        if (seasonal?.ViableNow.Count > 0)
+        {
+            lines.Add("Plant today (can mature this season)");
+            foreach (SeasonalCropCandidate candidate in seasonal.ViableNow.Take(6))
+                lines.Add($"- Plant {candidate.SeedName} to ship {candidate.HarvestName} ({candidate.DaysToMature}d)");
+            lines.Add(string.Empty);
+        }
+
+        if (incompleteFriendships.Count > 0)
+        {
+            lines.Add("Friendship actions");
+            foreach (FriendshipTargetStatus target in incompleteFriendships.Take(6))
+            {
+                string giftHint = this.GetGiftHintForNpc(target.Npc);
+                lines.Add($"- {target.NpcName}: {target.CurrentHearts}/{target.TargetHearts} hearts ({target.HeartsRemaining} remaining){giftHint}");
+            }
+            lines.Add(string.Empty);
+        }
+
+        AddDetailIfAny(lines, "Missing fish examples to target", this.GetMissingFishNames(maxItems: 4));
+        AddDetailIfAny(lines, "Missing cooking recipe examples to complete", this.GetMissingCookingRecipeNames(maxItems: 4));
+
+        if (Game1.timeOfDay >= 2200)
+            lines.Add("Late-day note: prioritize quick actions (talk, gift, ship) before sleep.");
+
+        if (lines.Count == 0)
+            lines.Add("No high-value daily actions detected right now.");
+
+        return lines;
+    }
+
+    private SeasonalActionSnapshot? TryBuildSeasonalActionSnapshot(Farmer player)
+    {
         try
         {
             Dictionary<string, StardewValley.GameData.Crops.CropData> cropDataBySeedId =
@@ -783,31 +895,59 @@ internal sealed class PerfectionSummaryService
                     tooLateThisSeason.Add(candidate);
             }
 
-            lines.Add($"Season: {currentSeason} Day {dayOfMonth} (growth days left: {growthDaysLeftThisSeason})");
-            lines.Add($"Missing shippable crop outputs: {missingCandidates.Count}");
-            lines.Add($"Plant now + can mature this season: {viableNow.Count}");
-            lines.Add($"Plantable now but too late this season: {tooLateThisSeason.Count}");
-            lines.Add($"Not growable this season: {notThisSeason.Count}");
-
-            if (!detailsEnabled)
+            return new SeasonalActionSnapshot
             {
-                lines.Add(string.Empty);
-                lines.Add("Detailed crop names are hidden in summary-only mode.");
-                lines.Add("Enable detailed spoilers and disable category-summary lock to see exact crop recommendations.");
-                return lines;
-            }
-
-            AddSeasonalDetail(lines, "Plant now (viable this season)", viableNow.Take(8), includeTimeLeft: false, growthDaysLeftThisSeason);
-            AddSeasonalDetail(lines, "Too late this season", tooLateThisSeason.Take(8), includeTimeLeft: true, growthDaysLeftThisSeason);
-            AddSeasonalDetail(lines, "Not in current season", notThisSeason.Take(8), includeTimeLeft: false, growthDaysLeftThisSeason);
+                DayOfMonth = dayOfMonth,
+                CurrentSeason = currentSeason,
+                GrowthDaysLeftThisSeason = growthDaysLeftThisSeason,
+                MissingCandidates = missingCandidates,
+                ViableNow = viableNow,
+                TooLateThisSeason = tooLateThisSeason,
+                NotThisSeason = notThisSeason
+            };
         }
         catch
         {
+            return null;
+        }
+    }
+
+    private List<string> BuildSeasonalCropLines(Farmer player, bool detailsEnabled)
+    {
+        List<string> lines = new();
+        SeasonalActionSnapshot? snapshot = this.TryBuildSeasonalActionSnapshot(player);
+        if (snapshot == null)
+        {
             lines.Add("Seasonal crop viability data unavailable.");
             lines.Add("Could not load crop/object game data for this save.");
+            return lines;
         }
 
+        lines.Add($"Season: {snapshot.CurrentSeason} Day {snapshot.DayOfMonth} (growth days left: {snapshot.GrowthDaysLeftThisSeason})");
+        lines.Add($"Missing shippable crop outputs: {snapshot.MissingCandidates.Count}");
+        lines.Add($"Plant now + can mature this season: {snapshot.ViableNow.Count}");
+        lines.Add($"Plantable now but too late this season: {snapshot.TooLateThisSeason.Count}");
+        lines.Add($"Not growable this season: {snapshot.NotThisSeason.Count}");
+
+        if (!detailsEnabled)
+        {
+            lines.Add(string.Empty);
+            lines.Add("Detailed crop names are hidden in summary-only mode.");
+            lines.Add("Enable detailed spoilers and disable category-summary lock to see exact crop recommendations.");
+            return lines;
+        }
+
+        AddSeasonalDetail(lines, "Plant now (viable this season)", snapshot.ViableNow.Take(8), includeTimeLeft: false, snapshot.GrowthDaysLeftThisSeason);
+        AddSeasonalDetail(lines, "Too late this season", snapshot.TooLateThisSeason.Take(8), includeTimeLeft: true, snapshot.GrowthDaysLeftThisSeason);
+        AddSeasonalDetail(lines, "Not in current season", snapshot.NotThisSeason.Take(8), includeTimeLeft: false, snapshot.GrowthDaysLeftThisSeason);
         return lines;
+    }
+
+    private static string FormatRemainingCount(string label, int? remaining)
+    {
+        return remaining.HasValue
+            ? $"{label}: {remaining.Value} remaining"
+            : $"{label}: unavailable";
     }
 
     private static void AddSeasonalDetail(
