@@ -16,7 +16,7 @@ internal sealed class ModEntry : Mod
     public override void Entry(IModHelper helper)
     {
         this.config = helper.ReadConfig<ModConfig>() ?? new ModConfig();
-        this.summaryService = new PerfectionSummaryService(helper);
+        this.summaryService = new PerfectionSummaryService(helper, this.Monitor);
 
         helper.ConsoleCommands.Add(
             OpenCommand,
@@ -29,13 +29,19 @@ internal sealed class ModEntry : Mod
 
     private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
     {
-        GmcmIntegration.Register(this.Helper, this.ModManifest, this.config, () =>
-        {
-            this.config = new ModConfig();
-        }, () =>
-        {
-            this.config = this.Helper.ReadConfig<ModConfig>() ?? new ModConfig();
-        });
+        GmcmIntegration.Register(
+            this.Helper,
+            this.ModManifest,
+            () => this.config,
+            () =>
+            {
+                this.config.ResetToDefaults();
+            },
+            () =>
+            {
+                this.Helper.WriteConfig(this.config);
+                this.config = this.Helper.ReadConfig<ModConfig>() ?? new ModConfig();
+            });
     }
 
     private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)

@@ -18,7 +18,9 @@ internal sealed class PerfectionAdvisorMenu : IClickableMenu
     private readonly PerfectionAdvisorSnapshot snapshot;
     private readonly List<TabPage> pages;
     private readonly int[] tabScrollOffsets;
-    private readonly Rectangle contentArea;
+    private readonly Dictionary<int, List<string>> wrappedLinesByTab = new();
+    private Rectangle contentArea;
+    private int wrappedLineCacheWidth = -1;
     private int selectedTabIndex;
 
     public PerfectionAdvisorMenu(PerfectionAdvisorSnapshot snapshot)
@@ -30,7 +32,6 @@ internal sealed class PerfectionAdvisorMenu : IClickableMenu
             showUpperRightCloseButton: true)
     {
         this.snapshot = snapshot;
-        this.contentArea = new Rectangle(this.xPositionOnScreen + 32, this.yPositionOnScreen + 148, this.width - 64, this.height - 198);
 
         this.pages = new List<TabPage>
         {
@@ -45,7 +46,7 @@ internal sealed class PerfectionAdvisorMenu : IClickableMenu
         };
         this.tabScrollOffsets = new int[this.pages.Count];
 
-        this.LayoutTabs();
+        this.RecalculateLayout(new Rectangle(0, 0, Game1.uiViewport.Width, Game1.uiViewport.Height));
     }
 
     private int ContentLineHeight => Game1.smallFont.LineSpacing + 4;
@@ -68,15 +69,7 @@ internal sealed class PerfectionAdvisorMenu : IClickableMenu
     public override void gameWindowSizeChanged(Rectangle oldBounds, Rectangle newBounds)
     {
         base.gameWindowSizeChanged(oldBounds, newBounds);
-        this.xPositionOnScreen = newBounds.Width / 2 - this.width / 2;
-        this.yPositionOnScreen = newBounds.Height / 2 - this.height / 2;
-        this.upperRightCloseButton = new ClickableTextureComponent(
-            new Rectangle(this.xPositionOnScreen + this.width - 36, this.yPositionOnScreen + 8, 28, 28),
-            Game1.mouseCursors,
-            new Rectangle(337, 494, 12, 12),
-            2f);
-
-        this.LayoutTabs();
+        this.RecalculateLayout(newBounds);
     }
 
     public override void receiveLeftClick(int x, int y, bool playSound = true)
@@ -207,15 +200,46 @@ internal sealed class PerfectionAdvisorMenu : IClickableMenu
         return Math.Max(1, (this.contentArea.Height - 24) / this.ContentLineHeight);
     }
 
+    private void RecalculateLayout(Rectangle viewportBounds)
+    {
+        this.xPositionOnScreen = viewportBounds.Width / 2 - this.width / 2;
+        this.yPositionOnScreen = viewportBounds.Height / 2 - this.height / 2;
+        this.contentArea = new Rectangle(this.xPositionOnScreen + 32, this.yPositionOnScreen + 148, this.width - 64, this.height - 198);
+        this.upperRightCloseButton = new ClickableTextureComponent(
+            new Rectangle(this.xPositionOnScreen + this.width - 36, this.yPositionOnScreen + 8, 28, 28),
+            Game1.mouseCursors,
+            new Rectangle(337, 494, 12, 12),
+            2f);
+
+        this.LayoutTabs();
+        this.InvalidateWrappedLinesCache();
+    }
+
+    private void InvalidateWrappedLinesCache()
+    {
+        this.wrappedLinesByTab.Clear();
+        this.wrappedLineCacheWidth = -1;
+    }
+
     private List<string> GetWrappedLinesForSelectedTab()
     {
+        int wrapWidth = this.contentArea.Width - 28;
+        if (this.wrappedLineCacheWidth != wrapWidth)
+        {
+            this.wrappedLinesByTab.Clear();
+            this.wrappedLineCacheWidth = wrapWidth;
+        }
+
+        if (this.wrappedLinesByTab.TryGetValue(this.selectedTabIndex, out List<string>? cached))
+            return cached;
+
         IReadOnlyList<string> lines = this.pages[this.selectedTabIndex].Lines;
         List<string> wrapped = new();
-        int wrapWidth = this.contentArea.Width - 28;
 
         if (lines.Count == 0)
         {
             wrapped.Add("No data available.");
+            this.wrappedLinesByTab[this.selectedTabIndex] = wrapped;
             return wrapped;
         }
 
@@ -233,6 +257,7 @@ internal sealed class PerfectionAdvisorMenu : IClickableMenu
                 wrapped.Add(item);
         }
 
+        this.wrappedLinesByTab[this.selectedTabIndex] = wrapped;
         return wrapped;
     }
 }

@@ -52,14 +52,17 @@ internal sealed class PerfectionSummaryService
     }
 
     private readonly IModHelper helper;
+    private readonly IMonitor monitor;
     private readonly Dictionary<string, string> giftHintByNpcName = new(StringComparer.OrdinalIgnoreCase);
     private static readonly int GiftTasteLoveCode = GetNpcGiftTasteCode("gift_taste_love", fallback: 0);
     private static readonly int GiftTasteLikeCode = GetNpcGiftTasteCode("gift_taste_like", fallback: 2);
     private static readonly HashSet<string> ValidSeasonTokens = new(StringComparer.OrdinalIgnoreCase) { "spring", "summer", "fall", "winter" };
+    private const string WeddingRingRecipeName = "Wedding Ring";
 
-    public PerfectionSummaryService(IModHelper helper)
+    public PerfectionSummaryService(IModHelper helper, IMonitor monitor)
     {
         this.helper = helper;
+        this.monitor = monitor;
     }
 
     public PerfectionAdvisorSnapshot BuildSnapshot(ModConfig config)
@@ -81,21 +84,36 @@ internal sealed class PerfectionSummaryService
         Farmer player = Game1.player;
         bool detailsEnabled = config.EnableDetailedSpoilers && !config.ShowOnlyCategorySummary;
 
-        (int shippedUnique, int shippedTotal) = this.GetCanonicalShippedProgress(player);
+        List<string> degradedSections = new();
+
+        (int shippedUnique, int? shippedTotal, bool shippedFallback) = this.GetCanonicalShippedProgress(player);
+        if (shippedFallback)
+            degradedSections.Add("Shipped");
+
         int fishCaught = CountCollectionEntries(player.fishCaught);
         int cookedRecipes = CountPlayerProgressEntries(player, "recipesCooked", player.cookingRecipes);
-        int craftedRecipes = CountPlayerProgressEntries(player, "recipesCrafted", player.craftingRecipes);
+        (int craftedRecipes, int? totalCraftingRecipes, bool craftingFallback) = this.GetCraftingProgressExcludingWeddingRing(player);
+        if (craftingFallback)
+            degradedSections.Add("Crafting");
+
         List<string> friendshipLines = this.BuildFriendshipLines(player, detailsEnabled, out int completeFriendshipTargets, out int totalFriendshipTargets, out int totalHeartsRemaining);
 
         int? totalFish = this.TryLoadCount("Data/Fish");
         int? totalCookingRecipes = this.TryLoadCount("Data/CookingRecipes");
-        int? totalCraftingRecipes = this.TryLoadCount("Data/CraftingRecipes");
+        if (!totalFish.HasValue)
+            degradedSections.Add("Fish totals");
+        if (!totalCookingRecipes.HasValue)
+            degradedSections.Add("Cooking totals");
+        if (!totalCraftingRecipes.HasValue)
+            degradedSections.Add("Crafting totals");
 
         List<string> overviewLines = new()
         {
             detailsEnabled ? "Detailed spoiler mode is ON." : "Summary-only mode is ON.",
             config.ShowOnlyCategorySummary ? "Category summary lock is ON." : "Category summary lock is OFF.",
-            "Shipped progress mirrors Collections/perfection shipped-item semantics.",
+            "Coverage is a tracked subset for planning, not full perfection parity.",
+            "Current-player view only; farm-wide multiplayer perfection is not modeled in this slice.",
+            "Shipped progress mirrors Collections/perfection semantics when canonical data is available.",
             "Read-only advisor. No automation or gameplay control actions."
         };
 
@@ -108,7 +126,13 @@ internal sealed class PerfectionSummaryService
             FormatProgress("Friendship targets maxed", completeFriendshipTargets, totalFriendshipTargets),
             $"Friendship hearts remaining: {totalHeartsRemaining}"
         };
-        List<string> fishLines = this.BuildFishGuidanceLines(player, detailsEnabled);
+        List<string> fishLines = this.BuildFishGuidanceLines(player, detailsEnabled, out bool fishDegraded);
+        if (fishDegraded)
+            degradedSections.Add("Fish");
+
+        SeasonalActionSnapshot? seasonalSnapshot = this.TryBuildSeasonalActionSnapshot(player);
+        if (seasonalSnapshot == null)
+            degradedSections.Add("Seasonal");
 
         List<(string Label, int Remaining)> blockers = new();
         AddBlockerIfKnown(blockers, "Fish collection", fishCaught, totalFish);
@@ -148,16 +172,27 @@ internal sealed class PerfectionSummaryService
             detailLines.Add("Enable 'EnableDetailedSpoilers' and disable 'ShowOnlyCategorySummary' to view detail examples.");
         }
 
-        List<string> seasonalLines = this.BuildSeasonalCropLines(player, detailsEnabled);
+        List<string> seasonalLines = this.BuildSeasonalCropLines(seasonalSnapshot, detailsEnabled);
         List<string> todayLines = this.BuildTodayActionLines(
             player,
             detailsEnabled,
+            seasonalSnapshot,
             fishCaught,
             totalFish,
             cookedRecipes,
             totalCookingRecipes,
             craftedRecipes,
             totalCraftingRecipes);
+
+        if (degradedSections.Count > 0)
+            overviewLines.Add($"Data quality: degraded sections -> {string.Join(", ", degradedSections.Distinct(StringComparer.OrdinalIgnoreCase))}.");
+
+        if (degradedSections.Count > 0)
+        {
+            this.monitor.Log(
+                $"Perfection Advisor snapshot built with degraded sections: {string.Join(", ", degradedSections.Distinct(StringComparer.OrdinalIgnoreCase))}.",
+                LogLevel.Debug);
+        }
 
         return new PerfectionAdvisorSnapshot(
             detailsEnabled ? "Detailed spoilers enabled" : "Summary-only mode",
@@ -215,7 +250,7 @@ internal sealed class PerfectionSummaryService
         return CountPositiveValues(fallbackSource);
     }
 
-    private (int ShippedUnique, int TotalShippable) GetCanonicalShippedProgress(Farmer player)
+    private (int ShippedUnique, int? TotalShippable, bool UsedFallback) GetCanonicalShippedProgress(Farmer player)
     {
         try
         {
@@ -240,11 +275,36 @@ internal sealed class PerfectionSummaryService
                     shippedUnique++;
             }
 
-            return (shippedUnique, totalShippable);
+            if (totalShippable <= 0)
+                return (shippedUnique, null, true);
+
+            return (shippedUnique, totalShippable, false);
         }
         catch
         {
-            return (CountCollectionEntries(player.basicShipped), 0);
+            return (CountCollectionEntries(player.basicShipped), null, true);
+        }
+    }
+
+    private (int CraftedCount, int? TotalCraftable, bool UsedFallback) GetCraftingProgressExcludingWeddingRing(Farmer player)
+    {
+        try
+        {
+            Dictionary<string, string> allRecipes = this.helper.GameContent.Load<Dictionary<string, string>>("Data/CraftingRecipes");
+            int totalCraftable = allRecipes.Keys.Count(recipeName => !IsWeddingRingRecipe(recipeName));
+
+            object? canonicalSource = GetPropertyValue(player, "recipesCrafted") ?? player.craftingRecipes;
+            HashSet<string> craftedKeys = GetPositiveKeys(canonicalSource);
+            int craftedCount = craftedKeys.Count(recipeName => !IsWeddingRingRecipe(recipeName));
+
+            return (craftedCount, totalCraftable, false);
+        }
+        catch
+        {
+            object? canonicalSource = GetPropertyValue(player, "recipesCrafted") ?? player.craftingRecipes;
+            HashSet<string> craftedKeys = GetPositiveKeys(canonicalSource);
+            int craftedCount = craftedKeys.Count(recipeName => !IsWeddingRingRecipe(recipeName));
+            return (craftedCount, null, true);
         }
     }
 
@@ -298,13 +358,15 @@ internal sealed class PerfectionSummaryService
         }
     }
 
-    private List<string> BuildFishGuidanceLines(Farmer player, bool detailsEnabled)
+    private List<string> BuildFishGuidanceLines(Farmer player, bool detailsEnabled, out bool degraded)
     {
         List<string> lines = new();
+        degraded = false;
 
         List<FishAvailabilityCandidate>? missingFish = this.TryBuildMissingFishAvailability(player);
         if (missingFish == null)
         {
+            degraded = true;
             lines.Add("Fish availability guidance unavailable.");
             lines.Add("Could not load fish data for this save.");
             return lines;
@@ -341,14 +403,15 @@ internal sealed class PerfectionSummaryService
             .ToList();
 
         lines.Add($"Now: {seasonNow} Day {Game1.dayOfMonth}, {timeNow}, weather {weatherNow}");
+        lines.Add("Scope: tracked fish subset and prefilter logic (not full catchability simulation).");
         lines.Add($"Missing fish tracked: {missingFish.Count}");
         lines.Add($"Rod-catch season/weather/time model entries: {temporalFish.Count}");
-        lines.Add($"Season/weather/time match now (location not applied): {availableNow.Count}");
-        lines.Add($"Season/weather/time match later today (location not applied): {laterToday.Count}");
+        lines.Add($"Season/weather/time prefilter match now: {availableNow.Count}");
+        lines.Add($"Season/weather/time prefilter match later today: {laterToday.Count}");
         lines.Add($"Current season but blocked by time/weather right now: {notNowThisSeason.Count}");
         lines.Add($"Rod-catch model but not in current season: {notThisSeason.Count}");
         lines.Add($"Nonstandard or alternate-acquisition entries: {nonstandardFish.Count}");
-        lines.Add("Note: location-specific fish rules are not yet included in this tab.");
+        lines.Add("Note: location/method constraints are not fully modeled in this tab yet.");
 
         if (!detailsEnabled)
         {
@@ -358,8 +421,8 @@ internal sealed class PerfectionSummaryService
             return lines;
         }
 
-        AddFishDetail(lines, "Season/weather/time match now (location-dependent)", availableNow);
-        AddFishDetail(lines, "Season/weather/time match later today (location-dependent)", laterToday);
+        AddFishDetail(lines, "Season/weather/time prefilter match now", availableNow);
+        AddFishDetail(lines, "Season/weather/time prefilter match later today", laterToday);
         AddFishDetail(lines, "Current season but not available right now", notNowThisSeason);
         AddFishDetail(lines, "Not available this season", notThisSeason);
         AddNonstandardFishDetail(lines, "Nonstandard / alternate-acquisition entries", nonstandardFish);
@@ -703,9 +766,16 @@ internal sealed class PerfectionSummaryService
             : $"{label}: {current}";
     }
 
-    private static string FormatProgress(string label, int current, int total, string suffix)
+    private static string FormatProgress(string label, int current, int? total, string suffix)
     {
-        return $"{label}: {current}/{total}{suffix}";
+        return total.HasValue
+            ? $"{label}: {current}/{total.Value}{suffix}"
+            : $"{label}: {current}{suffix} (total unavailable)";
+    }
+
+    private static bool IsWeddingRingRecipe(string recipeName)
+    {
+        return string.Equals(recipeName, WeddingRingRecipeName, StringComparison.OrdinalIgnoreCase);
     }
 
     private static void AddBlockerIfKnown(List<(string Label, int Remaining)> blockers, string label, int current, int? total)
@@ -1135,6 +1205,7 @@ internal sealed class PerfectionSummaryService
     private List<string> BuildTodayActionLines(
         Farmer player,
         bool detailsEnabled,
+        SeasonalActionSnapshot? seasonal,
         int fishCaught,
         int? totalFish,
         int cookedRecipes,
@@ -1150,15 +1221,14 @@ internal sealed class PerfectionSummaryService
             .ThenBy(target => target.NpcName, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        SeasonalActionSnapshot? seasonal = this.TryBuildSeasonalActionSnapshot(player);
-
-        lines.Add($"Today: {Game1.season} Day {Game1.dayOfMonth}, time {Game1.timeOfDay:0000}");
+        lines.Add($"Today: {Game1.season} Day {Game1.dayOfMonth}, time {FormatTimeOfDayDisplay(Game1.timeOfDay)}");
+        lines.Add("Scope: actionable hints from tracked sections only.");
 
         if (seasonal != null)
         {
             lines.Add($"Season window: {seasonal.GrowthDaysLeftThisSeason} growth day(s) left in {seasonal.CurrentSeason}.");
             if (seasonal.ViableNow.Count > 0)
-                lines.Add($"Time-sensitive crops: {seasonal.ViableNow.Count} missing crop outputs can still be planted today.");
+                lines.Add($"Time-sensitive crops: {seasonal.ViableNow.Count} tracked crop outputs can still be planted today.");
             else if (seasonal.TooLateThisSeason.Count > 0)
                 lines.Add("Time-sensitive crops: no remaining missing crop outputs can mature this season.");
             else
@@ -1317,10 +1387,9 @@ internal sealed class PerfectionSummaryService
         }
     }
 
-    private List<string> BuildSeasonalCropLines(Farmer player, bool detailsEnabled)
+    private List<string> BuildSeasonalCropLines(SeasonalActionSnapshot? snapshot, bool detailsEnabled)
     {
         List<string> lines = new();
-        SeasonalActionSnapshot? snapshot = this.TryBuildSeasonalActionSnapshot(player);
         if (snapshot == null)
         {
             lines.Add("Seasonal crop viability data unavailable.");
@@ -1329,6 +1398,7 @@ internal sealed class PerfectionSummaryService
         }
 
         lines.Add($"Season: {snapshot.CurrentSeason} Day {snapshot.DayOfMonth} (growth days left: {snapshot.GrowthDaysLeftThisSeason})");
+        lines.Add("Scope: tracked crop-ship subset only (not full perfection crops planner).");
         lines.Add($"Missing shippable crop outputs: {snapshot.MissingCandidates.Count}");
         lines.Add($"Plant now + can mature this season: {snapshot.ViableNow.Count}");
         lines.Add($"Plantable now but too late this season: {snapshot.TooLateThisSeason.Count}");
