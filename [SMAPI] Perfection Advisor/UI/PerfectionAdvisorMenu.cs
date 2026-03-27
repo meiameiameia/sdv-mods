@@ -36,6 +36,7 @@ internal sealed class PerfectionAdvisorMenu : IClickableMenu
         {
             new() { Name = "Overview", Lines = snapshot.OverviewLines },
             new() { Name = "Progress", Lines = snapshot.ProgressLines },
+            new() { Name = "Fish", Lines = snapshot.FishLines },
             new() { Name = "Blockers", Lines = snapshot.BlockerLines },
             new() { Name = "Friendship", Lines = snapshot.FriendshipLines },
             new() { Name = "Seasonal", Lines = snapshot.SeasonalLines },

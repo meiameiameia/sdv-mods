@@ -37,10 +37,25 @@ internal sealed class PerfectionSummaryService
         public List<SeasonalCropCandidate> NotThisSeason { get; init; } = new();
     }
 
+    private sealed class FishAvailabilityCandidate
+    {
+        public string FishName { get; init; } = string.Empty;
+        public bool UsesSeasonWeatherTimeModel { get; init; }
+        public string SeasonsText { get; init; } = "unknown";
+        public string WeatherText { get; init; } = "unknown";
+        public IReadOnlyList<(int Start, int End)> TimeWindows { get; init; } = Array.Empty<(int, int)>();
+        public bool IsInCurrentSeason { get; init; }
+        public bool MatchesCurrentWeather { get; init; }
+        public bool IsAvailableNow { get; init; }
+        public bool IsAvailableLaterToday { get; init; }
+        public string CategoryLabel { get; init; } = string.Empty;
+    }
+
     private readonly IModHelper helper;
     private readonly Dictionary<string, string> giftHintByNpcName = new(StringComparer.OrdinalIgnoreCase);
     private static readonly int GiftTasteLoveCode = GetNpcGiftTasteCode("gift_taste_love", fallback: 0);
     private static readonly int GiftTasteLikeCode = GetNpcGiftTasteCode("gift_taste_like", fallback: 2);
+    private static readonly HashSet<string> ValidSeasonTokens = new(StringComparer.OrdinalIgnoreCase) { "spring", "summer", "fall", "winter" };
 
     public PerfectionSummaryService(IModHelper helper)
     {
@@ -55,6 +70,7 @@ internal sealed class PerfectionSummaryService
                 "No save loaded",
                 new[] { "Load a save to view advisor data." },
                 new[] { "No progress data available." },
+                new[] { "No fish guidance data available." },
                 new[] { "No blocker data available." },
                 new[] { "No friendship data available." },
                 new[] { "No seasonal data available." },
@@ -92,6 +108,7 @@ internal sealed class PerfectionSummaryService
             FormatProgress("Friendship targets maxed", completeFriendshipTargets, totalFriendshipTargets),
             $"Friendship hearts remaining: {totalHeartsRemaining}"
         };
+        List<string> fishLines = this.BuildFishGuidanceLines(player, detailsEnabled);
 
         List<(string Label, int Remaining)> blockers = new();
         AddBlockerIfKnown(blockers, "Fish collection", fishCaught, totalFish);
@@ -146,6 +163,7 @@ internal sealed class PerfectionSummaryService
             detailsEnabled ? "Detailed spoilers enabled" : "Summary-only mode",
             overviewLines,
             progressLines,
+            fishLines,
             blockerLines,
             friendshipLines,
             seasonalLines,
@@ -277,6 +295,393 @@ internal sealed class PerfectionSummaryService
         catch
         {
             return Array.Empty<string>();
+        }
+    }
+
+    private List<string> BuildFishGuidanceLines(Farmer player, bool detailsEnabled)
+    {
+        List<string> lines = new();
+
+        List<FishAvailabilityCandidate>? missingFish = this.TryBuildMissingFishAvailability(player);
+        if (missingFish == null)
+        {
+            lines.Add("Fish availability guidance unavailable.");
+            lines.Add("Could not load fish data for this save.");
+            return lines;
+        }
+
+        string seasonNow = Game1.season.ToString();
+        string weatherNow = Game1.isRaining ? "rain" : "sun";
+        string timeNow = FormatTimeOfDayDisplay(Game1.timeOfDay);
+
+        List<FishAvailabilityCandidate> temporalFish = missingFish
+            .Where(fish => fish.UsesSeasonWeatherTimeModel)
+            .ToList();
+        List<FishAvailabilityCandidate> nonstandardFish = missingFish
+            .Where(fish => !fish.UsesSeasonWeatherTimeModel)
+            .OrderBy(fish => fish.FishName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        List<FishAvailabilityCandidate> availableNow = temporalFish
+            .Where(fish => fish.IsAvailableNow)
+            .OrderBy(fish => fish.FishName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        List<FishAvailabilityCandidate> laterToday = temporalFish
+            .Where(fish => !fish.IsAvailableNow && fish.IsAvailableLaterToday)
+            .OrderBy(fish => GetNextWindowStartAfter(Game1.timeOfDay, fish.TimeWindows) ?? int.MaxValue)
+            .ThenBy(fish => fish.FishName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        List<FishAvailabilityCandidate> notNowThisSeason = temporalFish
+            .Where(fish => fish.IsInCurrentSeason && !fish.IsAvailableNow && !fish.IsAvailableLaterToday)
+            .OrderBy(fish => fish.FishName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        List<FishAvailabilityCandidate> notThisSeason = temporalFish
+            .Where(fish => !fish.IsInCurrentSeason)
+            .OrderBy(fish => fish.FishName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        lines.Add($"Now: {seasonNow} Day {Game1.dayOfMonth}, {timeNow}, weather {weatherNow}");
+        lines.Add($"Missing fish tracked: {missingFish.Count}");
+        lines.Add($"Rod-catch season/weather/time model entries: {temporalFish.Count}");
+        lines.Add($"Season/weather/time match now (location not applied): {availableNow.Count}");
+        lines.Add($"Season/weather/time match later today (location not applied): {laterToday.Count}");
+        lines.Add($"Current season but blocked by time/weather right now: {notNowThisSeason.Count}");
+        lines.Add($"Rod-catch model but not in current season: {notThisSeason.Count}");
+        lines.Add($"Nonstandard or alternate-acquisition entries: {nonstandardFish.Count}");
+        lines.Add("Note: location-specific fish rules are not yet included in this tab.");
+
+        if (!detailsEnabled)
+        {
+            lines.Add(string.Empty);
+            lines.Add("Detailed fish names and windows are hidden in summary-only mode.");
+            lines.Add("Enable detailed spoilers and disable category-summary lock to see exact fish guidance.");
+            return lines;
+        }
+
+        AddFishDetail(lines, "Season/weather/time match now (location-dependent)", availableNow);
+        AddFishDetail(lines, "Season/weather/time match later today (location-dependent)", laterToday);
+        AddFishDetail(lines, "Current season but not available right now", notNowThisSeason);
+        AddFishDetail(lines, "Not available this season", notThisSeason);
+        AddNonstandardFishDetail(lines, "Nonstandard / alternate-acquisition entries", nonstandardFish);
+        return lines;
+    }
+
+    private List<FishAvailabilityCandidate>? TryBuildMissingFishAvailability(Farmer player)
+    {
+        try
+        {
+            Dictionary<string, string> fishData = this.helper.GameContent.Load<Dictionary<string, string>>("Data/Fish");
+            Dictionary<string, StardewValley.GameData.Objects.ObjectData> objectDataById =
+                this.helper.GameContent.Load<Dictionary<string, StardewValley.GameData.Objects.ObjectData>>("Data/Objects");
+            HashSet<string> caught = GetPositiveKeys(player.fishCaught);
+            List<FishAvailabilityCandidate> missing = new();
+
+            string currentSeason = Game1.season.ToString().ToLowerInvariant();
+            bool isRaining = Game1.isRaining;
+            int currentTime = Game1.timeOfDay;
+
+            foreach (KeyValuePair<string, string> pair in fishData)
+            {
+                if (caught.Contains(pair.Key))
+                    continue;
+
+                string[] parts = pair.Value.Split('/');
+                string fishName = ExtractNameFromDataEntry(pair.Value, fallback: pair.Key);
+                objectDataById.TryGetValue(pair.Key, out StardewValley.GameData.Objects.ObjectData? objectData);
+                bool isRodCatchType = IsRodCatchObjectType(objectData);
+                bool hasAlternateAcquisitionMarkers = HasAlternateAcquisitionMarkers(parts);
+                bool isRodCatchEligible = isRodCatchType && !hasAlternateAcquisitionMarkers;
+
+                if (isRodCatchEligible && TryParseSeasonWeatherTimeModel(parts, out List<(int Start, int End)> windows, out HashSet<string> seasonTokens, out HashSet<string> weatherTokens))
+                {
+                    bool hasSeasonRestriction = seasonTokens.Count > 0;
+                    bool isInCurrentSeason = !hasSeasonRestriction || seasonTokens.Contains(currentSeason);
+                    bool matchesCurrentWeather = WeatherMatches(weatherTokens, isRaining);
+                    bool inTimeWindowNow = IsTimeInAnyWindow(currentTime, windows);
+                    bool isAvailableNow = isInCurrentSeason && matchesCurrentWeather && inTimeWindowNow;
+                    bool isAvailableLaterToday = !isAvailableNow && isInCurrentSeason && matchesCurrentWeather && HasFutureWindowToday(currentTime, windows);
+
+                    string seasonsText = hasSeasonRestriction
+                        ? string.Join("/", seasonTokens.OrderBy(token => token, StringComparer.OrdinalIgnoreCase))
+                        : "any";
+                    string weatherText = FormatWeatherDisplay(weatherTokens);
+
+                    missing.Add(new FishAvailabilityCandidate
+                    {
+                        FishName = fishName,
+                        UsesSeasonWeatherTimeModel = true,
+                        SeasonsText = seasonsText,
+                        WeatherText = weatherText,
+                        TimeWindows = windows,
+                        IsInCurrentSeason = isInCurrentSeason,
+                        MatchesCurrentWeather = matchesCurrentWeather,
+                        IsAvailableNow = isAvailableNow,
+                        IsAvailableLaterToday = isAvailableLaterToday,
+                        CategoryLabel = "Rod-catch season/weather/time model"
+                    });
+                }
+                else
+                {
+                    string categoryLabel = hasAlternateAcquisitionMarkers
+                        ? "Alternate acquisition entry (non-rod/trap-style data)"
+                        : isRodCatchType
+                        ? "Rod-fish type with incompatible fish-data shape"
+                        : $"Non-rod object type ({objectData?.Type ?? "unknown"})";
+                    missing.Add(new FishAvailabilityCandidate
+                    {
+                        FishName = fishName,
+                        UsesSeasonWeatherTimeModel = false,
+                        CategoryLabel = categoryLabel
+                    });
+                }
+            }
+
+            return missing;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static bool TryParseSeasonWeatherTimeModel(
+        string[] parts,
+        out List<(int Start, int End)> windows,
+        out HashSet<string> seasonTokens,
+        out HashSet<string> weatherTokens)
+    {
+        windows = new List<(int Start, int End)>();
+        seasonTokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        weatherTokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        for (int timeIndex = 0; timeIndex < parts.Length; timeIndex++)
+        {
+            if (TryParseFishTimeWindows(parts[timeIndex], out List<(int Start, int End)> parsedWindows))
+            {
+                // Strict shape gate: season and weather must be the next two fields.
+                if (timeIndex + 2 >= parts.Length)
+                    continue;
+                if (!TryParseSeasonField(parts[timeIndex + 1], out HashSet<string> parsedSeasons))
+                    continue;
+                if (!TryParseWeatherField(parts[timeIndex + 2], out HashSet<string> parsedWeather))
+                    continue;
+
+                windows = parsedWindows;
+                seasonTokens = parsedSeasons;
+                weatherTokens = parsedWeather;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool HasAlternateAcquisitionMarkers(string[] parts)
+    {
+        foreach (string part in parts)
+        {
+            HashSet<string> tokens = TokenizeLower(part);
+            if (tokens.Contains("trap") || tokens.Contains("traps") || tokens.Contains("crabpot") || tokens.Contains("crab_pot"))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsRodCatchObjectType(StardewValley.GameData.Objects.ObjectData? objectData)
+    {
+        if (objectData == null)
+            return false;
+
+        return string.Equals(objectData.Type, "Fish", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool TryParseFishTimeWindows(string source, out List<(int Start, int End)> windows)
+    {
+        windows = new List<(int Start, int End)>();
+        if (string.IsNullOrWhiteSpace(source))
+            return false;
+
+        string[] tokens = source.Split(new[] { ' ', ',', ';', '-' }, StringSplitOptions.RemoveEmptyEntries);
+        List<int> times = new();
+        foreach (string token in tokens)
+        {
+            if (!int.TryParse(token, out int timeValue))
+                return false;
+            if (!IsValidSdvTime(timeValue))
+                return false;
+            times.Add(timeValue);
+        }
+
+        if (times.Count < 2 || times.Count % 2 != 0)
+            return false;
+
+        for (int i = 0; i < times.Count; i += 2)
+            windows.Add((times[i], times[i + 1]));
+
+        return windows.Count > 0;
+    }
+
+    private static bool IsValidSdvTime(int timeValue)
+    {
+        if (timeValue < 0 || timeValue > 2600)
+            return false;
+
+        int minutes = timeValue % 100;
+        return minutes >= 0 && minutes < 60 && timeValue % 10 == 0;
+    }
+
+    private static bool TryParseSeasonField(string source, out HashSet<string> seasonTokens)
+    {
+        seasonTokens = TokenizeLower(source);
+        if (seasonTokens.Count == 0)
+            return false;
+
+        return seasonTokens.All(token => ValidSeasonTokens.Contains(token));
+    }
+
+    private static bool TryParseWeatherField(string source, out HashSet<string> weatherTokens)
+    {
+        weatherTokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        HashSet<string> tokens = TokenizeLower(source);
+        if (tokens.Count == 0)
+            return false;
+
+        foreach (string token in tokens)
+        {
+            switch (token)
+            {
+                case "both":
+                case "any":
+                    weatherTokens.Add("sun");
+                    weatherTokens.Add("rain");
+                    break;
+                case "sun":
+                case "sunny":
+                    weatherTokens.Add("sun");
+                    break;
+                case "rain":
+                case "rainy":
+                    weatherTokens.Add("rain");
+                    break;
+                default:
+                    return false;
+            }
+        }
+
+        return weatherTokens.Count > 0;
+    }
+
+    private static HashSet<string> TokenizeLower(string source)
+    {
+        return source
+            .Split(new[] { ' ', ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(token => token.Trim().ToLowerInvariant())
+            .Where(token => token.Length > 0)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static bool WeatherMatches(HashSet<string> weatherTokens, bool isRaining)
+    {
+        if (weatherTokens.Count == 0)
+            return true;
+        return isRaining ? weatherTokens.Contains("rain") : weatherTokens.Contains("sun");
+    }
+
+    private static bool IsTimeInAnyWindow(int currentTime, IReadOnlyList<(int Start, int End)> windows)
+    {
+        foreach ((int start, int end) in windows)
+        {
+            if (end < start)
+            {
+                if (currentTime >= start || currentTime <= end)
+                    return true;
+            }
+            else if (currentTime >= start && currentTime <= end)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool HasFutureWindowToday(int currentTime, IReadOnlyList<(int Start, int End)> windows)
+    {
+        return windows.Any(window => window.Start > currentTime && window.Start <= 2600);
+    }
+
+    private static int? GetNextWindowStartAfter(int currentTime, IReadOnlyList<(int Start, int End)> windows)
+    {
+        return windows
+            .Where(window => window.Start > currentTime)
+            .Select(window => (int?)window.Start)
+            .DefaultIfEmpty(null)
+            .Min();
+    }
+
+    private static string FormatWeatherDisplay(HashSet<string> weatherTokens)
+    {
+        bool sun = weatherTokens.Contains("sun");
+        bool rain = weatherTokens.Contains("rain");
+        if (sun && rain)
+            return "both";
+        if (rain)
+            return "rainy";
+        if (sun)
+            return "sunny";
+        return "unknown";
+    }
+
+    private static void AddFishDetail(List<string> lines, string title, IEnumerable<FishAvailabilityCandidate> fish)
+    {
+        FishAvailabilityCandidate[] list = fish.ToArray();
+        lines.Add(string.Empty);
+        lines.Add(title);
+
+        if (list.Length == 0)
+        {
+            lines.Add("- none");
+            return;
+        }
+
+        foreach (FishAvailabilityCandidate entry in list)
+        {
+            string timeText = entry.TimeWindows.Count > 0
+                ? string.Join(", ", entry.TimeWindows.Select(window => $"{FormatTimeOfDayDisplay(window.Start)}-{FormatTimeOfDayDisplay(window.End)}"))
+                : "time unknown";
+            lines.Add($"- {entry.FishName} (time {timeText}, weather {entry.WeatherText}, season {entry.SeasonsText})");
+        }
+    }
+
+    private static void AddNonstandardFishDetail(List<string> lines, string title, IEnumerable<FishAvailabilityCandidate> fish)
+    {
+        FishAvailabilityCandidate[] list = fish.ToArray();
+        lines.Add(string.Empty);
+        lines.Add(title);
+
+        if (list.Length == 0)
+        {
+            lines.Add("- none");
+            return;
+        }
+
+        foreach (FishAvailabilityCandidate entry in list)
+            lines.Add($"- {entry.FishName} ({entry.CategoryLabel})");
+    }
+
+    private static string FormatTimeOfDayDisplay(int time)
+    {
+        if (!IsValidSdvTime(time))
+            return "unknown";
+
+        try
+        {
+            return Game1.getTimeOfDayString(time);
+        }
+        catch
+        {
+            return time.ToString("0000");
         }
     }
 

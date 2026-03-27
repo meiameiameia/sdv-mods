@@ -5,6 +5,7 @@ internal sealed class PerfectionAdvisorSnapshot
     public string ModeLabel { get; }
     public IReadOnlyList<string> OverviewLines { get; }
     public IReadOnlyList<string> ProgressLines { get; }
+    public IReadOnlyList<string> FishLines { get; }
     public IReadOnlyList<string> BlockerLines { get; }
     public IReadOnlyList<string> FriendshipLines { get; }
     public IReadOnlyList<string> SeasonalLines { get; }
@@ -15,6 +16,7 @@ internal sealed class PerfectionAdvisorSnapshot
         string modeLabel,
         IReadOnlyList<string> overviewLines,
         IReadOnlyList<string> progressLines,
+        IReadOnlyList<string> fishLines,
         IReadOnlyList<string> blockerLines,
         IReadOnlyList<string> friendshipLines,
         IReadOnlyList<string> seasonalLines,
@@ -24,6 +26,7 @@ internal sealed class PerfectionAdvisorSnapshot
         this.ModeLabel = modeLabel;
         this.OverviewLines = overviewLines;
         this.ProgressLines = progressLines;
+        this.FishLines = fishLines;
         this.BlockerLines = blockerLines;
         this.FriendshipLines = friendshipLines;
         this.SeasonalLines = seasonalLines;
