@@ -37,4 +37,4 @@
 - Add location-scoped drill-downs once broader multi-system terminal modules exist.
 - Add dedicated tests or smoke docs once the UI shell has been runtime-smoked in-game.
 - Keep future terminal modules read-focused by trusting snapshot semantics first, especially `ProgressText`, instead of re-deriving machine progress ad hoc.
-- If `Perfection Advisor` is added later, keep terminal integration summary-level and read-only rather than moving full advisor workflows into this mod.
+- If `Perfection Advisor` is surfaced later, keep terminal integration summary-level and read-only rather than moving full execution-assistant workflows into this mod.

@@ -1,14 +1,18 @@
 # Perfection Advisor
 
 ## Purpose
-`Perfection Advisor` is the planned standalone guidance mod for Stardew completion/perfection planning.
+`Perfection Advisor` is the standalone read-only execution assistant for Stardew completion/perfection planning.
 
-This line is the immediate next design/product focus for the repo.
+The point of this mod is not just to report progress. The point is to reduce wiki/context switching and let the player glance at the advisor, decide quickly, and act immediately toward perfection.
 
 ## Product Direction (Current)
 
 - standalone first (separate from `Farm Terminal`)
 - assistant-style guidance for completion/perfection planning
+- execution-oriented, read-only guidance:
+  - what still matters
+  - what can be done today
+  - where to go / who to target next
 - spoiler/assist behavior only
 - default-off guidance surfaces so players opt in deliberately
 
@@ -25,6 +29,7 @@ This line is the immediate next design/product focus for the repo.
 Allowed future connection:
 
 - optional summary-level read integration in terminal views, if useful later
+- optional compatibility with map/overlay mods for read-only action cues
 
 Not allowed in v1:
 
@@ -36,6 +41,17 @@ Not allowed in v1:
 - keep docs and design lightweight until implementation starts
 - do not broaden into broad ecosystem rewrites
 - keep configuration intent aligned with repo hardening rules (meaningful player-facing settings should target GMCM parity when shipped)
+
+## Current Near-Term Goal
+
+The current work on this line should converge on one actionability slice before the mod is paused for a while:
+
+- friendship execution guidance with meaningful next-action surfaces
+- current-day prioritization that is immediately usable
+- map/current-location compatible guidance where it removes real friction
+- trust-safe wording whenever the underlying logic is heuristic rather than canonical
+
+This line should pause once it reliably supports glance -> decide -> act workflows for real late-game saves, rather than growing sideways into every possible perfection subsystem at once.
 
 ## Immediate Routing
 

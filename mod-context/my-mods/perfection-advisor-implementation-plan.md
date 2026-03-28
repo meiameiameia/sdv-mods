@@ -7,13 +7,14 @@ This is a lightweight design-to-implementation prep note, not a runtime spec.
 
 ## 1) v1 Product Role
 
-`Perfection Advisor` v1 should be a standalone, read-only completion assistant for late-game players who want targeted guidance to finish perfection faster.
+`Perfection Advisor` should now be treated as a standalone, read-only completion execution assistant for late-game players who want targeted guidance to finish perfection faster.
 
 Primary value:
 
 - show current completion status clearly
 - show the next highest-value blockers
 - reduce wiki/context switching without automating gameplay
+- help the player act immediately, not just understand state
 
 ## 2) Why Standalone First
 
@@ -42,6 +43,21 @@ Recommended v1 category coverage (small but useful):
 - crafted items progress
 - friendship progress summary
 - golden walnut summary count only
+
+## 3b) Current Actionability Slice
+
+The next narrow slice should focus on execution quality instead of broader category expansion.
+
+Highest-value additions:
+
+- friendship execution guidance:
+  - target NPCs still needing hearts
+  - whether they still need today-actions
+  - useful gift guidance
+  - map/current-location compatible guidance
+- stronger "today" prioritization that feels like a mission board rather than a summary card
+- action-first wording for crop/fish guidance where confidence is high
+- explicit heuristic/canonical trust labels where confidence is not yet high
 
 ## 4) Deferred Scope
 
@@ -104,6 +120,12 @@ Keep interaction minimal:
 - toggle summary vs detailed spoiler view (only if enabled)
 - no direct actions that change gameplay state
 
+Preferred UX direction for the current actionability slice:
+
+- the player should be able to glance at one tab and know the next concrete step
+- map/overlay compatibility is acceptable when it stays read-only
+- raw coordinates are acceptable as fallback, but stronger visual guidance is preferable when available
+
 ## 8) Future Farm Terminal Integration (Later)
 
 If integration is added later, keep it summary-level only.
@@ -137,3 +159,14 @@ Do not include:
 5. add standalone advisor UI shell (summary first, detailed spoilers gated)
 6. add GMCM parity for shipped settings
 7. run focused v1 validation: disabled-by-default behavior, spoiler opt-in, progress accuracy, no gameplay side effects
+
+## 11) Recommended Pause Point
+
+Pause this line after the advisor reliably supports:
+
+- late-game friendship execution guidance
+- current-day prioritization
+- trust-safe crop/fish action guidance
+- a stable standalone read-only UX
+
+At that point, switch active implementation focus back to `PowerGrid` polish and then `Electronic Artisan Machines` Wave 1 continuation.

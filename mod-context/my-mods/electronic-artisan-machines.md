@@ -10,7 +10,7 @@ The mod's job is to introduce late-game powered artisan throughput upgrades that
 Current sequencing status:
 
 - the line remains valid
-- expansion beyond `Industrial Preserves Jar` is deferred while the new standalone `Perfection Advisor` line is the immediate design/product focus
+- expansion beyond `Industrial Preserves Jar` is deferred while the current standalone `Perfection Advisor` actionability slice is finished
 
 ## Product Identity
 
@@ -45,7 +45,7 @@ Why this subset:
 
 Sequencing note:
 
-- `Powered Cheese Press` and `Powered Oil Maker` remain Wave 1 members, but are not immediate next implementation targets right now
+- `Powered Cheese Press` and `Powered Oil Maker` remain Wave 1 members, but the line resumes only after the current Perfection Advisor actionability slice is paused
 
 Recommended first implementation target:
 

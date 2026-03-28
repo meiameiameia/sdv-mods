@@ -42,3 +42,4 @@
 - Add update keys in manifest (log flags missing update key).
 - Expand compatibility test matrix around `Data/Machines` heavy packs.
 - Formalize a small external integration guide for third-party consumer registration defaults.
+- Keep near-term polish passes narrow and readability-focused; for example, a clearer `Wind Generator` animation/readability pass is a good fit as long as it mirrors existing vanilla-style motion instead of inventing a loose approximation.

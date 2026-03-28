@@ -12,8 +12,8 @@ Define a unified machine ecosystem where your mods participate cleanly in the br
 ## Near-Term Product Boundary Update
 
 - `Electronic Artisan Machines` remains a separate machine-family line, but expansion beyond `Industrial Preserves Jar` is deferred for now.
-- The immediate next product/design focus is a new standalone `Perfection Advisor` line (spoiler/assist, default-off).
-- `Farm Terminal` remains read-only and should not absorb full advisor ownership in v1; at most, later summary integration can be added through existing snapshot/read surfaces.
+- The immediate advisor/product focus is the standalone `Perfection Advisor` actionability slice: read-only execution guidance, default-off spoilers, no gameplay automation.
+- `Farm Terminal` remains read-only and should not absorb full advisor ownership; at most, later summary integration can be added through existing snapshot/read surfaces.
 
 ## Conceptual Topology
 
@@ -107,3 +107,9 @@ A farm terminal style mod can aggregate:
 - power state (`darth.PowerGrid/*` modData + snapshot API),
 - automation routing state (Automate/Junimo context),
 without changing existing gameplay contracts.
+
+`Perfection Advisor` should follow the same boundary discipline:
+
+- actionable read surfaces are allowed
+- map/overlay compatibility is allowed
+- direct automation or gameplay control is not

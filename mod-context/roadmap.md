@@ -97,17 +97,32 @@ This phase should also finish current config-surface hardening:
 - `Farm Terminal` reaches GMCM parity for its user-facing config
 - `FishSmoker Recipe` only grows GMCM/config support if a real preset/config surface is introduced later
 
-## Phase 4: Perfection Advisor (Next Focus)
+## Phase 4: Perfection Advisor (Execution Assistant)
 
-Define and stage a new standalone assistant mod line focused on completion/perfection planning.
+Advance `Perfection Advisor` as a standalone, read-only execution assistant for late-game completion work.
 
 Current product direction:
 
 - standalone first (`Perfection Advisor`)
-- spoiler/assist behavior
-- default-off guidance surfaces
-- no control ownership and no automatic gameplay actions
+- default-off spoiler/assist behavior
+- read-only execution guidance, not automation
+- information should be immediately plannable and executable in the current day/session
 - optional later summary integration into `Farm Terminal`, while keeping `Farm Terminal` read-only
+
+Near-term actionability slice:
+
+- friendship execution guidance:
+  - who still needs hearts
+  - whether they still need talk/gift attention today
+  - useful gift guidance
+  - map/current-location guidance so the player can act immediately
+- stronger "what can I do today?" prioritization
+- keep fish/crop guidance trust-safe and actionable, not overclaimed
+
+Pause criteria for this line:
+
+- once the advisor reliably supports late-game glance -> decide -> act workflows
+- then pause it instead of widening breadth indefinitely
 
 Routing brief:
 
@@ -130,8 +145,8 @@ Wave 1 priorities:
 
 Current sequencing note:
 
-- expansion beyond `Industrial Preserves Jar` is deferred while `Perfection Advisor` is the immediate design/product focus
-- `Powered Cheese Press` is not the next implementation target right now
+- expansion beyond `Industrial Preserves Jar` remains deferred until the current Perfection Advisor actionability slice reaches its pause criteria
+- `Powered Cheese Press` is the next machine once `Electronic Artisan Machines` resumes
 
 Rationale:
 
@@ -207,8 +222,9 @@ Depth should come from interacting systems, not just from adding more placeable 
 Near-term sequencing:
 
 - keep `Industrial Preserves Jar` as the first completed/validated machine slice for this line
-- do not treat `Powered Cheese Press` as the immediate next target
-- resume Wave 1 expansion only after `Perfection Advisor` reaches a stable standalone design/product baseline
+- do not resume Wave 1 until the current Perfection Advisor actionability slice is finished
+- resume with `Powered Cheese Press`
+- follow with `PowerGrid`/art polish and then the rest of Wave 1 as justified
 
 ## Deferred / Optional
 
