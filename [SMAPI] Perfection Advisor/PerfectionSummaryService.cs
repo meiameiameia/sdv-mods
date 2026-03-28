@@ -43,9 +43,12 @@ internal sealed class PerfectionSummaryService
         public bool UsesSeasonWeatherTimeModel { get; init; }
         public string SeasonsText { get; init; } = "unknown";
         public string WeatherText { get; init; } = "unknown";
+        public string LocationText { get; init; } = "unknown";
         public IReadOnlyList<(int Start, int End)> TimeWindows { get; init; } = Array.Empty<(int, int)>();
         public bool IsInCurrentSeason { get; init; }
         public bool MatchesCurrentWeather { get; init; }
+        public bool IsLocationAware { get; init; }
+        public bool MatchesCurrentLocation { get; init; }
         public bool IsAvailableNow { get; init; }
         public bool IsAvailableLaterToday { get; init; }
         public string CategoryLabel { get; init; } = string.Empty;
@@ -379,6 +382,12 @@ internal sealed class PerfectionSummaryService
         List<FishAvailabilityCandidate> temporalFish = missingFish
             .Where(fish => fish.UsesSeasonWeatherTimeModel)
             .ToList();
+        List<FishAvailabilityCandidate> locationAwareTemporalFish = temporalFish
+            .Where(fish => fish.IsLocationAware)
+            .ToList();
+        List<FishAvailabilityCandidate> locationUnresolvedTemporalFish = temporalFish
+            .Where(fish => !fish.IsLocationAware)
+            .ToList();
         List<FishAvailabilityCandidate> nonstandardFish = missingFish
             .Where(fish => !fish.UsesSeasonWeatherTimeModel)
             .OrderBy(fish => fish.FishName, StringComparer.OrdinalIgnoreCase)
@@ -394,7 +403,7 @@ internal sealed class PerfectionSummaryService
             .ThenBy(fish => fish.FishName, StringComparer.OrdinalIgnoreCase)
             .ToList();
         List<FishAvailabilityCandidate> notNowThisSeason = temporalFish
-            .Where(fish => fish.IsInCurrentSeason && !fish.IsAvailableNow && !fish.IsAvailableLaterToday)
+            .Where(fish => fish.IsInCurrentSeason && fish.IsLocationAware && !fish.IsAvailableNow && !fish.IsAvailableLaterToday)
             .OrderBy(fish => fish.FishName, StringComparer.OrdinalIgnoreCase)
             .ToList();
         List<FishAvailabilityCandidate> notThisSeason = temporalFish
@@ -403,15 +412,17 @@ internal sealed class PerfectionSummaryService
             .ToList();
 
         lines.Add($"Now: {seasonNow} Day {Game1.dayOfMonth}, {timeNow}, weather {weatherNow}");
-        lines.Add("Scope: tracked fish subset and prefilter logic (not full catchability simulation).");
+        lines.Add("Scope: tracked fish subset with rod-model location checks where canonical location signals are parseable.");
         lines.Add($"Missing fish tracked: {missingFish.Count}");
         lines.Add($"Rod-catch season/weather/time model entries: {temporalFish.Count}");
-        lines.Add($"Season/weather/time prefilter match now: {availableNow.Count}");
-        lines.Add($"Season/weather/time prefilter match later today: {laterToday.Count}");
-        lines.Add($"Current season but blocked by time/weather right now: {notNowThisSeason.Count}");
+        lines.Add($"Rod-catch entries with modeled location signals: {locationAwareTemporalFish.Count}");
+        lines.Add($"Rod-catch entries with unresolved location signals: {locationUnresolvedTemporalFish.Count}");
+        lines.Add($"Location-aware catchable now: {availableNow.Count}");
+        lines.Add($"Location-aware catchable later today: {laterToday.Count}");
+        lines.Add($"Current season but blocked by time/weather/location right now: {notNowThisSeason.Count}");
         lines.Add($"Rod-catch model but not in current season: {notThisSeason.Count}");
         lines.Add($"Nonstandard or alternate-acquisition entries: {nonstandardFish.Count}");
-        lines.Add("Note: location/method constraints are not fully modeled in this tab yet.");
+        lines.Add("Note: method-specific constraints and special-case logic are still partial.");
 
         if (!detailsEnabled)
         {
@@ -421,9 +432,10 @@ internal sealed class PerfectionSummaryService
             return lines;
         }
 
-        AddFishDetail(lines, "Season/weather/time prefilter match now", availableNow);
-        AddFishDetail(lines, "Season/weather/time prefilter match later today", laterToday);
-        AddFishDetail(lines, "Current season but not available right now", notNowThisSeason);
+        AddFishDetail(lines, "Location-aware catchable now", availableNow);
+        AddFishDetail(lines, "Location-aware catchable later today", laterToday);
+        AddFishDetail(lines, "Current season but not available right now (includes location-aware checks)", notNowThisSeason);
+        AddFishDetail(lines, "Rod-model with unresolved location signals", locationUnresolvedTemporalFish);
         AddFishDetail(lines, "Not available this season", notThisSeason);
         AddNonstandardFishDetail(lines, "Nonstandard / alternate-acquisition entries", nonstandardFish);
         return lines;
@@ -442,6 +454,7 @@ internal sealed class PerfectionSummaryService
             string currentSeason = Game1.season.ToString().ToLowerInvariant();
             bool isRaining = Game1.isRaining;
             int currentTime = Game1.timeOfDay;
+            HashSet<string> currentLocationSignals = GetCurrentLocationSignals(player.currentLocation);
 
             foreach (KeyValuePair<string, string> pair in fishData)
             {
@@ -455,19 +468,34 @@ internal sealed class PerfectionSummaryService
                 bool hasAlternateAcquisitionMarkers = HasAlternateAcquisitionMarkers(parts);
                 bool isRodCatchEligible = isRodCatchType && !hasAlternateAcquisitionMarkers;
 
-                if (isRodCatchEligible && TryParseSeasonWeatherTimeModel(parts, out List<(int Start, int End)> windows, out HashSet<string> seasonTokens, out HashSet<string> weatherTokens))
+                if (isRodCatchEligible
+                    && TryParseSeasonWeatherTimeModel(
+                        parts,
+                        out List<(int Start, int End)> windows,
+                        out HashSet<string> seasonTokens,
+                        out HashSet<string> weatherTokens,
+                        out string locationFieldRaw))
                 {
                     bool hasSeasonRestriction = seasonTokens.Count > 0;
                     bool isInCurrentSeason = !hasSeasonRestriction || seasonTokens.Contains(currentSeason);
                     bool matchesCurrentWeather = WeatherMatches(weatherTokens, isRaining);
                     bool inTimeWindowNow = IsTimeInAnyWindow(currentTime, windows);
-                    bool isAvailableNow = isInCurrentSeason && matchesCurrentWeather && inTimeWindowNow;
-                    bool isAvailableLaterToday = !isAvailableNow && isInCurrentSeason && matchesCurrentWeather && HasFutureWindowToday(currentTime, windows);
+                    bool matchesTemporalNow = isInCurrentSeason && matchesCurrentWeather && inTimeWindowNow;
+                    bool matchesTemporalLaterToday = !matchesTemporalNow && isInCurrentSeason && matchesCurrentWeather && HasFutureWindowToday(currentTime, windows);
+
+                    bool isLocationAware = TryParseRodLocationSignals(locationFieldRaw, out HashSet<string> fishLocationSignals, out bool locationEverywhere);
+                    bool matchesCurrentLocation = isLocationAware
+                        && (locationEverywhere || LocationSignalsMatch(fishLocationSignals, currentLocationSignals));
+                    bool isAvailableNow = matchesTemporalNow && matchesCurrentLocation;
+                    bool isAvailableLaterToday = !isAvailableNow && matchesTemporalLaterToday && matchesCurrentLocation;
 
                     string seasonsText = hasSeasonRestriction
                         ? string.Join("/", seasonTokens.OrderBy(token => token, StringComparer.OrdinalIgnoreCase))
                         : "any";
                     string weatherText = FormatWeatherDisplay(weatherTokens);
+                    string locationText = isLocationAware
+                        ? FormatLocationSignalsDisplay(fishLocationSignals, locationEverywhere)
+                        : "unresolved";
 
                     missing.Add(new FishAvailabilityCandidate
                     {
@@ -475,12 +503,17 @@ internal sealed class PerfectionSummaryService
                         UsesSeasonWeatherTimeModel = true,
                         SeasonsText = seasonsText,
                         WeatherText = weatherText,
+                        LocationText = locationText,
                         TimeWindows = windows,
                         IsInCurrentSeason = isInCurrentSeason,
                         MatchesCurrentWeather = matchesCurrentWeather,
+                        IsLocationAware = isLocationAware,
+                        MatchesCurrentLocation = matchesCurrentLocation,
                         IsAvailableNow = isAvailableNow,
                         IsAvailableLaterToday = isAvailableLaterToday,
-                        CategoryLabel = "Rod-catch season/weather/time model"
+                        CategoryLabel = isLocationAware
+                            ? "Rod-catch season/weather/time/location model"
+                            : "Rod-catch model with unresolved location signals"
                     });
                 }
                 else
@@ -511,11 +544,13 @@ internal sealed class PerfectionSummaryService
         string[] parts,
         out List<(int Start, int End)> windows,
         out HashSet<string> seasonTokens,
-        out HashSet<string> weatherTokens)
+        out HashSet<string> weatherTokens,
+        out string locationFieldRaw)
     {
         windows = new List<(int Start, int End)>();
         seasonTokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         weatherTokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        locationFieldRaw = string.Empty;
 
         for (int timeIndex = 0; timeIndex < parts.Length; timeIndex++)
         {
@@ -532,11 +567,119 @@ internal sealed class PerfectionSummaryService
                 windows = parsedWindows;
                 seasonTokens = parsedSeasons;
                 weatherTokens = parsedWeather;
+                locationFieldRaw = timeIndex > 0 ? parts[timeIndex - 1] : string.Empty;
                 return true;
             }
         }
 
         return false;
+    }
+
+    private static HashSet<string> GetCurrentLocationSignals(GameLocation location)
+    {
+        HashSet<string> signals = new(StringComparer.OrdinalIgnoreCase);
+        string raw = $"{location.NameOrUniqueName} {location.GetType().Name}";
+        AddLocationSignalsFromFragment(raw, signals);
+
+        string lowered = raw.ToLowerInvariant();
+        if (lowered.Contains("town"))
+            signals.Add("river");
+        if (lowered.Contains("mountain"))
+        {
+            signals.Add("lake");
+            signals.Add("river");
+        }
+        if (lowered.Contains("forest") || lowered.Contains("woods") || lowered.Contains("backwoods"))
+            signals.Add("river");
+        if (lowered.Contains("beach") || lowered.Contains("ocean"))
+        {
+            signals.Add("beach");
+            signals.Add("ocean");
+        }
+        if (lowered.Contains("island"))
+        {
+            signals.Add("island");
+            signals.Add("ocean");
+        }
+        if (lowered.Contains("sewer"))
+            signals.Add("sewer");
+        if (lowered.Contains("desert"))
+            signals.Add("desert");
+        if (lowered.Contains("mine"))
+            signals.Add("mine");
+        if (lowered.Contains("submarine"))
+            signals.Add("submarine");
+
+        return signals;
+    }
+
+    private static bool TryParseRodLocationSignals(string source, out HashSet<string> locationSignals, out bool locationEverywhere)
+    {
+        locationSignals = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        locationEverywhere = false;
+        if (string.IsNullOrWhiteSpace(source))
+            return false;
+
+        HashSet<string> rawTokens = TokenizeLower(source);
+        if (rawTokens.Count == 0)
+            return false;
+
+        if (rawTokens.Contains("any") || rawTokens.Contains("all") || rawTokens.Contains("both"))
+        {
+            locationEverywhere = true;
+            return true;
+        }
+
+        AddLocationSignalsFromFragment(source, locationSignals);
+        return locationSignals.Count > 0;
+    }
+
+    private static void AddLocationSignalsFromFragment(string source, HashSet<string> signals)
+    {
+        string lowered = source.ToLowerInvariant();
+        if (lowered.Contains("beach"))
+        {
+            signals.Add("beach");
+            signals.Add("ocean");
+        }
+        if (lowered.Contains("ocean"))
+            signals.Add("ocean");
+        if (lowered.Contains("river"))
+            signals.Add("river");
+        if (lowered.Contains("lake"))
+            signals.Add("lake");
+        if (lowered.Contains("town"))
+            signals.Add("town");
+        if (lowered.Contains("mountain"))
+            signals.Add("mountain");
+        if (lowered.Contains("forest") || lowered.Contains("woods"))
+            signals.Add("forest");
+        if (lowered.Contains("desert"))
+            signals.Add("desert");
+        if (lowered.Contains("sewer"))
+            signals.Add("sewer");
+        if (lowered.Contains("island"))
+            signals.Add("island");
+        if (lowered.Contains("mine"))
+            signals.Add("mine");
+        if (lowered.Contains("submarine"))
+            signals.Add("submarine");
+        if (lowered.Contains("mutant"))
+            signals.Add("sewer");
+    }
+
+    private static bool LocationSignalsMatch(HashSet<string> fishLocationSignals, HashSet<string> currentLocationSignals)
+    {
+        return fishLocationSignals.Count > 0 && fishLocationSignals.Overlaps(currentLocationSignals);
+    }
+
+    private static string FormatLocationSignalsDisplay(HashSet<string> locationSignals, bool locationEverywhere)
+    {
+        if (locationEverywhere)
+            return "any";
+        if (locationSignals.Count == 0)
+            return "unknown";
+        return string.Join("/", locationSignals.OrderBy(token => token, StringComparer.OrdinalIgnoreCase));
     }
 
     private static bool HasAlternateAcquisitionMarkers(string[] parts)
@@ -713,7 +856,8 @@ internal sealed class PerfectionSummaryService
             string timeText = entry.TimeWindows.Count > 0
                 ? string.Join(", ", entry.TimeWindows.Select(window => $"{FormatTimeOfDayDisplay(window.Start)}-{FormatTimeOfDayDisplay(window.End)}"))
                 : "time unknown";
-            lines.Add($"- {entry.FishName} (time {timeText}, weather {entry.WeatherText}, season {entry.SeasonsText})");
+            string locationText = entry.IsLocationAware ? entry.LocationText : "unresolved";
+            lines.Add($"- {entry.FishName} (time {timeText}, weather {entry.WeatherText}, season {entry.SeasonsText}, location {locationText})");
         }
     }
 
