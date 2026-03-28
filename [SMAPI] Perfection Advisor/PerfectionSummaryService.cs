@@ -98,6 +98,24 @@ internal sealed class PerfectionSummaryService
         (int craftedRecipes, int? totalCraftingRecipes, bool craftingFallback) = this.GetCraftingProgressExcludingWeddingRing(player);
         if (craftingFallback)
             degradedSections.Add("Crafting");
+        (int maxedSkills, int totalSkills, bool skillsPartial) = this.GetVanillaSkillsMaxedStatus(player);
+        if (skillsPartial)
+            degradedSections.Add("Skills");
+        (int stardropsFound, int? stardropTarget, bool stardropsPartial) = this.GetStardropStatus(player);
+        if (stardropsPartial)
+            degradedSections.Add("Stardrops");
+        (bool? monsterEradicationComplete, bool monsterPartial) = this.GetMonsterEradicationStatus();
+        if (monsterPartial)
+            degradedSections.Add("Monster eradication");
+        (int obelisksBuilt, int? obeliskTarget, bool obelisksPartial) = this.GetObeliskStatus();
+        if (obelisksPartial)
+            degradedSections.Add("Obelisks");
+        (bool? goldClockBuilt, bool goldClockPartial) = this.GetGoldClockStatus();
+        if (goldClockPartial)
+            degradedSections.Add("Gold clock");
+        (int walnutsFound, int? walnutTarget, bool walnutsPartial) = this.GetGoldenWalnutStatus(player);
+        if (walnutsPartial)
+            degradedSections.Add("Golden walnuts");
 
         List<string> friendshipLines = this.BuildFriendshipLines(player, detailsEnabled, out int completeFriendshipTargets, out int totalFriendshipTargets, out int totalHeartsRemaining);
 
@@ -117,6 +135,7 @@ internal sealed class PerfectionSummaryService
             "Coverage is a tracked subset for planning, not full perfection parity.",
             "Current-player view only; farm-wide multiplayer perfection is not modeled in this slice.",
             "Shipped progress mirrors Collections/perfection semantics when canonical data is available.",
+            "Coverage phase 1 includes skills, stardrops, monster eradication, obelisks, gold clock, and walnut summary.",
             "Read-only advisor. No automation or gameplay control actions."
         };
 
@@ -129,6 +148,24 @@ internal sealed class PerfectionSummaryService
             FormatProgress("Friendship targets maxed", completeFriendshipTargets, totalFriendshipTargets),
             $"Friendship hearts remaining: {totalHeartsRemaining}"
         };
+        progressLines.Add(string.Empty);
+        progressLines.Add("Perfection coverage phase 1 (read-only)");
+        progressLines.Add($"Skills maxed (vanilla, player): {maxedSkills}/{totalSkills}");
+        progressLines.Add(stardropTarget.HasValue
+            ? $"Stardrops obtained (player): {stardropsFound}/{stardropTarget.Value}"
+            : $"Stardrops obtained (player): {stardropsFound} (target unavailable)");
+        progressLines.Add(monsterEradicationComplete.HasValue
+            ? $"Monster eradication goals: {(monsterEradicationComplete.Value ? "complete" : "incomplete")}"
+            : "Monster eradication goals: status unavailable");
+        progressLines.Add(obeliskTarget.HasValue
+            ? $"Obelisks built (farm): {obelisksBuilt}/{obeliskTarget.Value}"
+            : $"Obelisks built (farm): {obelisksBuilt} (target unavailable)");
+        progressLines.Add(goldClockBuilt.HasValue
+            ? $"Gold clock built (farm): {(goldClockBuilt.Value ? "yes" : "no")}"
+            : "Gold clock built (farm): status unavailable");
+        progressLines.Add(walnutTarget.HasValue
+            ? $"Golden walnuts found (save summary): {walnutsFound}/{walnutTarget.Value}"
+            : $"Golden walnuts found (save summary): {walnutsFound} (target unavailable)");
         List<string> fishLines = this.BuildFishGuidanceLines(player, detailsEnabled, out bool fishDegraded);
         if (fishDegraded)
             degradedSections.Add("Fish");
@@ -141,6 +178,14 @@ internal sealed class PerfectionSummaryService
         AddBlockerIfKnown(blockers, "Fish collection", fishCaught, totalFish);
         AddBlockerIfKnown(blockers, "Cooking recipes", cookedRecipes, totalCookingRecipes);
         AddBlockerIfKnown(blockers, "Crafting recipes", craftedRecipes, totalCraftingRecipes);
+        AddBlockerIfKnown(blockers, "Skills maxed", maxedSkills, totalSkills);
+        AddBlockerIfKnown(blockers, "Stardrops obtained", stardropsFound, stardropTarget);
+        AddBlockerIfKnown(blockers, "Obelisks built", obelisksBuilt, obeliskTarget);
+        AddBlockerIfKnown(blockers, "Golden walnuts", walnutsFound, walnutTarget);
+        if (monsterEradicationComplete.HasValue && !monsterEradicationComplete.Value)
+            blockers.Add(("Monster eradication goals", 1));
+        if (goldClockBuilt.HasValue && !goldClockBuilt.Value)
+            blockers.Add(("Gold clock built", 1));
 
         List<string> blockerLines = new();
         List<(string Label, int Remaining)> topBlockers = blockers
@@ -308,6 +353,189 @@ internal sealed class PerfectionSummaryService
             HashSet<string> craftedKeys = GetPositiveKeys(canonicalSource);
             int craftedCount = craftedKeys.Count(recipeName => !IsWeddingRingRecipe(recipeName));
             return (craftedCount, null, true);
+        }
+    }
+
+    private (int MaxedSkills, int TotalSkills, bool Partial) GetVanillaSkillsMaxedStatus(Farmer player)
+    {
+        (string Label, string[] Members)[] skillMembers =
+        {
+            ("Farming", new[] { "FarmingLevel", "farmingLevel" }),
+            ("Fishing", new[] { "FishingLevel", "fishingLevel" }),
+            ("Foraging", new[] { "ForagingLevel", "foragingLevel" }),
+            ("Mining", new[] { "MiningLevel", "miningLevel" }),
+            ("Combat", new[] { "CombatLevel", "combatLevel" })
+        };
+
+        int maxed = 0;
+        bool partial = false;
+
+        foreach ((_, string[] members) in skillMembers)
+        {
+            int? level = GetIntMemberValue(player, members);
+            if (!level.HasValue)
+            {
+                partial = true;
+                continue;
+            }
+
+            if (level.Value >= 10)
+                maxed++;
+        }
+
+        return (maxed, skillMembers.Length, partial);
+    }
+
+    private (int Found, int? Target, bool Partial) GetStardropStatus(Farmer player)
+    {
+        object? stardropsFound = GetPropertyValue(player, "stardropsFound");
+        if (stardropsFound == null)
+            return (0, null, true);
+
+        int found = CountCollectionEntries(stardropsFound);
+        return (found, 7, false);
+    }
+
+    private (bool? Complete, bool Partial) GetMonsterEradicationStatus()
+    {
+        try
+        {
+            Type? guildType = typeof(Game1).Assembly.GetType("StardewValley.Locations.AdventureGuild");
+            if (guildType == null)
+                return (null, true);
+
+            string[] preferredMethodNames =
+            {
+                "areAllMonsterSlayerQuestsComplete",
+                "AreAllMonsterSlayerQuestsComplete",
+                "hasCompletedAllMonsterSlayerQuests",
+                "HasCompletedAllMonsterSlayerQuests"
+            };
+
+            foreach (string methodName in preferredMethodNames)
+            {
+                MethodInfo? method = guildType.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                if (method == null || method.ReturnType != typeof(bool) || method.GetParameters().Length != 0)
+                    continue;
+
+                if (method.Invoke(null, null) is bool value)
+                    return (value, false);
+            }
+
+            MethodInfo? heuristic = guildType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
+                .FirstOrDefault(method =>
+                    method.ReturnType == typeof(bool)
+                    && method.GetParameters().Length == 0
+                    && method.Name.Contains("Monster", StringComparison.OrdinalIgnoreCase)
+                    && method.Name.Contains("Slayer", StringComparison.OrdinalIgnoreCase)
+                    && method.Name.Contains("Complete", StringComparison.OrdinalIgnoreCase));
+
+            if (heuristic?.Invoke(null, null) is bool fallbackValue)
+                return (fallbackValue, false);
+        }
+        catch
+        {
+            // Keep partial status below.
+        }
+
+        return (null, true);
+    }
+
+    private (int Built, int? Target, bool Partial) GetObeliskStatus()
+    {
+        (HashSet<string> keys, bool partial) = GetFarmBuildingTypeKeys();
+        if (keys.Count == 0 && partial)
+            return (0, null, true);
+
+        string[] targets =
+        {
+            "earth obelisk",
+            "water obelisk",
+            "desert obelisk",
+            "island obelisk"
+        };
+
+        int built = targets.Count(target => keys.Contains(target));
+        return (built, targets.Length, partial);
+    }
+
+    private (bool? Built, bool Partial) GetGoldClockStatus()
+    {
+        (HashSet<string> keys, bool partial) = GetFarmBuildingTypeKeys();
+        if (keys.Count == 0 && partial)
+            return (null, true);
+
+        bool built = keys.Contains("gold clock");
+        return (built, partial);
+    }
+
+    private (int Found, int? Target, bool Partial) GetGoldenWalnutStatus(Farmer player)
+    {
+        try
+        {
+            object? team = GetPropertyValue(player, "team");
+            int? found = GetIntMemberValue(team, "GoldenWalnutsFound", "goldenWalnutsFound", "GoldenWalnuts", "goldenWalnuts");
+            int? total = GetIntMemberValue(team, "GoldenWalnutsTotal", "goldenWalnutsTotal");
+
+            if (!found.HasValue)
+            {
+                object? netWorldState = GetStaticPropertyValue(typeof(Game1), "netWorldState");
+                object? worldValue = GetPropertyValue(netWorldState, "Value");
+                found = GetIntMemberValue(worldValue, "GoldenWalnutsFound", "goldenWalnutsFound", "GoldenWalnuts", "goldenWalnuts");
+                total ??= GetIntMemberValue(worldValue, "GoldenWalnutsTotal", "goldenWalnutsTotal");
+            }
+
+            if (!total.HasValue && found.HasValue)
+                total = 130;
+
+            if (!found.HasValue)
+                return (0, total, true);
+
+            return (found.Value, total, false);
+        }
+        catch
+        {
+            return (0, null, true);
+        }
+    }
+
+    private static (HashSet<string> Keys, bool Partial) GetFarmBuildingTypeKeys()
+    {
+        HashSet<string> keys = new(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            Farm farm = Game1.getFarm();
+            if (farm == null)
+                return (keys, true);
+
+            object? buildingsObj = GetPropertyValue(farm, "buildings");
+            if (buildingsObj is not IEnumerable buildings)
+                return (keys, true);
+
+            foreach (object? building in buildings)
+            {
+                if (building == null)
+                    continue;
+
+                string? typeName = GetStringMemberValue(building, "buildingType", "BuildingType", "nameOfBuildingType", "NameOfBuildingType");
+                if (string.IsNullOrWhiteSpace(typeName))
+                {
+                    MethodInfo? getData = building.GetType().GetMethod("GetData", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    object? data = getData?.GetParameters().Length == 0 ? getData.Invoke(building, null) : null;
+                    typeName = GetStringMemberValue(data, "Name", "DisplayName", "Id");
+                }
+
+                if (string.IsNullOrWhiteSpace(typeName))
+                    continue;
+
+                keys.Add(typeName.Trim().ToLowerInvariant());
+            }
+
+            return (keys, false);
+        }
+        catch
+        {
+            return (keys, true);
         }
     }
 
@@ -1060,6 +1288,48 @@ internal sealed class PerfectionSummaryService
         };
     }
 
+    private static int? GetIntMemberValue(object? source, params string[] memberNames)
+    {
+        if (source == null)
+            return null;
+
+        Type sourceType = source.GetType();
+        foreach (string memberName in memberNames)
+        {
+            PropertyInfo? prop = sourceType.GetProperty(memberName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (prop != null)
+            {
+                int? converted = ConvertToInt(prop.GetValue(source));
+                if (converted.HasValue)
+                    return converted;
+            }
+
+            FieldInfo? field = sourceType.GetField(memberName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (field != null)
+            {
+                int? converted = ConvertToInt(field.GetValue(source));
+                if (converted.HasValue)
+                    return converted;
+            }
+        }
+
+        return null;
+    }
+
+    private static int? ConvertToInt(object? value)
+    {
+        object? unwrapped = UnwrapValue(value);
+        return unwrapped switch
+        {
+            int intValue => intValue,
+            long longValue => (int)longValue,
+            float floatValue => (int)floatValue,
+            double doubleValue => (int)doubleValue,
+            decimal decimalValue => (int)decimalValue,
+            _ => null
+        };
+    }
+
     private static object? GetPropertyValue(object? source, string propertyName)
     {
         if (source == null)
@@ -1067,6 +1337,34 @@ internal sealed class PerfectionSummaryService
 
         PropertyInfo? prop = source.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         return prop?.GetValue(source);
+    }
+
+    private static object? GetStaticPropertyValue(Type sourceType, string propertyName)
+    {
+        PropertyInfo? prop = sourceType.GetProperty(propertyName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+        return prop?.GetValue(null);
+    }
+
+    private static string? GetStringMemberValue(object? source, params string[] memberNames)
+    {
+        if (source == null)
+            return null;
+
+        Type sourceType = source.GetType();
+        foreach (string memberName in memberNames)
+        {
+            PropertyInfo? prop = sourceType.GetProperty(memberName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            object? propValue = prop?.GetValue(source);
+            if (propValue is string propString && !string.IsNullOrWhiteSpace(propString))
+                return propString;
+
+            FieldInfo? field = sourceType.GetField(memberName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            object? fieldValue = field?.GetValue(source);
+            if (fieldValue is string fieldString && !string.IsNullOrWhiteSpace(fieldString))
+                return fieldString;
+        }
+
+        return null;
     }
 
     private static string ResolveObjectDisplayName(string objectItemId)
