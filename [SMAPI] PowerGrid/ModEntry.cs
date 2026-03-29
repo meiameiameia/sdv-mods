@@ -44,7 +44,7 @@ internal sealed class ModEntry : Mod
     private const float ChargedBatteryThreshold = 0.5f;
     private const string WindGeneratorWheelSpriteName = "WindGenerator__wheel";
     private const float WindGeneratorGeneratingRadiansPerSecond = 5.5f;
-    private const float WindGeneratorIdleRadiansPerSecond = 0.35f;
+    private const float WindGeneratorIdleRadiansPerSecond = 0f;
     private const float WindGeneratorWheelLayerOffset = 0.0001f;
     private static readonly Rectangle BigCraftableSourceRect = new(0, 0, 16, 32);
     private static readonly Vector2 WindGeneratorWheelPivot = new(8f, 6f);
@@ -403,7 +403,10 @@ internal sealed class ModEntry : Mod
         {
             int ticks = elapsed / PowerConstants.TickIntervalMinutes;
             for (int i = 0; i < ticks; i++)
+            {
                 PowerMgr.SimulateTick();
+                TriggerSteamGeneratorWorkingAnimations();
+            }
         }
     }
 
@@ -1496,7 +1499,54 @@ internal sealed class ModEntry : Mod
         if (obj.modData.TryGetValue(RuntimeOnlineKey, out string? onlineText))
             return onlineText == "1" ? "generating" : "idle";
 
-        return null;
+        // Default to idle so wind visuals (including wheel layer) are present as soon as placed.
+        return "idle";
+    }
+
+    private void TriggerSteamGeneratorWorkingAnimations()
+    {
+        if (!Context.IsWorldReady || !Context.IsMainPlayer)
+            return;
+
+        foreach (GameLocation location in EnumerateLoadedLocations())
+        {
+            if (location.farmers.Count == 0)
+                continue;
+
+            foreach ((Vector2 tile, StardewValley.Object obj) in location.objects.Pairs)
+            {
+                if (obj.ItemId != PowerConstants.SteamGeneratorId)
+                    continue;
+
+                string generatorKey = PowerConstants.MakeNodeKey(location.NameOrUniqueName, tile, PowerConstants.SteamGeneratorId);
+                if (FuelMgr.GetFuelTicksRemaining(generatorKey) <= 0)
+                    continue;
+
+                // Mirrors vanilla furnace cadence:
+                // minutesElapsed -> 33% chance of addWorkingAnimation,
+                // then Furnace branch -> 50% chance of fire burst.
+                if (Game1.random.NextDouble() >= 0.165)
+                    continue;
+
+                float layerDepth = (float)(((tile.Y + 1.0) * 64.0 / 10000.0) + 0.0001);
+                TemporaryAnimatedSprite burst = new(
+                    30,
+                    tile * 64f + new Vector2(0f, -16f),
+                    Color.White,
+                    4,
+                    flipped: false,
+                    animationInterval: 50f,
+                    numberOfLoops: 10,
+                    sourceRectWidth: 64,
+                    layerDepth: layerDepth)
+                {
+                    alphaFade = 0.005f
+                };
+
+                Game1.Multiplayer.broadcastSprites(location, burst);
+                location.playSound("fireball");
+            }
+        }
     }
 
     private string? GetBatteryState(string locationName, Vector2 tile, string itemId)
