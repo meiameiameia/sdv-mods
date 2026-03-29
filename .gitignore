@@ -3,8 +3,14 @@
 **/obj/
 
 # Release/package outputs
-/artifacts/mod-zips/
+/artifacts/
 *.zip
+
+# Internal repo-only context and workflow material
+/AGENTS.md
+/mod-context/
+/_inspect_methods.cs
+*working*.png
 
 # SMAPI runtime-generated config files
 /[[]SMAPI[]] PowerGrid/config.json
