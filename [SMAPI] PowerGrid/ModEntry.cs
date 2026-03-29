@@ -42,9 +42,16 @@ internal sealed class ModEntry : Mod
     private const string RuntimeOnlineKey = PersistedModDataPrefix + "online";
     private const string RuntimeGeneratedThisTickKey = PersistedModDataPrefix + "generatedThisTick";
     private const float ChargedBatteryThreshold = 0.5f;
+    private const string WindGeneratorWheelSpriteName = "WindGenerator__wheel";
+    private const float WindGeneratorGeneratingRadiansPerSecond = 5.5f;
+    private const float WindGeneratorIdleRadiansPerSecond = 0.35f;
+    private const float WindGeneratorWheelLayerOffset = 0.0001f;
     private static readonly Rectangle BigCraftableSourceRect = new(0, 0, 16, 32);
+    private static readonly Vector2 WindGeneratorWheelPivot = new(8f, 6f);
     private readonly HashSet<string> invalidStateSpritesLogged = new(StringComparer.Ordinal);
     private readonly HashSet<string> conduitRenderDiagnosticsLogged = new(StringComparer.Ordinal);
+    private bool attemptedWindWheelTextureLoad;
+    private Texture2D? cachedWindWheelTexture;
 
     // Texture asset keys (lazy-computed from manifest)
     private string CopperCableTexture => $"Mods/{ModManifest.UniqueID}/CopperCable";
@@ -52,6 +59,7 @@ internal sealed class ModEntry : Mod
     private string IridiumCableTexture => $"Mods/{ModManifest.UniqueID}/IridiumCable";
     private string SteamGeneratorTexture => $"Mods/{ModManifest.UniqueID}/SteamGenerator";
     private string WindGeneratorTexture => $"Mods/{ModManifest.UniqueID}/WindGenerator";
+    private string WindGeneratorWheelTexture => GetTextureAsset(WindGeneratorWheelSpriteName);
     private string BasicBatteryTexture => $"Mods/{ModManifest.UniqueID}/BasicBattery";
     private string IridiumBatteryTexture => $"Mods/{ModManifest.UniqueID}/IridiumBattery";
     private string PowerConduitTexture => $"Mods/{ModManifest.UniqueID}/PowerConduit";
@@ -618,6 +626,7 @@ internal sealed class ModEntry : Mod
         TryLoadTexture(e, IridiumCableTexture, "IridiumCable", new Color(120, 70, 200));
         TryLoadTexture(e, SteamGeneratorTexture, "SteamGenerator", new Color(140, 140, 160));
         TryLoadTexture(e, WindGeneratorTexture, "WindGenerator", new Color(100, 180, 220));
+        TryLoadOptionalTexture(e, WindGeneratorWheelTexture, WindGeneratorWheelSpriteName);
         TryLoadTexture(e, BasicBatteryTexture, "BasicBattery", new Color(60, 180, 60));
         TryLoadTexture(e, IridiumBatteryTexture, "IridiumBattery", new Color(150, 80, 220));
         TryLoadTexture(e, PowerConduitTexture, "PowerConduit", new Color(220, 200, 60));
@@ -640,6 +649,19 @@ internal sealed class ModEntry : Mod
             return;
 
         e.LoadFrom(() => LoadTextureOrFallback(spriteName, spriteName, tint), AssetLoadPriority.Medium);
+    }
+
+    private void TryLoadOptionalTexture(AssetRequestedEventArgs e, string assetKey, string spriteName)
+    {
+        if (!e.NameWithoutLocale.IsEquivalentTo(assetKey))
+            return;
+
+        string customPath = $"assets/{spriteName}.png";
+        string fullPath = Path.Combine(Helper.DirectoryPath, customPath.Replace('/', Path.DirectorySeparatorChar));
+        if (!File.Exists(fullPath))
+            return;
+
+        e.LoadFrom(() => Helper.ModContent.Load<Texture2D>(customPath), AssetLoadPriority.Medium);
     }
 
     private void TryLoadStateTexture(AssetRequestedEventArgs e, string baseSpriteName, string stateName, Color tint)
@@ -1252,7 +1274,7 @@ internal sealed class ModEntry : Mod
         Vector2 screenPos = Game1.GlobalToLocal(Game1.viewport, new Vector2(tileX * 64, tileY * 64 - 64));
         float layerDepth = Math.Max(0f, ((tileY + 1) * 64f - 24f) / 10000f + tileX / 1000000f);
 
-        DrawStatefulTexture(spriteBatch, texture!, screenPos, alpha, layerDepth);
+        DrawStatefulTexture(spriteBatch, texture!, screenPos, alpha, layerDepth, obj, stateSpriteName!);
     }
 
     private void DrawStatefulObjectOverlayAtScreen(StardewValley.Object obj, SpriteBatch spriteBatch, int xNonTile, int yNonTile, float alpha, float? layerDepthOverride)
@@ -1276,10 +1298,10 @@ internal sealed class ModEntry : Mod
         Vector2 screenPos = new(xNonTile, yNonTile);
         float layerDepth = layerDepthOverride ?? Math.Max(0f, ((tileY + 1) * 64f - 24f) / 10000f + tileX / 1000000f);
 
-        DrawStatefulTexture(spriteBatch, texture!, screenPos, alpha, layerDepth);
+        DrawStatefulTexture(spriteBatch, texture!, screenPos, alpha, layerDepth, obj, stateSpriteName!);
     }
 
-    private static void DrawStatefulTexture(SpriteBatch spriteBatch, Texture2D texture, Vector2 screenPos, float alpha, float layerDepth)
+    private void DrawStatefulTexture(SpriteBatch spriteBatch, Texture2D texture, Vector2 screenPos, float alpha, float layerDepth, StardewValley.Object obj, string stateSpriteName)
     {
         spriteBatch.Draw(
             texture,
@@ -1291,6 +1313,8 @@ internal sealed class ModEntry : Mod
             4f,
             SpriteEffects.None,
             layerDepth);
+
+        DrawWindGeneratorWheelOverlay(spriteBatch, screenPos, alpha, layerDepth, obj, stateSpriteName);
     }
 
     private bool TryDrawStatefulTileReplacement(StardewValley.Object obj, SpriteBatch spriteBatch, int tileX, int tileY, float alpha, string source)
@@ -1308,8 +1332,71 @@ internal sealed class ModEntry : Mod
         Vector2 screenPos = Game1.GlobalToLocal(Game1.viewport, new Vector2(tileX * 64, tileY * 64 - 64));
         float layerDepth = Math.Max(0f, ((tileY + 1) * 64f - 24f) / 10000f + tileX / 1000000f);
         LogConduitRenderDiagnostic(obj, source, new object[] { tileX, tileY, alpha, stateSpriteName! });
-        DrawStatefulTexture(spriteBatch, texture!, screenPos, alpha, layerDepth);
+        DrawStatefulTexture(spriteBatch, texture!, screenPos, alpha, layerDepth, obj, stateSpriteName!);
         return true;
+    }
+
+    private void DrawWindGeneratorWheelOverlay(SpriteBatch spriteBatch, Vector2 screenPos, float alpha, float layerDepth, StardewValley.Object obj, string stateSpriteName)
+    {
+        if (obj.ItemId != PowerConstants.WindGeneratorId)
+            return;
+
+        if (!TryLoadWindGeneratorWheelTexture(out Texture2D? wheelTexture))
+            return;
+
+        bool generating = stateSpriteName.EndsWith("__generating", StringComparison.Ordinal);
+        float angularSpeed = generating ? WindGeneratorGeneratingRadiansPerSecond : WindGeneratorIdleRadiansPerSecond;
+        double totalSeconds = Game1.currentGameTime?.TotalGameTime.TotalSeconds ?? 0d;
+        float rotation = (float)(totalSeconds * angularSpeed);
+
+        Vector2 pivotScreenPos = screenPos + WindGeneratorWheelPivot * 4f;
+        float wheelLayerDepth = Math.Min(1f, layerDepth + WindGeneratorWheelLayerOffset);
+
+        spriteBatch.Draw(
+            wheelTexture!,
+            pivotScreenPos,
+            BigCraftableSourceRect,
+            Color.White * alpha,
+            rotation,
+            WindGeneratorWheelPivot,
+            4f,
+            SpriteEffects.None,
+            wheelLayerDepth);
+    }
+
+    private bool TryLoadWindGeneratorWheelTexture(out Texture2D? texture)
+    {
+        texture = cachedWindWheelTexture;
+        if (texture != null)
+            return true;
+
+        if (attemptedWindWheelTextureLoad)
+            return false;
+
+        attemptedWindWheelTextureLoad = true;
+
+        string customPath = $"assets/{WindGeneratorWheelSpriteName}.png";
+        string fullPath = Path.Combine(Helper.DirectoryPath, customPath.Replace('/', Path.DirectorySeparatorChar));
+        if (!File.Exists(fullPath))
+            return false;
+
+        try
+        {
+            cachedWindWheelTexture = Helper.GameContent.Load<Texture2D>(WindGeneratorWheelTexture);
+            texture = cachedWindWheelTexture;
+            return texture != null;
+        }
+        catch (Exception ex)
+        {
+            if (invalidStateSpritesLogged.Add(WindGeneratorWheelSpriteName))
+            {
+                Monitor.Log(
+                    $"[PowerGrid] Failed to load optional wind wheel sprite '{customPath}'. Wind generator will render without wheel animation. {ex.Message}",
+                    LogLevel.Warn);
+            }
+
+            return false;
+        }
     }
 
     private static bool IsStatefulPowerGridItem(string? itemId)
