@@ -46,6 +46,7 @@ internal sealed class ModEntry : Mod
     private const float WindGeneratorGeneratingRadiansPerSecond = 5.5f;
     private const float WindGeneratorIdleRadiansPerSecond = 0f;
     private const float WindGeneratorWheelLayerOffset = 0.0001f;
+    private const float SteamActiveOverlayLayerOffset = 0.0002f;
     private static readonly Rectangle BigCraftableSourceRect = new(0, 0, 16, 32);
     private static readonly Vector2 WindGeneratorWheelPivot = new(8f, 6f);
     private readonly HashSet<string> invalidStateSpritesLogged = new(StringComparer.Ordinal);
@@ -184,6 +185,7 @@ internal sealed class ModEntry : Mod
         BatteryState.ImportState(batteryData);
         ConduitMgr.ImportState(conduitData);
         FuelMgr.ImportState(fuelData);
+        PruneStaleGeneratorFuelState();
 
         PowerMgr.ResetRuntimeState();
         lastTimeOfDay = Game1.timeOfDay;
@@ -430,7 +432,10 @@ internal sealed class ModEntry : Mod
 
     private void OnObjectListChanged(object? sender, ObjectListChangedEventArgs e)
     {
-        // Mark location dirty when objects are placed/removed
+        foreach ((Vector2 tile, StardewValley.Object removedObj) in e.Removed)
+            HandleRemovedGeneratorFuelState(e.Location, tile, removedObj);
+
+        // Mark location dirty when objects are placed/removed.
         PowerMgr.MarkDirty(e.Location.NameOrUniqueName);
     }
 
@@ -1317,7 +1322,82 @@ internal sealed class ModEntry : Mod
             SpriteEffects.None,
             layerDepth);
 
+        DrawSteamGeneratorActiveOverlay(spriteBatch, screenPos, alpha, layerDepth, obj, stateSpriteName);
         DrawWindGeneratorWheelOverlay(spriteBatch, screenPos, alpha, layerDepth, obj, stateSpriteName);
+    }
+
+    private void DrawSteamGeneratorActiveOverlay(SpriteBatch spriteBatch, Vector2 screenPos, float alpha, float layerDepth, StardewValley.Object obj, string stateSpriteName)
+    {
+        if (obj.ItemId != PowerConstants.SteamGeneratorId || !stateSpriteName.EndsWith("__on", StringComparison.Ordinal))
+            return;
+
+        double totalSeconds = Game1.currentGameTime?.TotalGameTime.TotalSeconds ?? 0d;
+        float pulse = 0.55f + ((float)Math.Sin(totalSeconds * 7f) + 1f) * 0.225f;
+        float drift = (float)Math.Sin(totalSeconds * 3.2f);
+        float flicker = (float)Math.Sin(totalSeconds * 16f) * 0.6f;
+        float overlayDepth = Math.Min(1f, layerDepth + SteamActiveOverlayLayerOffset);
+
+        // Firebox glow anchored to the lit chamber on the SteamGenerator sprite.
+        Vector2 fireboxCenter = new(screenPos.X + 22f + flicker, screenPos.Y + 90f);
+        Color outerGlow = new Color(255, 160, 72) * Math.Min(1f, alpha * (0.32f + pulse * 0.28f));
+        Color midGlow = new Color(255, 198, 96) * Math.Min(1f, alpha * (0.5f + pulse * 0.25f));
+        Color coreGlow = new Color(255, 236, 156) * Math.Min(1f, alpha * (0.75f + pulse * 0.2f));
+
+        Rectangle outerRect = new((int)fireboxCenter.X - 7, (int)fireboxCenter.Y - 4, 14, 8);
+        Rectangle midRect = new((int)fireboxCenter.X - 5, (int)fireboxCenter.Y - 3, 10, 6);
+        Rectangle coreRect = new((int)fireboxCenter.X - 2, (int)fireboxCenter.Y - 1, 5, 3);
+
+        spriteBatch.Draw(Game1.staminaRect, outerRect, null, outerGlow, 0f, Vector2.Zero, SpriteEffects.None, overlayDepth);
+        spriteBatch.Draw(Game1.staminaRect, midRect, null, midGlow, 0f, Vector2.Zero, SpriteEffects.None, overlayDepth);
+        spriteBatch.Draw(Game1.staminaRect, coreRect, null, coreGlow, 0f, Vector2.Zero, SpriteEffects.None, overlayDepth);
+
+        // Steam puffs near the stack to make active state readable at a glance.
+        Color steamColor = new Color(224, 230, 236) * Math.Min(1f, alpha * (0.4f + pulse * 0.5f));
+        Rectangle puffA = new(
+            (int)screenPos.X + 35,
+            (int)(screenPos.Y + 18 - drift * 2f),
+            7,
+            4);
+        Rectangle puffB = new(
+            (int)screenPos.X + 33,
+            (int)(screenPos.Y + 12 - drift * 3f),
+            6,
+            3);
+        Rectangle puffCore = new(
+            (int)screenPos.X + 37,
+            (int)(screenPos.Y + 10 - drift * 2.2f),
+            3,
+            2);
+
+        spriteBatch.Draw(
+            Game1.staminaRect,
+            puffA,
+            null,
+            steamColor,
+            0f,
+            Vector2.Zero,
+            SpriteEffects.None,
+            overlayDepth);
+
+        spriteBatch.Draw(
+            Game1.staminaRect,
+            puffB,
+            null,
+            steamColor * 0.85f,
+            0f,
+            Vector2.Zero,
+            SpriteEffects.None,
+            overlayDepth);
+
+        spriteBatch.Draw(
+            Game1.staminaRect,
+            puffCore,
+            null,
+            steamColor * 0.95f,
+            0f,
+            Vector2.Zero,
+            SpriteEffects.None,
+            overlayDepth);
     }
 
     private bool TryDrawStatefulTileReplacement(StardewValley.Object obj, SpriteBatch spriteBatch, int tileX, int tileY, float alpha, string source)
@@ -1522,30 +1602,60 @@ internal sealed class ModEntry : Mod
                 if (FuelMgr.GetFuelTicksRemaining(generatorKey) <= 0)
                     continue;
 
-                // Mirrors vanilla furnace cadence:
-                // minutesElapsed -> 33% chance of addWorkingAnimation,
-                // then Furnace branch -> 50% chance of fire burst.
-                if (Game1.random.NextDouble() >= 0.165)
+                // Keep a guaranteed visible active cue even when machine-data working effects are unavailable.
+                obj.shakeTimer = Math.Max(obj.shakeTimer, 120);
+                obj.addWorkingAnimation();
+            }
+        }
+    }
+
+    private void PruneStaleGeneratorFuelState()
+    {
+        var validKeys = new HashSet<string>(StringComparer.Ordinal);
+        foreach (GameLocation location in EnumerateLoadedLocations())
+        {
+            string locationName = location.NameOrUniqueName;
+            foreach ((Vector2 tile, StardewValley.Object obj) in location.objects.Pairs)
+            {
+                if (obj.ItemId != PowerConstants.SteamGeneratorId)
                     continue;
 
-                float layerDepth = (float)(((tile.Y + 1.0) * 64.0 / 10000.0) + 0.0001);
-                TemporaryAnimatedSprite burst = new(
-                    30,
-                    tile * 64f + new Vector2(0f, -16f),
-                    Color.White,
-                    4,
-                    flipped: false,
-                    animationInterval: 50f,
-                    numberOfLoops: 10,
-                    sourceRectWidth: 64,
-                    layerDepth: layerDepth)
-                {
-                    alphaFade = 0.005f
-                };
-
-                Game1.Multiplayer.broadcastSprites(location, burst);
-                location.playSound("fireball");
+                validKeys.Add(PowerConstants.MakeNodeKey(locationName, tile, PowerConstants.SteamGeneratorId));
             }
+        }
+
+        int removed = FuelMgr.PruneToKeys(validKeys);
+        if (removed > 0)
+            Monitor.Log($"[PowerGrid] Pruned {removed} stale Steam Generator fuel state entries.", LogLevel.Trace);
+    }
+
+    private void HandleRemovedGeneratorFuelState(GameLocation location, Vector2 tile, StardewValley.Object removedObj)
+    {
+        if (removedObj.ItemId != PowerConstants.SteamGeneratorId && removedObj.ItemId != PowerConstants.WindGeneratorId)
+            return;
+
+        string itemId = removedObj.ItemId ?? "";
+        string key = PowerConstants.MakeNodeKey(location.NameOrUniqueName, tile, itemId);
+        if (!FuelMgr.TryRemoveFuelState(key, out int removedTicks) || removedTicks <= 0)
+            return;
+
+        if (itemId == PowerConstants.SteamGeneratorId)
+            DropSteamFuelFromTicks(location, tile, removedTicks);
+    }
+
+    private void DropSteamFuelFromTicks(GameLocation location, Vector2 tile, int ticks)
+    {
+        int ticksPerCoal = Math.Max(1, Config.CoalFuelTicks);
+        int coalToDrop = (ticks + ticksPerCoal - 1) / ticksPerCoal;
+        if (coalToDrop <= 0)
+            return;
+
+        Vector2 dropPos = new(tile.X * 64f + 32f, tile.Y * 64f + 32f);
+        while (coalToDrop > 0)
+        {
+            int stack = Math.Min(coalToDrop, 999);
+            Game1.createItemDebris(ItemRegistry.Create("(O)382", stack), dropPos, -1, location);
+            coalToDrop -= stack;
         }
     }
 

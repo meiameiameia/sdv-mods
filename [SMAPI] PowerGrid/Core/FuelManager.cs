@@ -107,6 +107,35 @@ internal sealed class FuelManager
         return fuelTicksRemaining.TryGetValue(nodeKey, out int ticks) ? ticks : 0;
     }
 
+    public bool TryRemoveFuelState(string nodeKey, out int removedTicks)
+    {
+        removedTicks = 0;
+        if (!fuelTicksRemaining.TryGetValue(nodeKey, out int existing))
+            return false;
+
+        removedTicks = existing;
+        fuelTicksRemaining.Remove(nodeKey);
+        return true;
+    }
+
+    public int PruneToKeys(ISet<string> validGeneratorKeys)
+    {
+        if (fuelTicksRemaining.Count == 0)
+            return 0;
+
+        var staleKeys = new List<string>();
+        foreach (string key in fuelTicksRemaining.Keys)
+        {
+            if (!validGeneratorKeys.Contains(key))
+                staleKeys.Add(key);
+        }
+
+        foreach (string key in staleKeys)
+            fuelTicksRemaining.Remove(key);
+
+        return staleKeys.Count;
+    }
+
     public void ClearAll()
     {
         fuelTicksRemaining.Clear();
