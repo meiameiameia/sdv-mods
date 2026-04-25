@@ -1,6 +1,6 @@
 using StardewModdingAPI.Utilities;
 
-namespace Darth.PowerGrid;
+namespace Meiameiameia.PowerGrid;
 
 internal sealed class ModConfig
 {
@@ -34,6 +34,11 @@ internal sealed class ModConfig
     public int WoodFuelTicks { get; set; } = 2;
     public int HardwoodFuelTicks { get; set; } = 4;
     public int BatteryPackFuelTicks { get; set; } = 12;
+
+    // --- PowerGrid-owned machines ---
+    public int IndustrialPreservesJarEUPerMinute { get; set; } = 3;
+    public float IndustrialPreservesJarMaxSpeedup { get; set; } = 0.20f;
+    public int IndustrialPreservesJarPriority { get; set; } = 10;
 
     // --- Debug ---
     public bool DebugOverlayEnabled { get; set; } = false;

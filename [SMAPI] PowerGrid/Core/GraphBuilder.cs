@@ -3,7 +3,7 @@ using StardewValley;
 using StardewValley.Objects;
 using StardewModdingAPI;
 
-namespace Darth.PowerGrid.Core;
+namespace Meiameiameia.PowerGrid.Core;
 
 internal sealed class GraphBuilder
 {
@@ -44,7 +44,8 @@ internal sealed class GraphBuilder
             string qualifiedId = obj.QualifiedItemId ?? "";
 
             // Debug: log all objects to see what we're comparing
-            if (itemId.StartsWith("darth.PowerGrid") || qualifiedId.StartsWith("(BC)darth.PowerGrid"))
+            if (itemId.StartsWith(PowerConstants.ModPrefix, StringComparison.Ordinal)
+                || qualifiedId.StartsWith("(BC)" + PowerConstants.ModPrefix, StringComparison.Ordinal))
                 monitor.Log($"[GraphBuilder.ScanLocation] Found PowerGrid object at {tile}: itemId='{itemId}', qualifiedId='{qualifiedId}'", LogLevel.Info);
 
             PowerNode? node = ClassifyObject(itemId, qualifiedId, locName, tile, obj);

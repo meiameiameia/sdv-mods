@@ -1,9 +1,9 @@
-﻿# [SMAPI] PowerGrid
+# [SMAPI] PowerGrid
 
 A cable-based electrical power network mod for Stardew Valley 1.6+.
 Build generators, run cables, store energy in batteries, and power your machines for speed boosts.
 
-**Author:** darth  
+**Author:** meiameiameia
 **Version:** 1.0.0  
 **Requires:** SMAPI 4.0.0+, Stardew Valley 1.6+
 
@@ -24,7 +24,6 @@ Build generators, run cables, store energy in batteries, and power your machines
 - [Building from Source](#building-from-source)
 - [Compatibility](#compatibility)
 - [Sprite Upgrade Guide](#sprite-upgrade-guide)
-- [AI Sprite Prompt Pack](#ai-sprite-prompt-pack)
 - [Testing Guide (Dev Sandbox)](#testing-guide-dev-sandbox)
 - [Troubleshooting](#troubleshooting)
 
@@ -99,19 +98,19 @@ To fuel a Steam Generator: **right-click it with fuel in hand** (same as loading
 
 Every **10 in-game minutes**, the simulation runs:
 
-1. **Generate EU** â€” Each generator produces its output (fuel consumed if needed)
-2. **Pool available EU** â€” Generation + battery drain if demand exceeds generation
-3. **Apply cable throughput cap** â€” Energy limited by weakest cable in network
-4. **Allocate to consumers** â€” Sorted by priority (lower = first). Partial allocation if insufficient
-5. **Store excess in batteries** â€” Remaining EU charges batteries up to capacity
+1. **Generate EU** — Each generator produces its output (fuel consumed if needed)
+2. **Pool available EU** — Generation + battery drain if demand exceeds generation
+3. **Apply cable throughput cap** — Energy limited by weakest cable in network
+4. **Allocate to consumers** — Sorted by priority (lower = first). Partial allocation if insufficient
+5. **Store excess in batteries** — Remaining EU charges batteries up to capacity
 
 ### Tick Acceleration
 
 Powered machines get their `MinutesUntilReady` reduced proportionally:
 
 ```
-minutesAccelerated = tickInterval (10min) Ã— speedupFraction
-speedupFraction = (EU allocated / EU demanded) Ã— maxSpeedup
+minutesAccelerated = tickInterval (10min) × speedupFraction
+speedupFraction = (EU allocated / EU demanded) × maxSpeedup
 ```
 
 Example: A Metal Keg with full power at 20% max speedup processes 2 extra minutes every 10-minute tick.
@@ -135,7 +134,7 @@ The two locations now share a single power network. Energy flows bidirectionally
 
 ## Metal Kegs Integration
 
-`[SMAPI] Metal Kegs` now registers its own PowerGrid consumer traits through the shared `DarthMods.API` contract when both mods are installed:
+`[SMAPI] Metal Kegs` remains separate until a later merge. PowerGrid keeps its public SMAPI API available from `PowerGrid.dll` for consumer registration and monitoring snapshots:
 
 | Machine | EU/minute | Max Speedup | Priority |
 |---------|-----------|-------------|----------|
@@ -267,7 +266,7 @@ These snapshot methods are read-only and are intended for monitoring UIs or term
 
 ### Power metadata (`modData`)
 
-PowerGrid writes live status to object `modData` each simulation tick using keys prefixed with `darth.PowerGrid/`.
+PowerGrid writes live status to object `modData` each simulation tick using keys prefixed with `meiameiameia.PowerGrid/`.
 That prefix intentionally stays unchanged for save/modData compatibility even though the mod UniqueID is now `meiameiameia.PowerGrid`.
 
 Shared keys:
@@ -332,7 +331,7 @@ To install: copy the entire `[SMAPI] PowerGrid` folder into your `Stardew Valley
 - **No conflict.** PowerGrid is a SMAPI C# mod; FishSmoker Recipe is a Content Patcher pack. They operate in completely different domains. PowerGrid does not touch `Data/ObjectInformation` or fish smoker recipes.
 
 ### With [SMAPI] Metal Kegs
-- **Designed to work together.** Metal Kegs registers `Metal Keg` and `Hard Iridium Keg` as PowerGrid consumers through the shared `DarthMods.API` integration surface.
+- **Designed to work together.** Metal Kegs remains a later merge; PowerGrid keeps the consumer registration and snapshot API available from its own assembly.
 - PowerGrid does NOT modify `Data/Machines` entries for Metal Kegs. It only adjusts `MinutesUntilReady` at runtime via tick events.
 - Metal Kegs works perfectly without PowerGrid installed (no speedup, normal behavior).
 
@@ -370,13 +369,13 @@ The mod ships with **runtime-generated placeholder sprites** (tinted vanilla tex
 All PowerGrid items are **BigCraftables**.
 
 **For Generators, Batteries, and Conduits:**
-- **Canvas size:** 16Ã—32 pixels (1 tile wide, 2 tiles tall)
+- **Canvas size:** 16×32 pixels (1 tile wide, 2 tiles tall)
 - **Transparent background** (PNG with alpha channel)
-- The bottom 16Ã—16 is the "base" that sits on the ground tile
-- The top 16Ã—16 is the upper portion visible above
+- The bottom 16×16 is the "base" that sits on the ground tile
+- The top 16×16 is the upper portion visible above
 
 **For Cables (Autotiling):**
-- **Canvas size:** 64Ã—128 pixels (A 4Ã—4 grid of 16Ã—32 frames)
+- **Canvas size:** 64×128 pixels (A 4×4 grid of 16×32 frames)
 - Cables dynamically draw connections to adjacent grid items.
 - The spritesheet contains 16 frames based on a bitmask (Up=1, Right=2, Down=4, Left=8).
 - **Frame Layout (Column = mask % 4, Row = mask / 4):**
@@ -384,7 +383,7 @@ All PowerGrid items are **BigCraftables**.
   - **Row 1:** [4] D     | [5] U,D    | [6] R,D    | [7] U,R,D
   - **Row 2:** [8] L     | [9] U,L    | [10] R,L   | [11] U,R,L
   - **Row 3:** [12] D,L  | [13] U,D,L | [14] R,D,L | [15] U,R,D,L
-- Even though the cable is drawn flat on the ground, each frame is still 16Ã—32 (the cable should be drawn in the bottom 16Ã—16 area of each frame, with the top 16Ã—16 left transparent).
+- Even though the cable is drawn flat on the ground, each frame is still 16×32 (the cable should be drawn in the bottom 16×16 area of each frame, with the top 16×16 left transparent).
 
 ### Step 3: Kitbashing from Vanilla Sprites
 
@@ -406,8 +405,8 @@ All PowerGrid items are **BigCraftables**.
 
 1. Pick a vanilla base sprite that matches the "feel" (e.g., Furnace for generators)
 2. Open in LibreSprite/Piskel
-3. Duplicate to a new file at 16Ã—32
-4. **Recolor:** Select the main body color and shift hue (e.g., gray â†’ copper orange for copper cable)
+3. Duplicate to a new file at 16×32
+4. **Recolor:** Select the main body color and shift hue (e.g., gray → copper orange for copper cable)
 5. **Reshape:** Move 3-5 pixels on the outline to create a new silhouette
 6. **Add detail:** Draw 1-2 small distinctive marks (a lightning bolt, gear, wire, etc.)
 7. Save as PNG with transparency
@@ -417,14 +416,14 @@ All PowerGrid items are **BigCraftables**.
 ### Step 5: Stardew Art Style Checklist
 
 - [ ] **1px dark outline** around the entire object (usually dark brown/black, ~RGB 50,30,20)
-- [ ] **Top-left light source** â€” highlights on top-left edges, shadows on bottom-right
-- [ ] **Limited palette** â€” Use 4-6 colors max per object (base, highlight, shadow, accent, outline)
-- [ ] **Consistent outline thickness** â€” Always 1px, never 2px or 0px
-- [ ] **No anti-aliasing** â€” Stardew uses hard pixel edges, not smooth gradients
-- [ ] **1px shading bands** â€” Light â†’ base â†’ shadow transitions are 1 pixel wide
-- [ ] **Readable at 1x zoom** â€” The sprite should be recognizable when tiny
-- [ ] **Stardew palette feel** â€” Warm, slightly desaturated colors. Avoid neon/pure colors.
-- [ ] **Ground contact** â€” Bottom row should suggest the object sits on the ground (shadow or flat base)
+- [ ] **Top-left light source** — highlights on top-left edges, shadows on bottom-right
+- [ ] **Limited palette** — Use 4-6 colors max per object (base, highlight, shadow, accent, outline)
+- [ ] **Consistent outline thickness** — Always 1px, never 2px or 0px
+- [ ] **No anti-aliasing** — Stardew uses hard pixel edges, not smooth gradients
+- [ ] **1px shading bands** — Light → base → shadow transitions are 1 pixel wide
+- [ ] **Readable at 1x zoom** — The sprite should be recognizable when tiny
+- [ ] **Stardew palette feel** — Warm, slightly desaturated colors. Avoid neon/pure colors.
+- [ ] **Ground contact** — Bottom row should suggest the object sits on the ground (shadow or flat base)
 
 ### Step 6: Testing Sprites
 
@@ -436,87 +435,11 @@ All PowerGrid items are **BigCraftables**.
 2. **Hot-reload** in SMAPI console: type `patch reload meiameiameia.PowerGrid`
    - If that doesn't work, try: `invalidate Mods/meiameiameia.PowerGrid/CopperCable` (etc.)
 3. **Common pitfalls:**
-   - Wrong file size (must be exactly 16Ã—32)
+   - Wrong file size (must be exactly 16×32)
    - Non-transparent background (use PNG-24 with alpha)
    - File named `.PNG` instead of `.png` (case matters on some systems)
    - Forgot to save with transparency layer enabled
-   - Offset issues: the sprite may appear shifted if canvas isn't exactly 16Ã—32
-
----
-
-## AI Sprite Prompt Pack
-
-This section is legacy prompt context only.
-Use `mod-context/art/prompts/` as the source of truth for current external-generation prompts.
-
-Copy-paste these prompts into an AI image generator (Stable Diffusion, DALL-E, Midjourney) and then manually clean up the results in a pixel editor.
-
-### General Style Prompt Prefix
-```
-pixel art, 16x32 pixels, stardew valley style, top-down RPG item sprite, 
-1px dark outline, top-left lighting, warm desaturated palette, transparent background, 
-no anti-aliasing, clean pixel edges, game asset
-```
-
-### Per-Item Prompts
-
-**Copper Cable:**
-```
-[style prefix] small copper wire conduit, orange-brown copper color, 
-coiled wire detail, compact industrial look, floor-mounted cable
-```
-
-**Iron Cable:**
-```
-[style prefix] iron wire conduit, silver-gray metallic, 
-reinforced wire look, industrial cable, floor-mounted
-```
-
-**Iridium Cable:**
-```
-[style prefix] iridium wire conduit, purple-violet metallic sheen, 
-premium glowing cable, high-tech industrial, floor-mounted
-```
-
-**Steam Generator:**
-```
-[style prefix] small steam engine generator, iron-gray body, 
-smoke stack on top, furnace grate at bottom, industrial boiler, coal-powered
-```
-
-**Wind Generator:**
-```
-[style prefix] small wind turbine, light blue and white, 
-spinning blades on top, wooden/metal pole base, farm windmill
-```
-
-**Basic Power Battery:**
-```
-[style prefix] small green battery unit, copper terminals on top, 
-charge indicator bar, industrial energy storage, compact machine
-```
-
-**Iridium Power Battery:**
-```
-[style prefix] advanced purple battery unit, iridium-plated, 
-glowing energy core, high capacity storage, premium industrial machine
-```
-
-**Power Conduit:**
-```
-[style prefix] golden energy relay device, crystal or antenna on top, 
-magical-industrial hybrid, teleportation node, energy bridge device
-```
-
-### Post-Processing Workflow
-1. Generate at higher resolution (64Ã—128 or 128Ã—256)
-2. Downscale to 16Ã—32 using **nearest-neighbor** interpolation (no smoothing!)
-3. Clean up in pixel editor: fix outline to consistent 1px, remove anti-aliased pixels
-4. Adjust palette to match Stardew's warm tones
-5. Ensure transparent background (no white/colored background pixels)
-6. Test in-game
-
----
+   - Offset issues: the sprite may appear shifted if canvas isn't exactly 16×32
 
 ## Testing Guide (Dev Sandbox)
 
@@ -550,15 +473,13 @@ player_add 388 500    # Wood
 player_add 787 20     # Battery Pack
 player_add 92 50      # Sap
 
-# Give yourself Metal Kegs (if installed)
-player_add (BC)darth.MetalKegs_MetalKeg 5
-player_add (BC)darth.MetalKegs_HardIridiumKeg 5
+# Metal Kegs item-ID examples are deferred until the later merge/fix.
 
 # Give yourself PowerGrid items directly
-player_add (BC)darth.PowerGrid_CopperCable 20
-player_add (BC)darth.PowerGrid_SteamGenerator 3
-player_add (BC)darth.PowerGrid_BasicBattery 2
-player_add (BC)darth.PowerGrid_PowerConduit 2
+player_add (BC)meiameiameia.PowerGrid_CopperCable 20
+player_add (BC)meiameiameia.PowerGrid_SteamGenerator 3
+player_add (BC)meiameiameia.PowerGrid_BasicBattery 2
+player_add (BC)meiameiameia.PowerGrid_PowerConduit 2
 
 # Time manipulation
 debug time 600        # Set time to 6:00 AM
@@ -635,5 +556,5 @@ Copy-Item -Recurse -Force "c:\dev\sdv-mod\[SMAPI] PowerGrid" "C:\Program Files (
 
 ## License
 
-This mod is part of the darth SDV modding monorepo. All rights reserved until a specific license is chosen for distribution.
+This mod is part of the meiameiameia SDV modding monorepo. All rights reserved until a specific license is chosen for distribution.
 

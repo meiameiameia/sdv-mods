@@ -3,7 +3,7 @@ using System.Globalization;
 using StardewModdingAPI;
 using StardewValley;
 
-namespace Darth.PowerGrid.Core;
+namespace Meiameiameia.PowerGrid.Core;
 
 internal sealed class AllocationResult
 {
@@ -46,7 +46,7 @@ internal sealed class PowerManager
     private readonly Dictionary<string, List<TickReport>> lastReports = new();
     private readonly HashSet<string> trackedMetadataTileKeys = new(StringComparer.Ordinal);
 
-    private const string MdPrefix = "darth.PowerGrid/";
+    private const string MdPrefix = "meiameiameia.PowerGrid/";
     private const string MdType = MdPrefix + "type";
     private const string MdConnected = MdPrefix + "connected";
     private const string MdNetworkId = MdPrefix + "networkId";

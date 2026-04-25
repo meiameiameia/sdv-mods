@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("PowerGrid", "MetalKegs", "FishSmoker", "FarmTerminal", "ElectronicArtisanMachines", "PerfectionAdvisor")]
+    [ValidateSet("PowerGrid", "MetalKegs", "FishSmoker")]
     [string[]]$Mods,
 
     [ValidateSet("none", "patch", "minor", "major")]
@@ -73,33 +73,6 @@ function Resolve-ModDefinition([string]$repoRoot, [string]$modName) {
                 CsprojPath = $null
             }
         }
-        "FarmTerminal" {
-            return @{
-                Name = "FarmTerminal"
-                FolderName = "[SMAPI] Farm Terminal"
-                ModDir = Join-Path $repoRoot "[SMAPI] Farm Terminal"
-                ManifestPath = Join-Path $repoRoot "[SMAPI] Farm Terminal\manifest.json"
-                CsprojPath = Join-Path $repoRoot "[SMAPI] Farm Terminal\FarmTerminal.csproj"
-            }
-        }
-        "ElectronicArtisanMachines" {
-            return @{
-                Name = "ElectronicArtisanMachines"
-                FolderName = "[SMAPI] Electronic Artisan Machines"
-                ModDir = Join-Path $repoRoot "[SMAPI] Electronic Artisan Machines"
-                ManifestPath = Join-Path $repoRoot "[SMAPI] Electronic Artisan Machines\manifest.json"
-                CsprojPath = Join-Path $repoRoot "[SMAPI] Electronic Artisan Machines\ElectronicArtisanMachines.csproj"
-            }
-        }
-        "PerfectionAdvisor" {
-            return @{
-                Name = "PerfectionAdvisor"
-                FolderName = "[SMAPI] Perfection Advisor"
-                ModDir = Join-Path $repoRoot "[SMAPI] Perfection Advisor"
-                ManifestPath = Join-Path $repoRoot "[SMAPI] Perfection Advisor\manifest.json"
-                CsprojPath = Join-Path $repoRoot "[SMAPI] Perfection Advisor\PerfectionAdvisor.csproj"
-            }
-        }
         default {
             throw "Unknown mod '$modName'."
         }
@@ -167,12 +140,31 @@ function Build-Mod([string]$csprojPath, [string]$configuration) {
     }
 }
 
+function Test-PackageDenyListed([System.IO.FileInfo]$file, [string]$relativePath) {
+    if ($relativePath -match '^(bin|obj)\\') { return $true }
+    if ($relativePath -match '(^|\\)(\.vs|\.vscode)\\') { return $true }
+
+    $deniedExtensions = @(
+        ".cs",
+        ".csproj",
+        ".sln",
+        ".user",
+        ".suo",
+        ".tmp",
+        ".cache",
+        ".bak",
+        ".orig",
+        ".zip"
+    )
+
+    return $deniedExtensions -icontains $file.Extension
+}
+
 function Copy-ModPayload([string]$sourceDir, [string]$destDir) {
     $files = Get-ChildItem -LiteralPath $sourceDir -Recurse -File
     foreach ($file in $files) {
         $relative = $file.FullName.Substring($sourceDir.Length).TrimStart('\')
-        if ($relative -match '^(bin|obj)\\') { continue }
-        if ($file.Extension -ieq ".zip") { continue }
+        if (Test-PackageDenyListed -file $file -relativePath $relative) { continue }
 
         $target = Join-Path $destDir $relative
         $targetParent = Split-Path -Parent $target

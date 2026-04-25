@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewValley;
 
-namespace Darth.PowerGrid.Core;
+namespace Meiameiameia.PowerGrid.Core;
 
 internal sealed class FuelManager
 {

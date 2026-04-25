@@ -1,12 +1,10 @@
 using Microsoft.Xna.Framework;
 using StardewValley;
-using Darth.PowerGrid.Core;
-using DarthMods.API.Power;
-using SharedPowerGridApi = DarthMods.API.Power.IPowerGridApi;
+using Meiameiameia.PowerGrid.Core;
 
-namespace Darth.PowerGrid.Integrations;
+namespace Meiameiameia.PowerGrid.Integrations;
 
-public sealed class PowerGridApi : IPowerGridApi, SharedPowerGridApi
+public sealed class PowerGridApi : IPowerGridApi
 {
     public void RegisterConsumer(string qualifiedItemId, int demandPerTick, float maxSpeedupFraction, int priority, string displayName)
     {
@@ -78,15 +76,5 @@ public sealed class PowerGridApi : IPowerGridApi, SharedPowerGridApi
     public IReadOnlyList<PowerBatterySnapshot> GetBatterySnapshots(string? locationName = null)
     {
         return ModEntry.Instance.PowerQuery.GetBatterySnapshots(locationName);
-    }
-
-    bool SharedPowerGridApi.IsTilePowered(string locationName, int tileX, int tileY)
-    {
-        return IsTilePowered(locationName, new Vector2(tileX, tileY));
-    }
-
-    float SharedPowerGridApi.GetSpeedupAtTile(string locationName, int tileX, int tileY)
-    {
-        return GetSpeedupAtTile(locationName, new Vector2(tileX, tileY));
     }
 }

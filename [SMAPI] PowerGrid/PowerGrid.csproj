@@ -4,20 +4,17 @@
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>1.0.24</Version>
-    <AssemblyVersion>1.0.24.0</AssemblyVersion>
-    <FileVersion>1.0.24.0</FileVersion>
-    <InformationalVersion>1.0.24</InformationalVersion>
+    <Version>0.1.0</Version>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <FileVersion>0.1.0.0</FileVersion>
+    <InformationalVersion>0.1.0</InformationalVersion>
     <AssemblyName>PowerGrid</AssemblyName>
-    <RootNamespace>Darth.PowerGrid</RootNamespace>
+    <RootNamespace>Meiameiameia.PowerGrid</RootNamespace>
     <EnableModDeploy>false</EnableModDeploy>
     <EnableModZip>false</EnableModZip>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.4.0" PrivateAssets="all" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\shared\DarthMods.API\DarthMods.API.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="0Harmony">
@@ -28,6 +25,5 @@
   <Target Name="CopyBuildOutputsToModRoot" AfterTargets="Build">
     <Copy SourceFiles="$(TargetDir)PowerGrid.dll" DestinationFiles="$(MSBuildProjectDirectory)\PowerGrid.dll" />
     <Copy SourceFiles="$(TargetDir)PowerGrid.deps.json" DestinationFiles="$(MSBuildProjectDirectory)\PowerGrid.deps.json" Condition="Exists('$(TargetDir)PowerGrid.deps.json')" />
-    <Copy SourceFiles="..\shared\DarthMods.API\bin\$(Configuration)\net6.0\DarthMods.API.dll" DestinationFiles="$(MSBuildProjectDirectory)\DarthMods.API.dll" Condition="Exists('..\shared\DarthMods.API\bin\$(Configuration)\net6.0\DarthMods.API.dll')" />
   </Target>
 </Project>

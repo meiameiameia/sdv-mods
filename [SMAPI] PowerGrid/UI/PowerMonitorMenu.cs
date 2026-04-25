@@ -2,10 +2,10 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewValley;
 using StardewValley.Menus;
-using Darth.PowerGrid.Core;
-using DarthMods.API.Power;
+using Meiameiameia.PowerGrid.Core;
+using Meiameiameia.PowerGrid.Integrations;
 
-namespace Darth.PowerGrid.UI;
+namespace Meiameiameia.PowerGrid.UI;
 
 internal sealed class PowerMonitorMenu : IClickableMenu
 {

@@ -4,7 +4,7 @@ using StardewModdingAPI;
 using StardewValley;
 using System.IO;
 
-namespace Darth.PowerGrid;
+namespace Meiameiameia.PowerGrid;
 
 /// <summary>
 /// Temporary utility to extract vanilla sprite sources used for placeholders.

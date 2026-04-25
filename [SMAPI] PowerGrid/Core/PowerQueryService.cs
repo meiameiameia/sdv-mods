@@ -1,15 +1,15 @@
-using DarthMods.API.Power;
+using Meiameiameia.PowerGrid.Integrations;
 using Netcode;
 using StardewValley;
 using StardewValley.Objects;
 using System.Globalization;
 using System.Reflection;
 
-namespace Darth.PowerGrid.Core;
+namespace Meiameiameia.PowerGrid.Core;
 
 internal sealed class PowerQueryService
 {
-    private const string MetalCaskItemId = "darth.MetalKegs_MetalCask";
+    private const string MetalCaskItemId = "meiameiameia.MetalKegs_MetalCask";
     private const string MetalCaskMarkerKey = "meiameiameia.MetalKegs/MetalCask";
     private const string MetalCaskPowerModeKey = "meiameiameia.MetalKegs/PowerMode";
     private const string MetalCaskObservedPowerStateKey = "meiameiameia.MetalKegs/ObservedPowerState";

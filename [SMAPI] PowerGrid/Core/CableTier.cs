@@ -1,4 +1,4 @@
-namespace Darth.PowerGrid.Core;
+namespace Meiameiameia.PowerGrid.Core;
 
 internal enum CableTier
 {

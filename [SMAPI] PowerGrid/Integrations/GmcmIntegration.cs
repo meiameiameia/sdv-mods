@@ -1,7 +1,7 @@
 using StardewModdingAPI;
 using StardewModdingAPI.Utilities;
 
-namespace Darth.PowerGrid.Integrations;
+namespace Meiameiameia.PowerGrid.Integrations;
 
 public interface IGmcmApi
 {
@@ -158,6 +158,30 @@ internal static class GmcmIntegration
             () => "Battery Pack",
             () => "Number of 10-minute ticks per Battery Pack.",
             min: 1, max: 50, interval: 1);
+
+        // --- PowerGrid-owned machines ---
+        gmcmApi.AddSectionTitle(manifest, () => "Industrial Preserves Jar");
+
+        gmcmApi.AddNumberOption(manifest,
+            () => config.IndustrialPreservesJarEUPerMinute,
+            (int val) => config.IndustrialPreservesJarEUPerMinute = val,
+            () => "EU per Minute",
+            () => "Power demand for each Industrial Preserves Jar. This is multiplied by the 10-minute PowerGrid tick.",
+            min: 0, max: 100, interval: 1);
+
+        gmcmApi.AddNumberOption(manifest,
+            () => (int)MathF.Round(config.IndustrialPreservesJarMaxSpeedup * 100f),
+            (int val) => config.IndustrialPreservesJarMaxSpeedup = Math.Clamp(val / 100f, 0f, 1f),
+            () => "Max Speedup Percent",
+            () => "Maximum processing speedup when fully powered.",
+            min: 0, max: 100, interval: 1);
+
+        gmcmApi.AddNumberOption(manifest,
+            () => config.IndustrialPreservesJarPriority,
+            (int val) => config.IndustrialPreservesJarPriority = val,
+            () => "Priority",
+            () => "Lower values receive power first when supply is limited.",
+            min: 0, max: 100, interval: 1);
 
         // --- Debug ---
         gmcmApi.AddSectionTitle(manifest, () => "Debug");

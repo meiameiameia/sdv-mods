@@ -1,6 +1,6 @@
 using Microsoft.Xna.Framework;
 
-namespace Darth.PowerGrid.Core;
+namespace Meiameiameia.PowerGrid.Core;
 
 internal sealed class PowerNode
 {

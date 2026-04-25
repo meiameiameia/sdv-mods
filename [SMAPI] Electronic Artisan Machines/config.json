@@ -1,6 +1,0 @@
-{
-  "EnablePowerGridIntegration": true,
-  "IndustrialPreservesJarEUPerMinute": 3,
-  "IndustrialPreservesJarMaxSpeedup": 0.2,
-  "IndustrialPreservesJarPriority": 10
-}

@@ -1,9 +1,9 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewValley;
-using Darth.PowerGrid.Core;
+using Meiameiameia.PowerGrid.Core;
 
-namespace Darth.PowerGrid.UI;
+namespace Meiameiameia.PowerGrid.UI;
 
 internal static class DebugOverlay
 {

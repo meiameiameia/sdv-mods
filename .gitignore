@@ -15,7 +15,6 @@
 # SMAPI runtime-generated config files
 /[[]SMAPI[]] PowerGrid/config.json
 /[[]SMAPI[]] Metal Kegs/config.json
-/[[]SMAPI[]] Farm Terminal/config.json
 
 # Local reference dumps and personal sandbox exports
 /reference-files/
@@ -53,3 +52,6 @@ shared/**/*.pdb
 *.dll
 *.deps.json
 *.pdb
+
+ARCHITECT_NOTES.md
+.github/PULL_REQUEST_TEMPLATE.md

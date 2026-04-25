@@ -9,13 +9,14 @@ using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
 using StardewValley.GameData.BigCraftables;
+using StardewValley.GameData.Machines;
 using StardewValley.Mods;
-using Darth.PowerGrid.Core;
-using Darth.PowerGrid.UI;
-using Darth.PowerGrid.Integrations;
-using DarthMods.API.Power;
+using StardewValley.Objects;
+using Meiameiameia.PowerGrid.Core;
+using Meiameiameia.PowerGrid.UI;
+using Meiameiameia.PowerGrid.Integrations;
 
-namespace Darth.PowerGrid;
+namespace Meiameiameia.PowerGrid;
 
 internal sealed class ModEntry : Mod
 {
@@ -33,7 +34,7 @@ internal sealed class ModEntry : Mod
     private Harmony? harmony;
 
     private const string DefaultBigCraftableTexture = "TileSheets/Craftables";
-    private const string PersistedModDataPrefix = "darth.PowerGrid/";
+    private const string PersistedModDataPrefix = "meiameiameia.PowerGrid/";
     private const string PersistedChargeKey = PersistedModDataPrefix + "charge";
     private const string PersistedFuelTicksRemainingKey = PersistedModDataPrefix + "fuelTicksRemaining";
     private const string PersistedLinkedKey = PersistedModDataPrefix + "linked";
@@ -41,34 +42,77 @@ internal sealed class ModEntry : Mod
     private const string PersistedPartnerTileKey = PersistedModDataPrefix + "partnerTile";
     private const string RuntimeOnlineKey = PersistedModDataPrefix + "online";
     private const string RuntimeGeneratedThisTickKey = PersistedModDataPrefix + "generatedThisTick";
+    private const string IndustrialPreservesJarRecipeKey = "Industrial Preserves Jar";
+    private const string IndustrialPreservesJarSpriteName = "IndustrialPreservesJar";
+    private const string IndustrialPreservesJarPoweredState = "powered";
+    private const string IndustrialPreservesJarUnpoweredState = "unpowered";
+    private const string SpriteDirectoryName = "Assets";
     private const float ChargedBatteryThreshold = 0.5f;
     private const string WindGeneratorWheelSpriteName = "WindGenerator__wheel";
     private const float WindGeneratorGeneratingRadiansPerSecond = 5.5f;
     private const float WindGeneratorIdleRadiansPerSecond = 0f;
     private const float WindGeneratorWheelLayerOffset = 0.0001f;
     private const float SteamActiveOverlayLayerOffset = 0.0002f;
+    private const float DefaultBigCraftableLayerDepthYOffset = 24f;
+    private const float FloorMountedLayerDepthInsetFromTileTop = 8f;
     private static readonly Rectangle BigCraftableSourceRect = new(0, 0, 16, 32);
     private static readonly Vector2 WindGeneratorWheelPivot = new(8f, 6f);
     private readonly HashSet<string> invalidStateSpritesLogged = new(StringComparer.Ordinal);
     private readonly HashSet<string> conduitRenderDiagnosticsLogged = new(StringComparer.Ordinal);
+    private static readonly string[] RequiredSpriteNames =
+    {
+        "CopperCable",
+        "IronCable",
+        "IridiumCable",
+        "SteamGenerator",
+        "SteamGenerator__off",
+        "SteamGenerator__on",
+        "WindGenerator",
+        "WindGenerator__idle",
+        "WindGenerator__generating",
+        "WindGenerator__wheel",
+        "BasicBattery",
+        "BasicBattery__low",
+        "BasicBattery__charged",
+        "IridiumBattery",
+        "IridiumBattery__low",
+        "IridiumBattery__charged",
+        "PowerConduit",
+        "PowerConduit__unpaired",
+        "PowerConduit__linked",
+        "IndustrialPreservesJar",
+        "IndustrialPreservesJar__powered",
+        "IndustrialPreservesJar__unpowered"
+    };
+    private string? vanillaPreservesJarBigCraftableId;
+    private bool loggedMissingPreservesTemplate;
+    private bool loggedMissingPreservesMachineTemplate;
     private bool attemptedWindWheelTextureLoad;
     private Texture2D? cachedWindWheelTexture;
 
     // Texture asset keys (lazy-computed from manifest)
-    private string CopperCableTexture => $"Mods/{ModManifest.UniqueID}/CopperCable";
-    private string IronCableTexture => $"Mods/{ModManifest.UniqueID}/IronCable";
-    private string IridiumCableTexture => $"Mods/{ModManifest.UniqueID}/IridiumCable";
-    private string SteamGeneratorTexture => $"Mods/{ModManifest.UniqueID}/SteamGenerator";
-    private string WindGeneratorTexture => $"Mods/{ModManifest.UniqueID}/WindGenerator";
+    private string CopperCableTexture => GetTextureAsset("CopperCable");
+    private string IronCableTexture => GetTextureAsset("IronCable");
+    private string IridiumCableTexture => GetTextureAsset("IridiumCable");
+    private string SteamGeneratorTexture => GetTextureAsset("SteamGenerator");
+    private string WindGeneratorTexture => GetTextureAsset("WindGenerator");
     private string WindGeneratorWheelTexture => GetTextureAsset(WindGeneratorWheelSpriteName);
-    private string BasicBatteryTexture => $"Mods/{ModManifest.UniqueID}/BasicBattery";
-    private string IridiumBatteryTexture => $"Mods/{ModManifest.UniqueID}/IridiumBattery";
-    private string PowerConduitTexture => $"Mods/{ModManifest.UniqueID}/PowerConduit";
+    private string BasicBatteryTexture => GetTextureAsset("BasicBattery");
+    private string IridiumBatteryTexture => GetTextureAsset("IridiumBattery");
+    private string PowerConduitTexture => GetTextureAsset("PowerConduit");
+    private string IndustrialPreservesJarTexture => GetTextureAsset(IndustrialPreservesJarSpriteName);
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
         PropertyNameCaseInsensitive = true,
         WriteIndented = true
+    };
+
+    private static readonly JsonSerializerOptions GameDataCloneJsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        WriteIndented = false,
+        IncludeFields = true
     };
 
     private readonly record struct LegacyConduitEndpoint(string LocationName, Vector2 Tile, StardewValley.Object ConduitObject);
@@ -97,7 +141,6 @@ internal sealed class ModEntry : Mod
         helper.Events.Content.AssetRequested += OnAssetRequested;
         helper.Events.World.ObjectListChanged += OnObjectListChanged;
         helper.Events.Input.ButtonPressed += OnButtonPressed;
-        helper.Events.Display.RenderingStep += OnRenderingStep;
         helper.Events.Display.RenderedWorld += OnRenderedWorld;
 
         // Console commands
@@ -117,10 +160,35 @@ internal sealed class ModEntry : Mod
         GmcmIntegration.Register(Helper, ModManifest, Config, () =>
         {
             Config = Helper.ReadConfig<ModConfig>() ?? new ModConfig();
+            RegisterPowerGridOwnedConsumers();
         });
 
+        RegisterPowerGridOwnedConsumers();
+        ValidateCriticalSpritePaths();
         LogConduitStateSpriteAvailability();
         Monitor.Log("[PowerGrid] Loaded. Waiting for save.", LogLevel.Info);
+    }
+
+    private void RegisterPowerGridOwnedConsumers()
+    {
+        ConsumerRegistry.Instance.Register(new ConsumerDefinition
+        {
+            QualifiedItemId = PowerConstants.Q(PowerConstants.IndustrialPreservesJarId),
+            DemandPerTick = GetDemandPerTick(Config.IndustrialPreservesJarEUPerMinute),
+            MaxSpeedupFraction = ClampSpeedup(Config.IndustrialPreservesJarMaxSpeedup),
+            Priority = Math.Max(0, Config.IndustrialPreservesJarPriority),
+            DisplayName = IndustrialPreservesJarRecipeKey
+        });
+    }
+
+    private static int GetDemandPerTick(int euPerMinute)
+    {
+        return Math.Max(0, euPerMinute) * PowerConstants.TickIntervalMinutes;
+    }
+
+    private static float ClampSpeedup(float speedup)
+    {
+        return Math.Clamp(speedup, 0f, 1f);
     }
 
     private void WarnAboutDeprecatedMetalKegSettings()
@@ -233,7 +301,7 @@ internal sealed class ModEntry : Mod
                 if (importBatteries
                     && importedBatteries != null
                     && IsBatteryItem(itemId)
-                    && TryReadNonNegativeInt(obj.modData, PersistedChargeKey, out int charge)
+                    && TryReadPowerModDataInt(obj.modData, "charge", out int charge)
                     && charge > 0)
                 {
                     importedBatteries[PowerConstants.MakeNodeKey(locationName, tile, itemId)] = charge;
@@ -242,7 +310,7 @@ internal sealed class ModEntry : Mod
                 if (importFuel
                     && importedFuel != null
                     && IsGeneratorItem(itemId)
-                    && TryReadNonNegativeInt(obj.modData, PersistedFuelTicksRemainingKey, out int fuelTicksRemaining)
+                    && TryReadPowerModDataInt(obj.modData, "fuelTicksRemaining", out int fuelTicksRemaining)
                     && fuelTicksRemaining > 0)
                 {
                     importedFuel[PowerConstants.MakeNodeKey(locationName, tile, itemId)] = fuelTicksRemaining;
@@ -264,15 +332,16 @@ internal sealed class ModEntry : Mod
 
             foreach (LegacyConduitEndpoint endpoint in conduitsByEndpoint.Values)
             {
-                if (!endpoint.ConduitObject.modData.TryGetValue(PersistedLinkedKey, out string? linkedRaw)
+                if (!TryReadPowerModDataString(endpoint.ConduitObject.modData, "linked", out string? linkedRaw)
                     || linkedRaw != "1")
                 {
                     continue;
                 }
 
-                if (!endpoint.ConduitObject.modData.TryGetValue(PersistedPartnerLocationKey, out string? partnerLocation)
+                if (!TryReadPowerModDataString(endpoint.ConduitObject.modData, "partnerLocation", out string? partnerLocation)
                     || string.IsNullOrWhiteSpace(partnerLocation)
-                    || !endpoint.ConduitObject.modData.TryGetValue(PersistedPartnerTileKey, out string? partnerTileRaw)
+                    || !TryReadPowerModDataString(endpoint.ConduitObject.modData, "partnerTile", out string? partnerTileRaw)
+                    || string.IsNullOrWhiteSpace(partnerTileRaw)
                     || !TryParseTile(partnerTileRaw, out Vector2 partnerTile))
                 {
                     continue;
@@ -341,6 +410,16 @@ internal sealed class ModEntry : Mod
         return modData.TryGetValue(key, out string? raw)
             && int.TryParse(raw, out value)
             && value >= 0;
+    }
+
+    private static bool TryReadPowerModDataInt(ModDataDictionary modData, string suffix, out int value)
+    {
+        return TryReadNonNegativeInt(modData, PersistedModDataPrefix + suffix, out value);
+    }
+
+    private static bool TryReadPowerModDataString(ModDataDictionary modData, string suffix, out string? value)
+    {
+        return modData.TryGetValue(PersistedModDataPrefix + suffix, out value);
     }
 
     private static bool TryParseTile(string raw, out Vector2 tile)
@@ -527,17 +606,6 @@ internal sealed class ModEntry : Mod
         }
     }
 
-    private void OnRenderingStep(object? sender, RenderingStepEventArgs e)
-    {
-        if (!Context.IsWorldReady || Game1.currentLocation == null)
-            return;
-
-        if (e.Step != RenderSteps.World_Sorted)
-            return;
-
-        DrawCables(e.SpriteBatch, Game1.currentLocation);
-    }
-
     private void OnRenderedWorld(object? sender, RenderedWorldEventArgs e)
     {
         if (!Context.IsWorldReady)
@@ -596,7 +664,7 @@ internal sealed class ModEntry : Mod
                 Vector2 screenPos = Game1.GlobalToLocal(Game1.viewport, new Vector2(cable.Tile.X * 64, cable.Tile.Y * 64));
                 screenPos.Y -= 64; 
 
-                float layerDepth = Math.Max(0.0f, ((cable.Tile.Y + 1f) * 64f - 24f) / 10000f) + cable.Tile.X * 1E-05f;
+                float layerDepth = 1f;
 
                 b.Draw(
                     texture: tex,
@@ -627,6 +695,10 @@ internal sealed class ModEntry : Mod
         {
             e.Edit(EditCraftingRecipes);
         }
+        else if (e.NameWithoutLocale.IsEquivalentTo("Data/Machines"))
+        {
+            e.Edit(EditMachines);
+        }
 
         // Texture loading for each PowerGrid object
         TryLoadTexture(e, CopperCableTexture, "CopperCable", new Color(200, 120, 60));
@@ -638,6 +710,7 @@ internal sealed class ModEntry : Mod
         TryLoadTexture(e, BasicBatteryTexture, "BasicBattery", new Color(60, 180, 60));
         TryLoadTexture(e, IridiumBatteryTexture, "IridiumBattery", new Color(150, 80, 220));
         TryLoadTexture(e, PowerConduitTexture, "PowerConduit", new Color(220, 200, 60));
+        TryLoadTexture(e, IndustrialPreservesJarTexture, IndustrialPreservesJarSpriteName, new Color(180, 120, 80));
 
         TryLoadStateTexture(e, "SteamGenerator", "off", new Color(140, 140, 160));
         TryLoadStateTexture(e, "SteamGenerator", "on", new Color(140, 140, 160));
@@ -649,6 +722,8 @@ internal sealed class ModEntry : Mod
         TryLoadStateTexture(e, "IridiumBattery", "charged", new Color(150, 80, 220));
         TryLoadStateTexture(e, "PowerConduit", "unpaired", new Color(220, 200, 60));
         TryLoadStateTexture(e, "PowerConduit", "linked", new Color(220, 200, 60));
+        TryLoadStateTexture(e, IndustrialPreservesJarSpriteName, IndustrialPreservesJarPoweredState, new Color(180, 120, 80));
+        TryLoadStateTexture(e, IndustrialPreservesJarSpriteName, IndustrialPreservesJarUnpoweredState, new Color(180, 120, 80));
     }
 
     private void TryLoadTexture(AssetRequestedEventArgs e, string assetKey, string spriteName, Color tint)
@@ -664,7 +739,7 @@ internal sealed class ModEntry : Mod
         if (!e.NameWithoutLocale.IsEquivalentTo(assetKey))
             return;
 
-        string customPath = $"assets/{spriteName}.png";
+        string customPath = GetSpriteRelativePath(spriteName);
         string fullPath = Path.Combine(Helper.DirectoryPath, customPath.Replace('/', Path.DirectorySeparatorChar));
         if (!File.Exists(fullPath))
             return;
@@ -681,7 +756,7 @@ internal sealed class ModEntry : Mod
 
         if (baseSpriteName == "PowerConduit")
         {
-            string fullPath = Path.Combine(Helper.DirectoryPath, "assets", $"{stateSpriteName}.png");
+            string fullPath = GetSpriteDiskPath(stateSpriteName);
             LogConduitDiagnosticOnce(
                 $"asset-request|{stateSpriteName}",
                 $"[PowerGrid] Conduit state asset requested: assetKey={assetKey}, fileExists={File.Exists(fullPath)}, path={fullPath}");
@@ -692,7 +767,7 @@ internal sealed class ModEntry : Mod
 
     private Texture2D LoadTextureOrFallback(string spriteName, string fallbackSpriteName, Color tint)
     {
-        string customPath = $"assets/{spriteName}.png";
+        string customPath = GetSpriteRelativePath(spriteName);
         string fullPath = Path.Combine(Helper.DirectoryPath, customPath.Replace('/', Path.DirectorySeparatorChar));
 
         if (File.Exists(fullPath))
@@ -774,6 +849,7 @@ internal sealed class ModEntry : Mod
             "BasicBattery" => 36,     // Lightning Rod
             "IridiumBattery" => 36,
             "PowerConduit" => 8,      // Scarecrow
+            "IndustrialPreservesJar" => 15,
             _ => 12                   // Keg fallback
         };
 
@@ -841,6 +917,37 @@ internal sealed class ModEntry : Mod
         // Power Conduit
         RegisterBigCraftable(dict, template, PowerConstants.PowerConduitId, "Power Conduit",
             "Links power networks across locations. Interact with two conduits to pair them.", PowerConduitTexture);
+
+        RegisterIndustrialPreservesJar(dict);
+    }
+
+    private void RegisterIndustrialPreservesJar(IDictionary<string, BigCraftableData> dict)
+    {
+        KeyValuePair<string, BigCraftableData>? templateOpt =
+            FindBigCraftableTemplate(dict, targetDisplayName: "Preserves Jar", preferredKey: "15");
+
+        if (templateOpt == null)
+        {
+            if (!loggedMissingPreservesTemplate)
+            {
+                Monitor.Log("[PowerGrid] Failed to find vanilla Preserves Jar template in Data/BigCraftables; Industrial Preserves Jar was not added.", LogLevel.Error);
+                loggedMissingPreservesTemplate = true;
+            }
+
+            return;
+        }
+
+        KeyValuePair<string, BigCraftableData> template = templateOpt.Value;
+        vanillaPreservesJarBigCraftableId = template.Key;
+
+        BigCraftableData industrialData = CloneJson(template.Value);
+        industrialData.Name = IndustrialPreservesJarRecipeKey;
+        industrialData.DisplayName = IndustrialPreservesJarRecipeKey;
+        industrialData.Description = "An industrial preserves jar built for powered throughput.";
+        industrialData.Texture = IndustrialPreservesJarTexture;
+        industrialData.SpriteIndex = 0;
+
+        dict[PowerConstants.IndustrialPreservesJarId] = industrialData;
     }
 
     private void RegisterBigCraftable(IDictionary<string, BigCraftableData> dict, BigCraftableData template,
@@ -882,6 +989,117 @@ internal sealed class ModEntry : Mod
 
         // Power Conduit: 337 (Iridium Bar) x1, 787 (Battery Pack) x1, 338 (Refined Quartz) x2
         dict["Power Conduit"] = $"337 1 787 1 338 2/Field/{PowerConstants.PowerConduitId}/true/null/";
+
+        string? preservesTemplate = dict.TryGetValue("Preserves Jar", out string? value) ? value : null;
+        dict[IndustrialPreservesJarRecipeKey] = BuildRecipeFromTemplate(preservesTemplate, PowerConstants.IndustrialPreservesJarId);
+    }
+
+    private void EditMachines(IAssetData asset)
+    {
+        IDictionary<string, MachineData> machines = asset.AsDictionary<string, MachineData>().Data;
+        string? templateKey = GetPreservesJarMachineKey(machines, vanillaPreservesJarBigCraftableId);
+        if (templateKey == null || !machines.TryGetValue(templateKey, out MachineData? template))
+        {
+            if (!loggedMissingPreservesMachineTemplate)
+            {
+                Monitor.Log("[PowerGrid] Failed to find vanilla Preserves Jar machine entry in Data/Machines; Industrial Preserves Jar machine rules were not added.", LogLevel.Error);
+                loggedMissingPreservesMachineTemplate = true;
+            }
+
+            return;
+        }
+
+        MachineData machine = CloneMachineByJson(template);
+        machines[PowerConstants.Q(PowerConstants.IndustrialPreservesJarId)] = machine;
+        machines[PowerConstants.IndustrialPreservesJarId] = machine;
+    }
+
+    private static string BuildRecipeFromTemplate(string? template, string resultItemId)
+    {
+        if (string.IsNullOrWhiteSpace(template))
+            return $"388 50 334 1/Home/{resultItemId}/true/null/";
+
+        string[] parts = template.Split('/');
+        if (parts.Length < 5)
+            return $"388 50 334 1/Home/{resultItemId}/true/null/";
+
+        parts[2] = resultItemId;
+        parts[3] = "true";
+
+        string rebuilt = string.Join("/", parts);
+        if (!rebuilt.EndsWith("/", StringComparison.Ordinal))
+            rebuilt += "/";
+        return rebuilt;
+    }
+
+    private static string? GetPreservesJarMachineKey(IDictionary<string, MachineData> machines, string? vanillaBigCraftableId)
+    {
+        if (!string.IsNullOrWhiteSpace(vanillaBigCraftableId))
+        {
+            string qualified = "(BC)" + vanillaBigCraftableId;
+            if (machines.ContainsKey(qualified))
+                return qualified;
+
+            if (machines.ContainsKey(vanillaBigCraftableId))
+                return vanillaBigCraftableId;
+        }
+
+        if (machines.ContainsKey("(BC)15"))
+            return "(BC)15";
+        if (machines.ContainsKey("15"))
+            return "15";
+
+        foreach (string key in machines.Keys)
+        {
+            if (key.Contains("PreservesJar", StringComparison.OrdinalIgnoreCase)
+                || key.Contains("Preserves Jar", StringComparison.OrdinalIgnoreCase))
+            {
+                return key;
+            }
+        }
+
+        return null;
+    }
+
+    private static KeyValuePair<string, BigCraftableData>? FindBigCraftableTemplate(
+        IDictionary<string, BigCraftableData> dict,
+        string targetDisplayName,
+        string? preferredKey)
+    {
+        if (!string.IsNullOrWhiteSpace(preferredKey)
+            && dict.TryGetValue(preferredKey, out BigCraftableData? byKey)
+            && HasDisplayName(byKey, targetDisplayName))
+        {
+            return new KeyValuePair<string, BigCraftableData>(preferredKey, byKey);
+        }
+
+        foreach (KeyValuePair<string, BigCraftableData> pair in dict)
+        {
+            if (HasDisplayName(pair.Value, targetDisplayName))
+                return pair;
+        }
+
+        return null;
+    }
+
+    private static bool HasDisplayName(BigCraftableData data, string displayName)
+    {
+        if (!string.IsNullOrWhiteSpace(data.DisplayName) && data.DisplayName.Equals(displayName, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (!string.IsNullOrWhiteSpace(data.Name) && data.Name.Equals(displayName, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return false;
+    }
+
+    private static MachineData CloneMachineByJson(MachineData template)
+    {
+        string json = JsonSerializer.Serialize(template, GameDataCloneJsonOptions);
+        MachineData? clone = JsonSerializer.Deserialize<MachineData>(json, GameDataCloneJsonOptions);
+        if (clone == null)
+            throw new InvalidOperationException("Failed to clone MachineData via JSON.");
+        return clone;
     }
 
     // ─────────────────────────────────────────────
@@ -1192,13 +1410,39 @@ internal sealed class ModEntry : Mod
                 modifiers: null);
             if (drawAboveFrontLayerTarget != null)
             {
-                harmony.Patch(drawAboveFrontLayerTarget, postfix: new HarmonyMethod(typeof(ModEntry), nameof(StatefulObjectAboveFrontLayerPostfix)));
+                harmony.Patch(
+                    drawAboveFrontLayerTarget,
+                    prefix: new HarmonyMethod(typeof(ModEntry), nameof(StatefulObjectAboveFrontLayerPrefix)),
+                    postfix: new HarmonyMethod(typeof(ModEntry), nameof(StatefulObjectAboveFrontLayerPostfix)));
+            }
+
+            MethodInfo? drawFloorDecorationsTarget = typeof(GameLocation).GetMethod(
+                "drawFloorDecorations",
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
+                binder: null,
+                types: new[] { typeof(SpriteBatch) },
+                modifiers: null);
+            if (drawFloorDecorationsTarget != null)
+            {
+                harmony.Patch(drawFloorDecorationsTarget, postfix: new HarmonyMethod(typeof(ModEntry), nameof(GameLocationDrawFloorDecorationsPostfix)));
+            }
+            else
+            {
+                Monitor.Log("[PowerGrid] Couldn't patch GameLocation.drawFloorDecorations(SpriteBatch); cables may not render.", LogLevel.Warn);
             }
         }
         catch (Exception ex)
         {
             Monitor.Log($"[PowerGrid] Failed to apply runtime object patches: {ex}", LogLevel.Error);
         }
+    }
+
+    private static void GameLocationDrawFloorDecorationsPostfix(GameLocation __instance, SpriteBatch b)
+    {
+        if (Instance == null || !Context.IsWorldReady || __instance == null || b == null)
+            return;
+
+        Instance.DrawCables(b, __instance);
     }
 
     private static void CablePassablePostfix(StardewValley.Object __instance, ref bool __result)
@@ -1264,6 +1508,15 @@ internal sealed class ModEntry : Mod
         Instance?.LogConduitRenderDiagnostic(__instance, "above-front-postfix", __args);
     }
 
+    private static bool StatefulObjectAboveFrontLayerPrefix(StardewValley.Object __instance, object[] __args)
+    {
+        if (__instance?.ItemId != PowerConstants.PowerConduitId)
+            return true;
+
+        Instance?.LogConduitRenderDiagnostic(__instance, "above-front-prefix-suppressed", __args);
+        return false;
+    }
+
     private void DrawStatefulObjectOverlayAtTile(StardewValley.Object obj, SpriteBatch spriteBatch, int tileX, int tileY, float alpha)
     {
         if (!Context.IsWorldReady || Game1.currentLocation == null || obj == null || !obj.bigCraftable.Value)
@@ -1280,7 +1533,7 @@ internal sealed class ModEntry : Mod
             return;
 
         Vector2 screenPos = Game1.GlobalToLocal(Game1.viewport, new Vector2(tileX * 64, tileY * 64 - 64));
-        float layerDepth = Math.Max(0f, ((tileY + 1) * 64f - 24f) / 10000f + tileX / 1000000f);
+        float layerDepth = GetStatefulObjectLayerDepth(obj, tileX, tileY);
 
         DrawStatefulTexture(spriteBatch, texture!, screenPos, alpha, layerDepth, obj, stateSpriteName!);
     }
@@ -1304,26 +1557,121 @@ internal sealed class ModEntry : Mod
             return;
 
         Vector2 screenPos = new(xNonTile, yNonTile);
-        float layerDepth = layerDepthOverride ?? Math.Max(0f, ((tileY + 1) * 64f - 24f) / 10000f + tileX / 1000000f);
+        float layerDepth = GetStatefulObjectLayerDepth(obj, tileX, tileY, layerDepthOverride);
 
         DrawStatefulTexture(spriteBatch, texture!, screenPos, alpha, layerDepth, obj, stateSpriteName!);
     }
 
     private void DrawStatefulTexture(SpriteBatch spriteBatch, Texture2D texture, Vector2 screenPos, float alpha, float layerDepth, StardewValley.Object obj, string stateSpriteName)
     {
+        if (obj.ItemId == PowerConstants.IndustrialPreservesJarId)
+        {
+            DrawAnimatedBigCraftableTexture(spriteBatch, texture, screenPos, alpha, layerDepth, obj);
+        }
+        else
+        {
+            spriteBatch.Draw(
+                texture,
+                screenPos,
+                BigCraftableSourceRect,
+                Color.White * alpha,
+                0f,
+                Vector2.Zero,
+                4f,
+                SpriteEffects.None,
+                layerDepth);
+        }
+
+        DrawSteamGeneratorActiveOverlay(spriteBatch, screenPos, alpha, layerDepth, obj, stateSpriteName);
+        DrawWindGeneratorWheelOverlay(spriteBatch, screenPos, alpha, layerDepth, obj, stateSpriteName);
+        DrawIndustrialPreservesJarReadyIndicator(spriteBatch, alpha, layerDepth, obj);
+    }
+
+    private static void DrawAnimatedBigCraftableTexture(
+        SpriteBatch spriteBatch,
+        Texture2D texture,
+        Vector2 screenPos,
+        float alpha,
+        float layerDepth,
+        StardewValley.Object obj)
+    {
+        Vector2 drawScale = obj.getScale() * 4f;
+        int shakeX = obj.shakeTimer > 0 ? Game1.random.Next(-1, 2) : 0;
+        int shakeY = obj.shakeTimer > 0 ? Game1.random.Next(-1, 2) : 0;
+
+        Rectangle destination = new(
+            (int)(screenPos.X - drawScale.X / 2f) + shakeX,
+            (int)(screenPos.Y - drawScale.Y / 2f) + shakeY,
+            Math.Max(1, (int)(64f + drawScale.X)),
+            Math.Max(1, (int)(128f + drawScale.Y / 2f)));
+
         spriteBatch.Draw(
             texture,
-            screenPos,
+            destination,
             BigCraftableSourceRect,
             Color.White * alpha,
             0f,
             Vector2.Zero,
-            4f,
             SpriteEffects.None,
             layerDepth);
+    }
 
-        DrawSteamGeneratorActiveOverlay(spriteBatch, screenPos, alpha, layerDepth, obj, stateSpriteName);
-        DrawWindGeneratorWheelOverlay(spriteBatch, screenPos, alpha, layerDepth, obj, stateSpriteName);
+    private static void DrawIndustrialPreservesJarReadyIndicator(SpriteBatch spriteBatch, float alpha, float layerDepth, StardewValley.Object obj)
+    {
+        if (obj.ItemId != PowerConstants.IndustrialPreservesJarId || !obj.readyForHarvest.Value)
+            return;
+
+        Vector2 tile = obj.TileLocation;
+        float bobOffset = 4f * (float)Math.Round(Math.Sin(Game1.currentGameTime.TotalGameTime.TotalMilliseconds / 250d), 2);
+        float bubbleLayerDepth = Math.Min(1f, layerDepth + 0.00001f);
+
+        spriteBatch.Draw(
+            Game1.mouseCursors,
+            Game1.GlobalToLocal(
+                Game1.viewport,
+                new Vector2(tile.X * 64f - 8f, tile.Y * 64f - 112f + bobOffset)),
+            new Rectangle(141, 465, 20, 24),
+            Color.White * (0.75f * alpha),
+            0f,
+            Vector2.Zero,
+            4f,
+            SpriteEffects.None,
+            bubbleLayerDepth);
+
+        StardewValley.Object? heldObject = obj.heldObject.Value;
+        if (heldObject == null)
+            return;
+
+        if (heldObject is ColoredObject coloredObject)
+        {
+            coloredObject.drawInMenu(
+                spriteBatch,
+                Game1.GlobalToLocal(
+                    Game1.viewport,
+                    new Vector2(tile.X * 64f, tile.Y * 64f - 104f + bobOffset)),
+                1f,
+                0.75f * alpha,
+                Math.Min(1f, bubbleLayerDepth + 0.00001f));
+            return;
+        }
+
+        var heldData = ItemRegistry.GetDataOrErrorItem(heldObject.QualifiedItemId);
+        Texture2D heldTexture = heldData.GetTexture();
+        Rectangle heldSource = heldData.GetSourceRect(0);
+        Vector2 iconPosition = Game1.GlobalToLocal(
+            Game1.viewport,
+            new Vector2(tile.X * 64f + 32f, tile.Y * 64f - 72f + bobOffset));
+
+        spriteBatch.Draw(
+            heldTexture,
+            iconPosition,
+            heldSource,
+            Color.White * (0.75f * alpha),
+            0f,
+            new Vector2(8f, 8f),
+            4f,
+            SpriteEffects.None,
+            Math.Min(1f, bubbleLayerDepth + 0.00001f));
     }
 
     private void DrawSteamGeneratorActiveOverlay(SpriteBatch spriteBatch, Vector2 screenPos, float alpha, float layerDepth, StardewValley.Object obj, string stateSpriteName)
@@ -1354,17 +1702,17 @@ internal sealed class ModEntry : Mod
         // Steam puffs near the stack to make active state readable at a glance.
         Color steamColor = new Color(224, 230, 236) * Math.Min(1f, alpha * (0.4f + pulse * 0.5f));
         Rectangle puffA = new(
-            (int)screenPos.X + 35,
+            (int)screenPos.X + 31,
             (int)(screenPos.Y + 18 - drift * 2f),
             7,
             4);
         Rectangle puffB = new(
-            (int)screenPos.X + 33,
+            (int)screenPos.X + 29,
             (int)(screenPos.Y + 12 - drift * 3f),
             6,
             3);
         Rectangle puffCore = new(
-            (int)screenPos.X + 37,
+            (int)screenPos.X + 33,
             (int)(screenPos.Y + 10 - drift * 2.2f),
             3,
             2);
@@ -1413,10 +1761,28 @@ internal sealed class ModEntry : Mod
             return false;
 
         Vector2 screenPos = Game1.GlobalToLocal(Game1.viewport, new Vector2(tileX * 64, tileY * 64 - 64));
-        float layerDepth = Math.Max(0f, ((tileY + 1) * 64f - 24f) / 10000f + tileX / 1000000f);
+        float layerDepth = GetStatefulObjectLayerDepth(obj, tileX, tileY);
         LogConduitRenderDiagnostic(obj, source, new object[] { tileX, tileY, alpha, stateSpriteName! });
         DrawStatefulTexture(spriteBatch, texture!, screenPos, alpha, layerDepth, obj, stateSpriteName!);
         return true;
+    }
+
+    private float GetStatefulObjectLayerDepth(StardewValley.Object obj, int tileX, int tileY, float? layerDepthOverride = null)
+    {
+        if (obj.ItemId == PowerConstants.PowerConduitId)
+            return GetFloorMountedLayerDepth(tileX, tileY);
+
+        return layerDepthOverride ?? GetBigCraftableLayerDepth(tileX, tileY, DefaultBigCraftableLayerDepthYOffset);
+    }
+
+    private static float GetBigCraftableLayerDepth(int tileX, int tileY, float yOffset)
+    {
+        return Math.Max(0f, ((tileY + 1) * 64f - yOffset) / 10000f + tileX / 1000000f);
+    }
+
+    private static float GetFloorMountedLayerDepth(int tileX, int tileY)
+    {
+        return Math.Max(0f, (tileY * 64f + FloorMountedLayerDepthInsetFromTileTop) / 10000f + tileX / 1000000f);
     }
 
     private void DrawWindGeneratorWheelOverlay(SpriteBatch spriteBatch, Vector2 screenPos, float alpha, float layerDepth, StardewValley.Object obj, string stateSpriteName)
@@ -1458,7 +1824,7 @@ internal sealed class ModEntry : Mod
 
         attemptedWindWheelTextureLoad = true;
 
-        string customPath = $"assets/{WindGeneratorWheelSpriteName}.png";
+        string customPath = GetSpriteRelativePath(WindGeneratorWheelSpriteName);
         string fullPath = Path.Combine(Helper.DirectoryPath, customPath.Replace('/', Path.DirectorySeparatorChar));
         if (!File.Exists(fullPath))
             return false;
@@ -1488,7 +1854,8 @@ internal sealed class ModEntry : Mod
             || itemId == PowerConstants.WindGeneratorId
             || itemId == PowerConstants.BasicBatteryId
             || itemId == PowerConstants.IridiumBatteryId
-            || itemId == PowerConstants.PowerConduitId;
+            || itemId == PowerConstants.PowerConduitId
+            || itemId == PowerConstants.IndustrialPreservesJarId;
     }
 
     private static bool IsCableItem(string? itemId)
@@ -1512,6 +1879,7 @@ internal sealed class ModEntry : Mod
             PowerConstants.BasicBatteryId => GetBatteryState(locationName, tile, itemId),
             PowerConstants.IridiumBatteryId => GetBatteryState(locationName, tile, itemId),
             PowerConstants.PowerConduitId => GetConduitState(locationName, tile),
+            PowerConstants.IndustrialPreservesJarId => GetIndustrialPreservesJarState(obj),
             _ => null
         };
 
@@ -1530,7 +1898,7 @@ internal sealed class ModEntry : Mod
     {
         texture = null;
 
-        string customPath = $"assets/{stateSpriteName}.png";
+        string customPath = GetSpriteRelativePath(stateSpriteName);
         string fullPath = Path.Combine(Helper.DirectoryPath, customPath.Replace('/', Path.DirectorySeparatorChar));
         if (!File.Exists(fullPath))
             return false;
@@ -1689,6 +2057,17 @@ internal sealed class ModEntry : Mod
         return ConduitMgr.GetPartner(locationName, tile) != null ? "linked" : "unpaired";
     }
 
+    private static string GetIndustrialPreservesJarState(StardewValley.Object obj)
+    {
+        bool hasEnergized = TryReadPowerModDataString(obj.modData, "energized", out string? energizedText);
+        bool hasPowered = TryReadPowerModDataString(obj.modData, "powered", out string? poweredText);
+        bool isPowered = hasEnergized
+            ? energizedText == "1"
+            : hasPowered && poweredText == "1";
+
+        return isPowered ? IndustrialPreservesJarPoweredState : IndustrialPreservesJarUnpoweredState;
+    }
+
     private int GetBatteryCapacity(string itemId)
     {
         return itemId switch
@@ -1708,6 +2087,7 @@ internal sealed class ModEntry : Mod
             PowerConstants.BasicBatteryId => "BasicBattery",
             PowerConstants.IridiumBatteryId => "IridiumBattery",
             PowerConstants.PowerConduitId => "PowerConduit",
+            PowerConstants.IndustrialPreservesJarId => IndustrialPreservesJarSpriteName,
             _ => null
         };
     }
@@ -1717,15 +2097,59 @@ internal sealed class ModEntry : Mod
         return PowerConstants.TextureAsset(ModManifest.UniqueID, spriteName);
     }
 
+    private string GetSpriteRelativePath(string spriteName)
+    {
+        return $"{SpriteDirectoryName}/{spriteName}.png";
+    }
+
+    private string GetSpriteDiskPath(string spriteName)
+    {
+        return Path.Combine(Helper.DirectoryPath, SpriteDirectoryName, $"{spriteName}.png");
+    }
+
     private static string GetStateSpriteName(string baseSpriteName, string stateName)
     {
         return $"{baseSpriteName}__{stateName}";
     }
 
+    private void ValidateCriticalSpritePaths()
+    {
+        int missingCount = 0;
+        foreach (string spriteName in RequiredSpriteNames)
+        {
+            string expectedPath = GetSpriteDiskPath(spriteName);
+            if (File.Exists(expectedPath))
+                continue;
+
+            missingCount++;
+            string legacyPath = Path.Combine(Helper.DirectoryPath, "assets", $"{spriteName}.png");
+            bool caseMismatchLikely = !string.Equals(SpriteDirectoryName, "assets", StringComparison.Ordinal)
+                && File.Exists(legacyPath);
+
+            if (caseMismatchLikely)
+            {
+                Monitor.Log(
+                    $"[PowerGrid] Critical asset case mismatch: expected '{expectedPath}' but found '{legacyPath}'. Linux/macOS are case-sensitive; keep sprite directory casing consistent.",
+                    LogLevel.Error);
+            }
+            else
+            {
+                Monitor.Log($"[PowerGrid] Missing critical sprite asset: {expectedPath}", LogLevel.Error);
+            }
+        }
+
+        if (missingCount == 0)
+        {
+            Monitor.Log(
+                $"[PowerGrid] Critical sprite path check passed for {RequiredSpriteNames.Length} assets under '{SpriteDirectoryName}/'.",
+                LogLevel.Trace);
+        }
+    }
+
     private void LogConduitStateSpriteAvailability()
     {
-        string linkedPath = Path.Combine(Helper.DirectoryPath, "assets", "PowerConduit__linked.png");
-        string unpairedPath = Path.Combine(Helper.DirectoryPath, "assets", "PowerConduit__unpaired.png");
+        string linkedPath = GetSpriteDiskPath("PowerConduit__linked");
+        string unpairedPath = GetSpriteDiskPath("PowerConduit__unpaired");
         LogConduitDiagnosticOnce(
             "startup-assets",
             $"[PowerGrid] Conduit state sprite availability: linkedExists={File.Exists(linkedPath)} ({linkedPath}), unpairedExists={File.Exists(unpairedPath)} ({unpairedPath})");

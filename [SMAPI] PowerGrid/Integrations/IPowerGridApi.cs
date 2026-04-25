@@ -1,7 +1,6 @@
 using Microsoft.Xna.Framework;
-using DarthMods.API.Power;
 
-namespace Darth.PowerGrid.Integrations;
+namespace Meiameiameia.PowerGrid.Integrations;
 
 /// <summary>
 /// Compatibility shim for older integrations still compiled against PowerGrid's local API namespace.
