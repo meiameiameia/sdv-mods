@@ -4,7 +4,7 @@ A cable-based electrical power network mod for Stardew Valley 1.6+.
 Build generators, run cables, store energy in batteries, and power your machines for speed boosts.
 
 **Author:** meiameiameia
-**Version:** 1.0.0  
+**Version:** 0.1.0
 **Requires:** SMAPI 4.0.0+, Stardew Valley 1.6+
 
 ---
@@ -16,7 +16,7 @@ Build generators, run cables, store energy in batteries, and power your machines
 - [Craftable Items](#craftable-items)
 - [Power Simulation](#power-simulation)
 - [Cross-Location Power (Conduits)](#cross-location-power-conduits)
-- [Metal Kegs Integration](#metal-kegs-integration)
+- [PowerGrid-Owned Machines](#powergrid-owned-machines)
 - [Power Monitor UI](#power-monitor-ui)
 - [Configuration (GMCM)](#configuration-gmcm)
 - [Console Commands](#console-commands)
@@ -132,19 +132,20 @@ The two locations now share a single power network. Energy flows bidirectionally
 
 ---
 
-## Metal Kegs Integration
+## PowerGrid-Owned Machines
 
-`[SMAPI] Metal Kegs` remains separate until a later merge. PowerGrid keeps its public SMAPI API available from `PowerGrid.dll` for consumer registration and monitoring snapshots:
+PowerGrid owns these powered artisan machines directly:
 
 | Machine | EU/minute | Max Speedup | Priority |
 |---------|-----------|-------------|----------|
+| Industrial Preserves Jar | 3 EU/min (30 EU/tick) | 20% | 10 |
 | Metal Keg | 2 EU/min (20 EU/tick) | 20% | 10 |
 | Hard Iridium Keg | 4 EU/min (40 EU/tick) | 20% | 10 |
 
 - If insufficient EU, machines process at **normal speed** (no penalty)
 - No output changes, no recipe changes, no item duplication
-- Metal Kegs owns these tuning values in its own config / GMCM menu
-- PowerGrid remains an optional integration
+- Metal Keg clones vanilla Keg behavior
+- Hard Iridium Keg uses Hardwood Keg behavior when that template is present, and falls back to vanilla Keg behavior otherwise
 
 ---
 
@@ -331,9 +332,9 @@ To install: copy the entire `[SMAPI] PowerGrid` folder into your `Stardew Valley
 - **No conflict.** PowerGrid is a SMAPI C# mod; FishSmoker Recipe is a Content Patcher pack. They operate in completely different domains. PowerGrid does not touch `Data/ObjectInformation` or fish smoker recipes.
 
 ### With [SMAPI] Metal Kegs
-- **Designed to work together.** Metal Kegs remains a later merge; PowerGrid keeps the consumer registration and snapshot API available from its own assembly.
-- PowerGrid does NOT modify `Data/Machines` entries for Metal Kegs. It only adjusts `MinutesUntilReady` at runtime via tick events.
-- Metal Kegs works perfectly without PowerGrid installed (no speedup, normal behavior).
+- PowerGrid now includes its own PowerGrid-native Metal Keg and Hard Iridium Keg items.
+- For testing the PowerGrid-owned versions, disable/remove the separate `[SMAPI] Metal Kegs` mod to avoid duplicate player-facing machine names.
+- The separate Metal Kegs mod is not deleted by this package and still owns its legacy item IDs if installed.
 
 ### With Automate
 - **Partially compatible by design.** Automate handles machine input/output chains; PowerGrid handles speed boosts.
@@ -473,13 +474,13 @@ player_add 388 500    # Wood
 player_add 787 20     # Battery Pack
 player_add 92 50      # Sap
 
-# Metal Kegs item-ID examples are deferred until the later merge/fix.
-
 # Give yourself PowerGrid items directly
 player_add (BC)meiameiameia.PowerGrid_CopperCable 20
 player_add (BC)meiameiameia.PowerGrid_SteamGenerator 3
 player_add (BC)meiameiameia.PowerGrid_BasicBattery 2
 player_add (BC)meiameiameia.PowerGrid_PowerConduit 2
+player_add (BC)meiameiameia.PowerGrid_MetalKeg 2
+player_add (BC)meiameiameia.PowerGrid_HardIridiumKeg 2
 
 # Time manipulation
 debug time 600        # Set time to 6:00 AM

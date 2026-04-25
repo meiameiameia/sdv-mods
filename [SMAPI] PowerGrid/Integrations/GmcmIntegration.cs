@@ -183,6 +183,52 @@ internal static class GmcmIntegration
             () => "Lower values receive power first when supply is limited.",
             min: 0, max: 100, interval: 1);
 
+        gmcmApi.AddSectionTitle(manifest, () => "Metal Keg");
+
+        gmcmApi.AddNumberOption(manifest,
+            () => config.MetalKegEUPerMinute,
+            (int val) => config.MetalKegEUPerMinute = val,
+            () => "EU per Minute",
+            () => "Power demand for each PowerGrid Metal Keg. This is multiplied by the 10-minute PowerGrid tick.",
+            min: 0, max: 100, interval: 1);
+
+        gmcmApi.AddNumberOption(manifest,
+            () => (int)MathF.Round(config.MetalKegMaxSpeedup * 100f),
+            (int val) => config.MetalKegMaxSpeedup = Math.Clamp(val / 100f, 0f, 1f),
+            () => "Max Speedup Percent",
+            () => "Maximum Metal Keg processing speedup when fully powered.",
+            min: 0, max: 100, interval: 1);
+
+        gmcmApi.AddNumberOption(manifest,
+            () => config.MetalKegPriority,
+            (int val) => config.MetalKegPriority = val,
+            () => "Priority",
+            () => "Lower values receive power first when supply is limited.",
+            min: 0, max: 100, interval: 1);
+
+        gmcmApi.AddSectionTitle(manifest, () => "Hard Iridium Keg");
+
+        gmcmApi.AddNumberOption(manifest,
+            () => config.HardIridiumKegEUPerMinute,
+            (int val) => config.HardIridiumKegEUPerMinute = val,
+            () => "EU per Minute",
+            () => "Power demand for each PowerGrid Hard Iridium Keg. This is multiplied by the 10-minute PowerGrid tick.",
+            min: 0, max: 100, interval: 1);
+
+        gmcmApi.AddNumberOption(manifest,
+            () => (int)MathF.Round(config.HardIridiumKegMaxSpeedup * 100f),
+            (int val) => config.HardIridiumKegMaxSpeedup = Math.Clamp(val / 100f, 0f, 1f),
+            () => "Max Speedup Percent",
+            () => "Maximum Hard Iridium Keg processing speedup when fully powered.",
+            min: 0, max: 100, interval: 1);
+
+        gmcmApi.AddNumberOption(manifest,
+            () => config.HardIridiumKegPriority,
+            (int val) => config.HardIridiumKegPriority = val,
+            () => "Priority",
+            () => "Lower values receive power first when supply is limited.",
+            min: 0, max: 100, interval: 1);
+
         // --- Debug ---
         gmcmApi.AddSectionTitle(manifest, () => "Debug");
 

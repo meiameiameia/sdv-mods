@@ -20,6 +20,8 @@ internal static class PowerConstants
 
     public const string PowerConduitId = ModPrefix + "PowerConduit";
     public const string IndustrialPreservesJarId = ModPrefix + "IndustrialPreservesJar";
+    public const string MetalKegId = ModPrefix + "MetalKeg";
+    public const string HardIridiumKegId = ModPrefix + "HardIridiumKeg";
 
     // Qualified versions (for Data/Machines keys etc.)
     public static string Q(string itemId) => $"(BC){itemId}";

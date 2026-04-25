@@ -43,9 +43,14 @@ internal sealed class ModEntry : Mod
     private const string RuntimeOnlineKey = PersistedModDataPrefix + "online";
     private const string RuntimeGeneratedThisTickKey = PersistedModDataPrefix + "generatedThisTick";
     private const string IndustrialPreservesJarRecipeKey = "Industrial Preserves Jar";
+    private const string MetalKegRecipeKey = "Metal Keg";
+    private const string HardIridiumKegRecipeKey = "Hard Iridium Keg";
     private const string IndustrialPreservesJarSpriteName = "IndustrialPreservesJar";
+    private const string MetalKegSpriteName = "MetalKeg";
+    private const string HardIridiumKegSpriteName = "HardIridiumKeg";
     private const string IndustrialPreservesJarPoweredState = "powered";
     private const string IndustrialPreservesJarUnpoweredState = "unpowered";
+    private const string GofHardwoodKegId = "GOF_Hardwood_Keg";
     private const string SpriteDirectoryName = "Assets";
     private const float ChargedBatteryThreshold = 0.5f;
     private const string WindGeneratorWheelSpriteName = "WindGenerator__wheel";
@@ -82,11 +87,23 @@ internal sealed class ModEntry : Mod
         "PowerConduit__linked",
         "IndustrialPreservesJar",
         "IndustrialPreservesJar__powered",
-        "IndustrialPreservesJar__unpowered"
+        "IndustrialPreservesJar__unpowered",
+        "MetalKeg",
+        "MetalKeg__powered",
+        "MetalKeg__unpowered",
+        "HardIridiumKeg",
+        "HardIridiumKeg__powered",
+        "HardIridiumKeg__unpowered"
     };
     private string? vanillaPreservesJarBigCraftableId;
+    private string? vanillaKegBigCraftableId;
+    private string? hardwoodKegBigCraftableId;
     private bool loggedMissingPreservesTemplate;
     private bool loggedMissingPreservesMachineTemplate;
+    private bool loggedMissingKegTemplate;
+    private bool loggedHardIridiumFallbackToVanillaKeg;
+    private bool loggedHardIridiumBoundToHardwoodKeg;
+    private bool loggedMissingKegMachineTemplate;
     private bool attemptedWindWheelTextureLoad;
     private Texture2D? cachedWindWheelTexture;
 
@@ -101,6 +118,8 @@ internal sealed class ModEntry : Mod
     private string IridiumBatteryTexture => GetTextureAsset("IridiumBattery");
     private string PowerConduitTexture => GetTextureAsset("PowerConduit");
     private string IndustrialPreservesJarTexture => GetTextureAsset(IndustrialPreservesJarSpriteName);
+    private string MetalKegTexture => GetTextureAsset(MetalKegSpriteName);
+    private string HardIridiumKegTexture => GetTextureAsset(HardIridiumKegSpriteName);
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -155,8 +174,6 @@ internal sealed class ModEntry : Mod
 
     private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
     {
-        WarnAboutDeprecatedMetalKegSettings();
-
         GmcmIntegration.Register(Helper, ModManifest, Config, () =>
         {
             Config = Helper.ReadConfig<ModConfig>() ?? new ModConfig();
@@ -179,6 +196,24 @@ internal sealed class ModEntry : Mod
             Priority = Math.Max(0, Config.IndustrialPreservesJarPriority),
             DisplayName = IndustrialPreservesJarRecipeKey
         });
+
+        ConsumerRegistry.Instance.Register(new ConsumerDefinition
+        {
+            QualifiedItemId = PowerConstants.Q(PowerConstants.MetalKegId),
+            DemandPerTick = GetDemandPerTick(Config.MetalKegEUPerMinute),
+            MaxSpeedupFraction = ClampSpeedup(Config.MetalKegMaxSpeedup),
+            Priority = Math.Max(0, Config.MetalKegPriority),
+            DisplayName = MetalKegRecipeKey
+        });
+
+        ConsumerRegistry.Instance.Register(new ConsumerDefinition
+        {
+            QualifiedItemId = PowerConstants.Q(PowerConstants.HardIridiumKegId),
+            DemandPerTick = GetDemandPerTick(Config.HardIridiumKegEUPerMinute),
+            MaxSpeedupFraction = ClampSpeedup(Config.HardIridiumKegMaxSpeedup),
+            Priority = Math.Max(0, Config.HardIridiumKegPriority),
+            DisplayName = HardIridiumKegRecipeKey
+        });
     }
 
     private static int GetDemandPerTick(int euPerMinute)
@@ -189,44 +224,6 @@ internal sealed class ModEntry : Mod
     private static float ClampSpeedup(float speedup)
     {
         return Math.Clamp(speedup, 0f, 1f);
-    }
-
-    private void WarnAboutDeprecatedMetalKegSettings()
-    {
-        string configPath = Path.Combine(Helper.DirectoryPath, "config.json");
-        if (!File.Exists(configPath))
-            return;
-
-        JsonObject? root;
-        try
-        {
-            root = JsonNode.Parse(File.ReadAllText(configPath)) as JsonObject;
-        }
-        catch (Exception ex)
-        {
-            Monitor.Log($"[PowerGrid] Couldn't inspect config.json for deprecated Metal Kegs settings: {ex.Message}", LogLevel.Trace);
-            return;
-        }
-
-        if (root == null)
-            return;
-
-        string[] deprecatedKeys = new[]
-        {
-            "MetalKegEUPerMinute",
-            "MetalKegMaxSpeedup",
-            "MetalKegPriority",
-            "HardIridiumKegEUPerMinute",
-            "HardIridiumKegMaxSpeedup",
-            "HardIridiumKegPriority"
-        };
-
-        var found = deprecatedKeys.Where(root.ContainsKey).ToArray();
-        if (found.Length == 0)
-            return;
-
-        Monitor.Log("[PowerGrid] Deprecated Metal Kegs settings were found in PowerGrid config and are now ignored. Configure those values in Metal Kegs instead.", LogLevel.Warn);
-        Monitor.Log($"[PowerGrid] Ignored deprecated keys: {string.Join(", ", found)}", LogLevel.Warn);
     }
 
     private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
@@ -689,15 +686,15 @@ internal sealed class ModEntry : Mod
     {
         if (e.NameWithoutLocale.IsEquivalentTo("Data/BigCraftables"))
         {
-            e.Edit(EditBigCraftables);
+            e.Edit(EditBigCraftables, AssetEditPriority.Late);
         }
         else if (e.NameWithoutLocale.IsEquivalentTo("Data/CraftingRecipes"))
         {
-            e.Edit(EditCraftingRecipes);
+            e.Edit(EditCraftingRecipes, AssetEditPriority.Late);
         }
         else if (e.NameWithoutLocale.IsEquivalentTo("Data/Machines"))
         {
-            e.Edit(EditMachines);
+            e.Edit(EditMachines, AssetEditPriority.Late);
         }
 
         // Texture loading for each PowerGrid object
@@ -711,6 +708,8 @@ internal sealed class ModEntry : Mod
         TryLoadTexture(e, IridiumBatteryTexture, "IridiumBattery", new Color(150, 80, 220));
         TryLoadTexture(e, PowerConduitTexture, "PowerConduit", new Color(220, 200, 60));
         TryLoadTexture(e, IndustrialPreservesJarTexture, IndustrialPreservesJarSpriteName, new Color(180, 120, 80));
+        TryLoadTexture(e, MetalKegTexture, MetalKegSpriteName, new Color(170, 170, 180));
+        TryLoadTexture(e, HardIridiumKegTexture, HardIridiumKegSpriteName, new Color(150, 110, 210));
 
         TryLoadStateTexture(e, "SteamGenerator", "off", new Color(140, 140, 160));
         TryLoadStateTexture(e, "SteamGenerator", "on", new Color(140, 140, 160));
@@ -724,6 +723,10 @@ internal sealed class ModEntry : Mod
         TryLoadStateTexture(e, "PowerConduit", "linked", new Color(220, 200, 60));
         TryLoadStateTexture(e, IndustrialPreservesJarSpriteName, IndustrialPreservesJarPoweredState, new Color(180, 120, 80));
         TryLoadStateTexture(e, IndustrialPreservesJarSpriteName, IndustrialPreservesJarUnpoweredState, new Color(180, 120, 80));
+        TryLoadStateTexture(e, MetalKegSpriteName, IndustrialPreservesJarPoweredState, new Color(170, 170, 180));
+        TryLoadStateTexture(e, MetalKegSpriteName, IndustrialPreservesJarUnpoweredState, new Color(170, 170, 180));
+        TryLoadStateTexture(e, HardIridiumKegSpriteName, IndustrialPreservesJarPoweredState, new Color(150, 110, 210));
+        TryLoadStateTexture(e, HardIridiumKegSpriteName, IndustrialPreservesJarUnpoweredState, new Color(150, 110, 210));
     }
 
     private void TryLoadTexture(AssetRequestedEventArgs e, string assetKey, string spriteName, Color tint)
@@ -850,6 +853,8 @@ internal sealed class ModEntry : Mod
             "IridiumBattery" => 36,
             "PowerConduit" => 8,      // Scarecrow
             "IndustrialPreservesJar" => 15,
+            "MetalKeg" => 12,
+            "HardIridiumKeg" => 12,
             _ => 12                   // Keg fallback
         };
 
@@ -919,6 +924,7 @@ internal sealed class ModEntry : Mod
             "Links power networks across locations. Interact with two conduits to pair them.", PowerConduitTexture);
 
         RegisterIndustrialPreservesJar(dict);
+        RegisterMetalKegs(dict);
     }
 
     private void RegisterIndustrialPreservesJar(IDictionary<string, BigCraftableData> dict)
@@ -948,6 +954,51 @@ internal sealed class ModEntry : Mod
         industrialData.SpriteIndex = 0;
 
         dict[PowerConstants.IndustrialPreservesJarId] = industrialData;
+    }
+
+    private void RegisterMetalKegs(IDictionary<string, BigCraftableData> dict)
+    {
+        KeyValuePair<string, BigCraftableData>? kegTemplateOpt =
+            FindBigCraftableTemplate(dict, targetDisplayName: "Keg", preferredKey: "12");
+
+        if (kegTemplateOpt == null)
+        {
+            if (!loggedMissingKegTemplate)
+            {
+                Monitor.Log("[PowerGrid] Failed to find vanilla Keg template in Data/BigCraftables; Metal Keg and Hard Iridium Keg were not added.", LogLevel.Error);
+                loggedMissingKegTemplate = true;
+            }
+
+            return;
+        }
+
+        KeyValuePair<string, BigCraftableData> kegTemplate = kegTemplateOpt.Value;
+        vanillaKegBigCraftableId = kegTemplate.Key;
+
+        BigCraftableData metalKegData = CloneJson(kegTemplate.Value);
+        metalKegData.Name = MetalKegRecipeKey;
+        metalKegData.DisplayName = MetalKegRecipeKey;
+        metalKegData.Description = "A sturdy metal keg built for powered throughput.";
+        metalKegData.Texture = MetalKegTexture;
+        metalKegData.SpriteIndex = 0;
+        dict[PowerConstants.MetalKegId] = metalKegData;
+
+        KeyValuePair<string, BigCraftableData>? hardwoodTemplateOpt = FindHardwoodKegBigCraftableTemplate(dict);
+        if (hardwoodTemplateOpt != null)
+            hardwoodKegBigCraftableId = hardwoodTemplateOpt.Value.Key;
+        else if (!loggedHardIridiumFallbackToVanillaKeg)
+        {
+            Monitor.Log("[PowerGrid] Hardwood Keg template was not found in Data/BigCraftables; Hard Iridium Keg will use vanilla Keg item data.", LogLevel.Info);
+            loggedHardIridiumFallbackToVanillaKeg = true;
+        }
+
+        BigCraftableData hardIridiumData = CloneJson(hardwoodTemplateOpt?.Value ?? kegTemplate.Value);
+        hardIridiumData.Name = HardIridiumKegRecipeKey;
+        hardIridiumData.DisplayName = HardIridiumKegRecipeKey;
+        hardIridiumData.Description = "An iridium-reinforced keg. Uses Hardwood Keg behavior when available, otherwise vanilla Keg behavior.";
+        hardIridiumData.Texture = HardIridiumKegTexture;
+        hardIridiumData.SpriteIndex = 0;
+        dict[PowerConstants.HardIridiumKegId] = hardIridiumData;
     }
 
     private void RegisterBigCraftable(IDictionary<string, BigCraftableData> dict, BigCraftableData template,
@@ -992,6 +1043,18 @@ internal sealed class ModEntry : Mod
 
         string? preservesTemplate = dict.TryGetValue("Preserves Jar", out string? value) ? value : null;
         dict[IndustrialPreservesJarRecipeKey] = BuildRecipeFromTemplate(preservesTemplate, PowerConstants.IndustrialPreservesJarId);
+
+        string? kegTemplate = dict.TryGetValue("Keg", out string? kegValue) ? kegValue : null;
+        dict[MetalKegRecipeKey] = BuildRecipeFromTemplate(
+            kegTemplate,
+            ingredients: "335 10 334 5 338 2 725 1 382 15",
+            resultItemId: PowerConstants.MetalKegId);
+
+        string? hardwoodKegTemplate = dict.TryGetValue("Hardwood Keg", out string? hardwoodValue) ? hardwoodValue : null;
+        dict[HardIridiumKegRecipeKey] = BuildRecipeFromTemplate(
+            hardwoodKegTemplate ?? kegTemplate,
+            ingredients: "337 5 787 1 338 5 725 1 382 30",
+            resultItemId: PowerConstants.HardIridiumKegId);
     }
 
     private void EditMachines(IAssetData asset)
@@ -1005,13 +1068,55 @@ internal sealed class ModEntry : Mod
                 Monitor.Log("[PowerGrid] Failed to find vanilla Preserves Jar machine entry in Data/Machines; Industrial Preserves Jar machine rules were not added.", LogLevel.Error);
                 loggedMissingPreservesMachineTemplate = true;
             }
+        }
+        else
+        {
+            MachineData machine = CloneMachineByJson(template);
+            machines[PowerConstants.Q(PowerConstants.IndustrialPreservesJarId)] = machine;
+            machines[PowerConstants.IndustrialPreservesJarId] = machine;
+        }
+
+        RegisterMetalKegMachines(machines);
+    }
+
+    private void RegisterMetalKegMachines(IDictionary<string, MachineData> machines)
+    {
+        string? kegBaseKey = GetKegMachineKey(machines, vanillaKegBigCraftableId);
+        if (kegBaseKey == null || !machines.TryGetValue(kegBaseKey, out MachineData? kegMachine))
+        {
+            if (!loggedMissingKegMachineTemplate)
+            {
+                Monitor.Log("[PowerGrid] Failed to find vanilla Keg machine entry in Data/Machines; Metal Keg and Hard Iridium Keg machine rules were not added.", LogLevel.Error);
+                loggedMissingKegMachineTemplate = true;
+            }
 
             return;
         }
 
-        MachineData machine = CloneMachineByJson(template);
-        machines[PowerConstants.Q(PowerConstants.IndustrialPreservesJarId)] = machine;
-        machines[PowerConstants.IndustrialPreservesJarId] = machine;
+        MachineData metalKegMachine = CloneMachineByJson(kegMachine);
+        machines[PowerConstants.Q(PowerConstants.MetalKegId)] = metalKegMachine;
+        machines[PowerConstants.MetalKegId] = metalKegMachine;
+
+        MachineData hardIridiumTemplate = kegMachine;
+        string? hardwoodKey = GetHardwoodKegMachineKey(machines, hardwoodKegBigCraftableId);
+        if (hardwoodKey != null && machines.TryGetValue(hardwoodKey, out MachineData? hardwoodMachine))
+        {
+            hardIridiumTemplate = hardwoodMachine;
+            if (!loggedHardIridiumBoundToHardwoodKeg)
+            {
+                Monitor.Log($"[PowerGrid] Hard Iridium Keg machine behavior cloned from '{hardwoodKey}'.", LogLevel.Info);
+                loggedHardIridiumBoundToHardwoodKeg = true;
+            }
+        }
+        else if (!loggedHardIridiumFallbackToVanillaKeg)
+        {
+            Monitor.Log("[PowerGrid] Hardwood Keg machine template was not found in Data/Machines; Hard Iridium Keg will use vanilla Keg machine behavior.", LogLevel.Info);
+            loggedHardIridiumFallbackToVanillaKeg = true;
+        }
+
+        MachineData hardIridiumMachine = CloneMachineByJson(hardIridiumTemplate);
+        machines[PowerConstants.Q(PowerConstants.HardIridiumKegId)] = hardIridiumMachine;
+        machines[PowerConstants.HardIridiumKegId] = hardIridiumMachine;
     }
 
     private static string BuildRecipeFromTemplate(string? template, string resultItemId)
@@ -1023,6 +1128,25 @@ internal sealed class ModEntry : Mod
         if (parts.Length < 5)
             return $"388 50 334 1/Home/{resultItemId}/true/null/";
 
+        parts[2] = resultItemId;
+        parts[3] = "true";
+
+        string rebuilt = string.Join("/", parts);
+        if (!rebuilt.EndsWith("/", StringComparison.Ordinal))
+            rebuilt += "/";
+        return rebuilt;
+    }
+
+    private static string BuildRecipeFromTemplate(string? template, string ingredients, string resultItemId)
+    {
+        if (string.IsNullOrWhiteSpace(template))
+            return $"{ingredients}/Field/{resultItemId}/true/null/";
+
+        string[] parts = template.Split('/');
+        if (parts.Length < 5)
+            return $"{ingredients}/Field/{resultItemId}/true/null/";
+
+        parts[0] = ingredients;
         parts[2] = resultItemId;
         parts[3] = "true";
 
@@ -1059,6 +1183,78 @@ internal sealed class ModEntry : Mod
         }
 
         return null;
+    }
+
+    private static string? GetKegMachineKey(IDictionary<string, MachineData> machines, string? vanillaBigCraftableId)
+    {
+        if (!string.IsNullOrWhiteSpace(vanillaBigCraftableId))
+        {
+            string qualified = "(BC)" + vanillaBigCraftableId;
+            if (machines.ContainsKey(qualified))
+                return qualified;
+
+            if (machines.ContainsKey(vanillaBigCraftableId))
+                return vanillaBigCraftableId;
+        }
+
+        if (machines.ContainsKey("(BC)12"))
+            return "(BC)12";
+        if (machines.ContainsKey("12"))
+            return "12";
+
+        foreach (string key in machines.Keys)
+        {
+            if (key.Contains("Keg", StringComparison.OrdinalIgnoreCase)
+                && !key.Contains("Hardwood", StringComparison.OrdinalIgnoreCase)
+                && !key.Contains("Iridium", StringComparison.OrdinalIgnoreCase))
+            {
+                return key;
+            }
+        }
+
+        return null;
+    }
+
+    private static string? GetHardwoodKegMachineKey(IDictionary<string, MachineData> machines, string? hardwoodBigCraftableId)
+    {
+        foreach (string candidate in new[] { PowerConstants.Q(GofHardwoodKegId), GofHardwoodKegId })
+        {
+            if (machines.ContainsKey(candidate))
+                return candidate;
+        }
+
+        if (!string.IsNullOrWhiteSpace(hardwoodBigCraftableId))
+        {
+            string qualified = "(BC)" + hardwoodBigCraftableId;
+            if (machines.ContainsKey(qualified))
+                return qualified;
+
+            if (machines.ContainsKey(hardwoodBigCraftableId))
+                return hardwoodBigCraftableId;
+        }
+
+        foreach (string key in machines.Keys)
+        {
+            if (key.Contains("Hardwood", StringComparison.OrdinalIgnoreCase)
+                && key.Contains("Keg", StringComparison.OrdinalIgnoreCase))
+            {
+                return key;
+            }
+        }
+
+        return null;
+    }
+
+    private static KeyValuePair<string, BigCraftableData>? FindHardwoodKegBigCraftableTemplate(
+        IDictionary<string, BigCraftableData> dict)
+    {
+        foreach (string candidate in new[] { GofHardwoodKegId, PowerConstants.Q(GofHardwoodKegId) })
+        {
+            if (dict.TryGetValue(candidate, out BigCraftableData? byExplicitId))
+                return new KeyValuePair<string, BigCraftableData>(candidate, byExplicitId);
+        }
+
+        return FindBigCraftableTemplate(dict, targetDisplayName: "Hardwood Keg", preferredKey: null);
     }
 
     private static KeyValuePair<string, BigCraftableData>? FindBigCraftableTemplate(
@@ -1246,7 +1442,9 @@ internal sealed class ModEntry : Mod
         "Wind Generator",
         "Basic Power Battery",
         "Iridium Power Battery",
-        "Power Conduit"
+        "Power Conduit",
+        MetalKegRecipeKey,
+        HardIridiumKegRecipeKey
     };
 
     private void CmdUnlock(string command, string[] args)
@@ -1564,7 +1762,7 @@ internal sealed class ModEntry : Mod
 
     private void DrawStatefulTexture(SpriteBatch spriteBatch, Texture2D texture, Vector2 screenPos, float alpha, float layerDepth, StardewValley.Object obj, string stateSpriteName)
     {
-        if (obj.ItemId == PowerConstants.IndustrialPreservesJarId)
+        if (IsAnimatedStatefulBigCraftable(obj.ItemId))
         {
             DrawAnimatedBigCraftableTexture(spriteBatch, texture, screenPos, alpha, layerDepth, obj);
         }
@@ -1584,7 +1782,14 @@ internal sealed class ModEntry : Mod
 
         DrawSteamGeneratorActiveOverlay(spriteBatch, screenPos, alpha, layerDepth, obj, stateSpriteName);
         DrawWindGeneratorWheelOverlay(spriteBatch, screenPos, alpha, layerDepth, obj, stateSpriteName);
-        DrawIndustrialPreservesJarReadyIndicator(spriteBatch, alpha, layerDepth, obj);
+        DrawStatefulReadyIndicator(spriteBatch, alpha, layerDepth, obj);
+    }
+
+    private static bool IsAnimatedStatefulBigCraftable(string? itemId)
+    {
+        return itemId == PowerConstants.IndustrialPreservesJarId
+            || itemId == PowerConstants.MetalKegId
+            || itemId == PowerConstants.HardIridiumKegId;
     }
 
     private static void DrawAnimatedBigCraftableTexture(
@@ -1616,9 +1821,9 @@ internal sealed class ModEntry : Mod
             layerDepth);
     }
 
-    private static void DrawIndustrialPreservesJarReadyIndicator(SpriteBatch spriteBatch, float alpha, float layerDepth, StardewValley.Object obj)
+    private static void DrawStatefulReadyIndicator(SpriteBatch spriteBatch, float alpha, float layerDepth, StardewValley.Object obj)
     {
-        if (obj.ItemId != PowerConstants.IndustrialPreservesJarId || !obj.readyForHarvest.Value)
+        if (!IsAnimatedStatefulBigCraftable(obj.ItemId) || !obj.readyForHarvest.Value)
             return;
 
         Vector2 tile = obj.TileLocation;
@@ -1855,7 +2060,9 @@ internal sealed class ModEntry : Mod
             || itemId == PowerConstants.BasicBatteryId
             || itemId == PowerConstants.IridiumBatteryId
             || itemId == PowerConstants.PowerConduitId
-            || itemId == PowerConstants.IndustrialPreservesJarId;
+            || itemId == PowerConstants.IndustrialPreservesJarId
+            || itemId == PowerConstants.MetalKegId
+            || itemId == PowerConstants.HardIridiumKegId;
     }
 
     private static bool IsCableItem(string? itemId)
@@ -1880,6 +2087,8 @@ internal sealed class ModEntry : Mod
             PowerConstants.IridiumBatteryId => GetBatteryState(locationName, tile, itemId),
             PowerConstants.PowerConduitId => GetConduitState(locationName, tile),
             PowerConstants.IndustrialPreservesJarId => GetIndustrialPreservesJarState(obj),
+            PowerConstants.MetalKegId => GetPoweredMachineState(obj),
+            PowerConstants.HardIridiumKegId => GetPoweredMachineState(obj),
             _ => null
         };
 
@@ -2059,6 +2268,11 @@ internal sealed class ModEntry : Mod
 
     private static string GetIndustrialPreservesJarState(StardewValley.Object obj)
     {
+        return GetPoweredMachineState(obj);
+    }
+
+    private static string GetPoweredMachineState(StardewValley.Object obj)
+    {
         bool hasEnergized = TryReadPowerModDataString(obj.modData, "energized", out string? energizedText);
         bool hasPowered = TryReadPowerModDataString(obj.modData, "powered", out string? poweredText);
         bool isPowered = hasEnergized
@@ -2088,6 +2302,8 @@ internal sealed class ModEntry : Mod
             PowerConstants.IridiumBatteryId => "IridiumBattery",
             PowerConstants.PowerConduitId => "PowerConduit",
             PowerConstants.IndustrialPreservesJarId => IndustrialPreservesJarSpriteName,
+            PowerConstants.MetalKegId => MetalKegSpriteName,
+            PowerConstants.HardIridiumKegId => HardIridiumKegSpriteName,
             _ => null
         };
     }

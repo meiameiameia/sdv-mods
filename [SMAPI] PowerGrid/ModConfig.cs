@@ -39,6 +39,12 @@ internal sealed class ModConfig
     public int IndustrialPreservesJarEUPerMinute { get; set; } = 3;
     public float IndustrialPreservesJarMaxSpeedup { get; set; } = 0.20f;
     public int IndustrialPreservesJarPriority { get; set; } = 10;
+    public int MetalKegEUPerMinute { get; set; } = 2;
+    public float MetalKegMaxSpeedup { get; set; } = 0.20f;
+    public int MetalKegPriority { get; set; } = 10;
+    public int HardIridiumKegEUPerMinute { get; set; } = 4;
+    public float HardIridiumKegMaxSpeedup { get; set; } = 0.20f;
+    public int HardIridiumKegPriority { get; set; } = 10;
 
     // --- Debug ---
     public bool DebugOverlayEnabled { get; set; } = false;
