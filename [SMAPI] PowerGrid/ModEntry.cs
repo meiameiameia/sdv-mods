@@ -5,11 +5,13 @@ using HarmonyLib;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Netcode;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
 using StardewValley.GameData.BigCraftables;
 using StardewValley.GameData.Machines;
+using StardewValley.Locations;
 using StardewValley.Mods;
 using StardewValley.Objects;
 using Meiameiameia.PowerGrid.Core;
@@ -43,14 +45,26 @@ internal sealed class ModEntry : Mod
     private const string RuntimeOnlineKey = PersistedModDataPrefix + "online";
     private const string RuntimeGeneratedThisTickKey = PersistedModDataPrefix + "generatedThisTick";
     private const string IndustrialPreservesJarRecipeKey = "Industrial Preserves Jar";
+    private const string MetalCaskRecipeKey = "Metal Cask";
     private const string MetalKegRecipeKey = "Metal Keg";
     private const string HardIridiumKegRecipeKey = "Hard Iridium Keg";
     private const string IndustrialPreservesJarSpriteName = "IndustrialPreservesJar";
+    private const string MetalCaskSpriteName = "MetalCask";
     private const string MetalKegSpriteName = "MetalKeg";
     private const string HardIridiumKegSpriteName = "HardIridiumKeg";
     private const string IndustrialPreservesJarPoweredState = "powered";
     private const string IndustrialPreservesJarUnpoweredState = "unpowered";
     private const string GofHardwoodKegId = "GOF_Hardwood_Keg";
+    private const float MetalCaskBaseAgingMultiplier = 0.50f;
+    private const float MetalCaskPoweredBonusDaysAtFullPower = 1.50f;
+    private const string MetalCaskPlacementError = "Metal Cask can only be placed in player-owned indoor spaces.";
+    private const string MetalCaskMarkerKey = PersistedModDataPrefix + "MetalCask";
+    private const string MetalCaskPowerModeKey = PersistedModDataPrefix + "MetalCaskPowerMode";
+    private const string MetalCaskObservedPowerStateKey = PersistedModDataPrefix + "MetalCaskObservedPowerState";
+    private const string MetalCaskObservedSpeedupKey = PersistedModDataPrefix + "MetalCaskObservedSpeedupFraction";
+    private const string MetalCaskDaysToNextQualityKey = PersistedModDataPrefix + "MetalCaskDaysToNextQuality";
+    private const string MetalCaskLastAppliedBonusDaysKey = PersistedModDataPrefix + "MetalCaskLastAppliedBonusDays";
+    private const string MetalCaskLastAppliedDateKey = PersistedModDataPrefix + "MetalCaskLastAppliedDate";
     private const string SpriteDirectoryName = "Assets";
     private const float ChargedBatteryThreshold = 0.5f;
     private const string WindGeneratorWheelSpriteName = "WindGenerator__wheel";
@@ -62,6 +76,9 @@ internal sealed class ModEntry : Mod
     private const float FloorMountedLayerDepthInsetFromTileTop = 8f;
     private static readonly Rectangle BigCraftableSourceRect = new(0, 0, 16, 32);
     private static readonly Vector2 WindGeneratorWheelPivot = new(8f, 6f);
+    private static readonly FieldInfo? CaskDaysToMatureField = AccessTools.Field(typeof(Cask), "daysToMature");
+    private static readonly MethodInfo? CaskCheckForMaturityMethod = AccessTools.Method(typeof(Cask), "checkForMaturity");
+    private static readonly MethodInfo? ResetParentSheetIndexMethod = AccessTools.Method(typeof(StardewValley.Object), "ResetParentSheetIndex");
     private readonly HashSet<string> invalidStateSpritesLogged = new(StringComparer.Ordinal);
     private readonly HashSet<string> conduitRenderDiagnosticsLogged = new(StringComparer.Ordinal);
     private static readonly string[] RequiredSpriteNames =
@@ -88,6 +105,9 @@ internal sealed class ModEntry : Mod
         "IndustrialPreservesJar",
         "IndustrialPreservesJar__powered",
         "IndustrialPreservesJar__unpowered",
+        "MetalCask",
+        "MetalCask__powered",
+        "MetalCask__unpowered",
         "MetalKeg",
         "MetalKeg__powered",
         "MetalKeg__unpowered",
@@ -96,10 +116,13 @@ internal sealed class ModEntry : Mod
         "HardIridiumKeg__unpowered"
     };
     private string? vanillaPreservesJarBigCraftableId;
+    private string? vanillaCaskBigCraftableId;
     private string? vanillaKegBigCraftableId;
     private string? hardwoodKegBigCraftableId;
     private bool loggedMissingPreservesTemplate;
     private bool loggedMissingPreservesMachineTemplate;
+    private bool loggedMissingCaskTemplate;
+    private bool loggedMissingCaskMachineTemplate;
     private bool loggedMissingKegTemplate;
     private bool loggedHardIridiumFallbackToVanillaKeg;
     private bool loggedHardIridiumBoundToHardwoodKeg;
@@ -118,6 +141,7 @@ internal sealed class ModEntry : Mod
     private string IridiumBatteryTexture => GetTextureAsset("IridiumBattery");
     private string PowerConduitTexture => GetTextureAsset("PowerConduit");
     private string IndustrialPreservesJarTexture => GetTextureAsset(IndustrialPreservesJarSpriteName);
+    private string MetalCaskTexture => GetTextureAsset(MetalCaskSpriteName);
     private string MetalKegTexture => GetTextureAsset(MetalKegSpriteName);
     private string HardIridiumKegTexture => GetTextureAsset(HardIridiumKegSpriteName);
 
@@ -199,6 +223,15 @@ internal sealed class ModEntry : Mod
 
         ConsumerRegistry.Instance.Register(new ConsumerDefinition
         {
+            QualifiedItemId = PowerConstants.Q(PowerConstants.MetalCaskId),
+            DemandPerTick = GetDemandPerTick(Config.MetalCaskEUPerMinute),
+            MaxSpeedupFraction = ClampSpeedup(Config.MetalCaskMaxSpeedup),
+            Priority = Math.Max(0, Config.MetalCaskPriority),
+            DisplayName = MetalCaskRecipeKey
+        });
+
+        ConsumerRegistry.Instance.Register(new ConsumerDefinition
+        {
             QualifiedItemId = PowerConstants.Q(PowerConstants.MetalKegId),
             DemandPerTick = GetDemandPerTick(Config.MetalKegEUPerMinute),
             MaxSpeedupFraction = ClampSpeedup(Config.MetalKegMaxSpeedup),
@@ -251,6 +284,8 @@ internal sealed class ModEntry : Mod
         ConduitMgr.ImportState(conduitData);
         FuelMgr.ImportState(fuelData);
         PruneStaleGeneratorFuelState();
+        RehydrateMetalCasks();
+        RefreshMetalCaskTelemetry();
 
         PowerMgr.ResetRuntimeState();
         lastTimeOfDay = Game1.timeOfDay;
@@ -456,6 +491,8 @@ internal sealed class ModEntry : Mod
     private void OnDayStarted(object? sender, DayStartedEventArgs e)
     {
         BatteryState.ApplyDailyLeak();
+        RehydrateMetalCasks();
+        RefreshMetalCaskTelemetry();
         PowerMgr.ResetRuntimeState();
         lastTimeOfDay = Game1.timeOfDay;
 
@@ -510,6 +547,9 @@ internal sealed class ModEntry : Mod
     {
         foreach ((Vector2 tile, StardewValley.Object removedObj) in e.Removed)
             HandleRemovedGeneratorFuelState(e.Location, tile, removedObj);
+
+        RehydrateMetalCasks(e.Location);
+        RefreshMetalCaskTelemetry(e.Location);
 
         // Mark location dirty when objects are placed/removed.
         PowerMgr.MarkDirty(e.Location.NameOrUniqueName);
@@ -708,6 +748,7 @@ internal sealed class ModEntry : Mod
         TryLoadTexture(e, IridiumBatteryTexture, "IridiumBattery", new Color(150, 80, 220));
         TryLoadTexture(e, PowerConduitTexture, "PowerConduit", new Color(220, 200, 60));
         TryLoadTexture(e, IndustrialPreservesJarTexture, IndustrialPreservesJarSpriteName, new Color(180, 120, 80));
+        TryLoadTexture(e, MetalCaskTexture, MetalCaskSpriteName, new Color(130, 130, 140));
         TryLoadTexture(e, MetalKegTexture, MetalKegSpriteName, new Color(170, 170, 180));
         TryLoadTexture(e, HardIridiumKegTexture, HardIridiumKegSpriteName, new Color(150, 110, 210));
 
@@ -723,6 +764,8 @@ internal sealed class ModEntry : Mod
         TryLoadStateTexture(e, "PowerConduit", "linked", new Color(220, 200, 60));
         TryLoadStateTexture(e, IndustrialPreservesJarSpriteName, IndustrialPreservesJarPoweredState, new Color(180, 120, 80));
         TryLoadStateTexture(e, IndustrialPreservesJarSpriteName, IndustrialPreservesJarUnpoweredState, new Color(180, 120, 80));
+        TryLoadStateTexture(e, MetalCaskSpriteName, IndustrialPreservesJarPoweredState, new Color(130, 130, 140));
+        TryLoadStateTexture(e, MetalCaskSpriteName, IndustrialPreservesJarUnpoweredState, new Color(130, 130, 140));
         TryLoadStateTexture(e, MetalKegSpriteName, IndustrialPreservesJarPoweredState, new Color(170, 170, 180));
         TryLoadStateTexture(e, MetalKegSpriteName, IndustrialPreservesJarUnpoweredState, new Color(170, 170, 180));
         TryLoadStateTexture(e, HardIridiumKegSpriteName, IndustrialPreservesJarPoweredState, new Color(150, 110, 210));
@@ -853,6 +896,7 @@ internal sealed class ModEntry : Mod
             "IridiumBattery" => 36,
             "PowerConduit" => 8,      // Scarecrow
             "IndustrialPreservesJar" => 15,
+            "MetalCask" => 163,
             "MetalKeg" => 12,
             "HardIridiumKeg" => 12,
             _ => 12                   // Keg fallback
@@ -924,6 +968,7 @@ internal sealed class ModEntry : Mod
             "Links power networks across locations. Interact with two conduits to pair them.", PowerConduitTexture);
 
         RegisterIndustrialPreservesJar(dict);
+        RegisterMetalCask(dict);
         RegisterMetalKegs(dict);
     }
 
@@ -954,6 +999,34 @@ internal sealed class ModEntry : Mod
         industrialData.SpriteIndex = 0;
 
         dict[PowerConstants.IndustrialPreservesJarId] = industrialData;
+    }
+
+    private void RegisterMetalCask(IDictionary<string, BigCraftableData> dict)
+    {
+        KeyValuePair<string, BigCraftableData>? templateOpt =
+            FindBigCraftableTemplate(dict, targetDisplayName: "Cask", preferredKey: "163");
+
+        if (templateOpt == null)
+        {
+            if (!loggedMissingCaskTemplate)
+            {
+                Monitor.Log("[PowerGrid] Failed to find vanilla Cask template in Data/BigCraftables; Metal Cask was not added.", LogLevel.Error);
+                loggedMissingCaskTemplate = true;
+            }
+
+            return;
+        }
+
+        KeyValuePair<string, BigCraftableData> template = templateOpt.Value;
+        vanillaCaskBigCraftableId = template.Key;
+
+        BigCraftableData metalCaskData = CloneJson(template.Value);
+        metalCaskData.Name = MetalCaskRecipeKey;
+        metalCaskData.DisplayName = MetalCaskRecipeKey;
+        metalCaskData.Description = "An industrial cask that can age artisan goods in player-owned indoor spaces. Slower than a cellar cask unless powered.";
+        metalCaskData.Texture = MetalCaskTexture;
+        metalCaskData.SpriteIndex = 0;
+        dict[PowerConstants.MetalCaskId] = metalCaskData;
     }
 
     private void RegisterMetalKegs(IDictionary<string, BigCraftableData> dict)
@@ -1044,6 +1117,12 @@ internal sealed class ModEntry : Mod
         string? preservesTemplate = dict.TryGetValue("Preserves Jar", out string? value) ? value : null;
         dict[IndustrialPreservesJarRecipeKey] = BuildRecipeFromTemplate(preservesTemplate, PowerConstants.IndustrialPreservesJarId);
 
+        string? caskTemplate = dict.TryGetValue("Cask", out string? caskValue) ? caskValue : null;
+        dict[MetalCaskRecipeKey] = BuildRecipeFromTemplate(
+            caskTemplate,
+            ingredients: "709 20 337 3 335 10 787 1 382 25",
+            resultItemId: PowerConstants.MetalCaskId);
+
         string? kegTemplate = dict.TryGetValue("Keg", out string? kegValue) ? kegValue : null;
         dict[MetalKegRecipeKey] = BuildRecipeFromTemplate(
             kegTemplate,
@@ -1076,7 +1155,27 @@ internal sealed class ModEntry : Mod
             machines[PowerConstants.IndustrialPreservesJarId] = machine;
         }
 
+        RegisterMetalCaskMachine(machines);
         RegisterMetalKegMachines(machines);
+    }
+
+    private void RegisterMetalCaskMachine(IDictionary<string, MachineData> machines)
+    {
+        string? caskBaseKey = GetCaskMachineKey(machines, vanillaCaskBigCraftableId);
+        if (caskBaseKey == null || !machines.TryGetValue(caskBaseKey, out MachineData? caskMachine))
+        {
+            if (!loggedMissingCaskMachineTemplate)
+            {
+                Monitor.Log("[PowerGrid] Failed to find vanilla Cask machine entry in Data/Machines; Metal Cask machine rules were not added.", LogLevel.Error);
+                loggedMissingCaskMachineTemplate = true;
+            }
+
+            return;
+        }
+
+        MachineData metalCaskMachine = CreateMetalCaskMachine(caskMachine);
+        machines[PowerConstants.Q(PowerConstants.MetalCaskId)] = metalCaskMachine;
+        machines[PowerConstants.MetalCaskId] = metalCaskMachine;
     }
 
     private void RegisterMetalKegMachines(IDictionary<string, MachineData> machines)
@@ -1215,6 +1314,32 @@ internal sealed class ModEntry : Mod
         return null;
     }
 
+    private static string? GetCaskMachineKey(IDictionary<string, MachineData> machines, string? vanillaBigCraftableId)
+    {
+        if (!string.IsNullOrWhiteSpace(vanillaBigCraftableId))
+        {
+            string qualified = "(BC)" + vanillaBigCraftableId;
+            if (machines.ContainsKey(qualified))
+                return qualified;
+
+            if (machines.ContainsKey(vanillaBigCraftableId))
+                return vanillaBigCraftableId;
+        }
+
+        if (machines.ContainsKey("(BC)163"))
+            return "(BC)163";
+        if (machines.ContainsKey("163"))
+            return "163";
+
+        foreach (string key in machines.Keys)
+        {
+            if (key.Contains("Cask", StringComparison.OrdinalIgnoreCase))
+                return key;
+        }
+
+        return null;
+    }
+
     private static string? GetHardwoodKegMachineKey(IDictionary<string, MachineData> machines, string? hardwoodBigCraftableId)
     {
         foreach (string candidate in new[] { PowerConstants.Q(GofHardwoodKegId), GofHardwoodKegId })
@@ -1296,6 +1421,44 @@ internal sealed class ModEntry : Mod
         if (clone == null)
             throw new InvalidOperationException("Failed to clone MachineData via JSON.");
         return clone;
+    }
+
+    private static MachineData CreateMetalCaskMachine(MachineData template)
+    {
+        JsonNode? root = JsonNode.Parse(JsonSerializer.Serialize(template, GameDataCloneJsonOptions));
+        JsonArray? rules = root?["OutputRules"] as JsonArray;
+        if (rules != null)
+        {
+            foreach (JsonNode? ruleNode in rules)
+            {
+                if (ruleNode is not JsonObject ruleObject)
+                    continue;
+
+                JsonObject customData = ruleObject["CustomData"] as JsonObject ?? new JsonObject();
+
+                float multiplier = 1f;
+                if (customData["AgingMultiplier"] != null
+                    && float.TryParse(
+                        customData["AgingMultiplier"]!.GetValue<string>(),
+                        System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture,
+                        out float existingMultiplier)
+                    && existingMultiplier > 0f)
+                {
+                    multiplier = existingMultiplier;
+                }
+
+                float slowedMultiplier = multiplier * MetalCaskBaseAgingMultiplier;
+                customData["AgingMultiplier"] = slowedMultiplier.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+                ruleObject["CustomData"] = customData;
+            }
+        }
+
+        MachineData? machine = root?.Deserialize<MachineData>(GameDataCloneJsonOptions);
+        if (machine == null)
+            throw new InvalidOperationException("Failed to build Metal Cask machine data.");
+
+        return machine;
     }
 
     // ─────────────────────────────────────────────
@@ -1443,6 +1606,7 @@ internal sealed class ModEntry : Mod
         "Basic Power Battery",
         "Iridium Power Battery",
         "Power Conduit",
+        MetalCaskRecipeKey,
         MetalKegRecipeKey,
         HardIridiumKegRecipeKey
     };
@@ -1628,11 +1792,96 @@ internal sealed class ModEntry : Mod
             {
                 Monitor.Log("[PowerGrid] Couldn't patch GameLocation.drawFloorDecorations(SpriteBatch); cables may not render.", LogLevel.Warn);
             }
+
+            MethodInfo? placementTarget = typeof(StardewValley.Object).GetMethod(
+                "placementAction",
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
+                binder: null,
+                types: new[] { typeof(GameLocation), typeof(int), typeof(int), typeof(Farmer) },
+                modifiers: null);
+            if (placementTarget != null)
+            {
+                harmony.Patch(
+                    placementTarget,
+                    prefix: new HarmonyMethod(typeof(ModEntry), nameof(MetalCaskPlacementPrefix)),
+                    postfix: new HarmonyMethod(typeof(ModEntry), nameof(MetalCaskPlacementPostfix)));
+            }
+
+            MethodInfo? isValidCaskLocationTarget = typeof(Cask).GetMethod(
+                "IsValidCaskLocation",
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
+                binder: null,
+                types: Type.EmptyTypes,
+                modifiers: null);
+            if (isValidCaskLocationTarget != null)
+                harmony.Patch(isValidCaskLocationTarget, postfix: new HarmonyMethod(typeof(ModEntry), nameof(MetalCaskLocationPostfix)));
+
+            MethodInfo? dayUpdateTarget = typeof(Cask).GetMethod(
+                "DayUpdate",
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
+                binder: null,
+                types: Type.EmptyTypes,
+                modifiers: null);
+            if (dayUpdateTarget != null)
+                harmony.Patch(dayUpdateTarget, postfix: new HarmonyMethod(typeof(ModEntry), nameof(MetalCaskDayUpdatePostfix)));
         }
         catch (Exception ex)
         {
             Monitor.Log($"[PowerGrid] Failed to apply runtime object patches: {ex}", LogLevel.Error);
         }
+    }
+
+    private static bool MetalCaskPlacementPrefix(StardewValley.Object __instance, object[] __args, ref bool __result)
+    {
+        if (Instance == null || __instance?.QualifiedItemId != PowerConstants.Q(PowerConstants.MetalCaskId))
+            return true;
+
+        if (__args.Length < 1 || __args[0] is not GameLocation location)
+            return true;
+
+        if (Instance.IsValidMetalCaskLocation(location))
+            return true;
+
+        Game1.showRedMessage(MetalCaskPlacementError);
+        __result = false;
+        return false;
+    }
+
+    private static void MetalCaskPlacementPostfix(StardewValley.Object __instance, object[] __args, ref bool __result)
+    {
+        if (Instance == null || !__result || __instance?.QualifiedItemId != PowerConstants.Q(PowerConstants.MetalCaskId))
+            return;
+
+        if (__args.Length < 3
+            || __args[0] is not GameLocation location
+            || __args[1] is not int x
+            || __args[2] is not int y)
+        {
+            return;
+        }
+
+        Vector2 tile = new(x / 64, y / 64);
+        if (!location.objects.TryGetValue(tile, out StardewValley.Object? placedObject) || placedObject == null)
+            return;
+
+        location.objects[tile] = Instance.CreatePlacedMetalCask(tile, placedObject, location);
+        Instance.PowerMgr.MarkDirty(location.NameOrUniqueName);
+    }
+
+    private static void MetalCaskLocationPostfix(Cask __instance, ref bool __result)
+    {
+        if (Instance == null || __instance == null || __result || !Instance.IsMetalCask(__instance))
+            return;
+
+        __result = Instance.IsValidMetalCaskLocation(__instance.Location);
+    }
+
+    private static void MetalCaskDayUpdatePostfix(Cask __instance)
+    {
+        if (Instance == null || __instance == null || !Instance.IsMetalCask(__instance))
+            return;
+
+        Instance.ApplyMetalCaskPowerBonus(__instance, __instance.Location);
     }
 
     private static void GameLocationDrawFloorDecorationsPostfix(GameLocation __instance, SpriteBatch b)
@@ -1788,6 +2037,15 @@ internal sealed class ModEntry : Mod
     private static bool IsAnimatedStatefulBigCraftable(string? itemId)
     {
         return itemId == PowerConstants.IndustrialPreservesJarId
+            || itemId == PowerConstants.MetalCaskId
+            || itemId == PowerConstants.MetalKegId
+            || itemId == PowerConstants.HardIridiumKegId;
+    }
+
+    private static bool UsesStatefulReadyIndicator(string? itemId)
+    {
+        return itemId == PowerConstants.IndustrialPreservesJarId
+            || itemId == PowerConstants.MetalCaskId
             || itemId == PowerConstants.MetalKegId
             || itemId == PowerConstants.HardIridiumKegId;
     }
@@ -1823,7 +2081,7 @@ internal sealed class ModEntry : Mod
 
     private static void DrawStatefulReadyIndicator(SpriteBatch spriteBatch, float alpha, float layerDepth, StardewValley.Object obj)
     {
-        if (!IsAnimatedStatefulBigCraftable(obj.ItemId) || !obj.readyForHarvest.Value)
+        if (!UsesStatefulReadyIndicator(obj.ItemId) || !obj.readyForHarvest.Value)
             return;
 
         Vector2 tile = obj.TileLocation;
@@ -2061,6 +2319,7 @@ internal sealed class ModEntry : Mod
             || itemId == PowerConstants.IridiumBatteryId
             || itemId == PowerConstants.PowerConduitId
             || itemId == PowerConstants.IndustrialPreservesJarId
+            || itemId == PowerConstants.MetalCaskId
             || itemId == PowerConstants.MetalKegId
             || itemId == PowerConstants.HardIridiumKegId;
     }
@@ -2087,6 +2346,7 @@ internal sealed class ModEntry : Mod
             PowerConstants.IridiumBatteryId => GetBatteryState(locationName, tile, itemId),
             PowerConstants.PowerConduitId => GetConduitState(locationName, tile),
             PowerConstants.IndustrialPreservesJarId => GetIndustrialPreservesJarState(obj),
+            PowerConstants.MetalCaskId => GetPoweredMachineState(obj),
             PowerConstants.MetalKegId => GetPoweredMachineState(obj),
             PowerConstants.HardIridiumKegId => GetPoweredMachineState(obj),
             _ => null
@@ -2143,6 +2403,186 @@ internal sealed class ModEntry : Mod
 
         string generatorKey = PowerConstants.MakeNodeKey(locationName, tile, PowerConstants.SteamGeneratorId);
         return FuelMgr.GetFuelTicksRemaining(generatorKey) > 0 ? "on" : "off";
+    }
+
+    private StardewValley.Object CreatePlacedMetalCask(Vector2 tile, StardewValley.Object placedObject, GameLocation location)
+    {
+        Cask metalCask = new(tile);
+        ApplyMetalCaskIdentity(metalCask, placedObject);
+
+        metalCask.modData.Clear();
+        foreach (KeyValuePair<string, string> pair in placedObject.modData.Pairs)
+            metalCask.modData[pair.Key] = pair.Value;
+
+        metalCask.modData[MetalCaskMarkerKey] = "true";
+        UpdateMetalCaskPowerTelemetry(metalCask, location, observedSpeedup: 0f, lastAppliedBonusDays: null);
+
+        return metalCask;
+    }
+
+    private void ApplyMetalCaskIdentity(Cask cask, StardewValley.Object? sourceObject = null)
+    {
+        StardewValley.Object identityTemplate = sourceObject ?? ItemRegistry.Create<StardewValley.Object>(PowerConstants.Q(PowerConstants.MetalCaskId));
+
+        cask.ItemId = PowerConstants.MetalCaskId;
+        cask.Name = identityTemplate.Name;
+        cask.Price = identityTemplate.Price;
+        cask.Type = identityTemplate.Type;
+        cask.Category = identityTemplate.Category;
+        cask.bigCraftable.Value = identityTemplate.bigCraftable.Value;
+        cask.CanBeSetDown = identityTemplate.CanBeSetDown;
+        cask.CanBeGrabbed = identityTemplate.CanBeGrabbed;
+        cask.setOutdoors.Value = identityTemplate.setOutdoors.Value;
+        cask.setIndoors.Value = identityTemplate.setIndoors.Value;
+        cask.Fragility = identityTemplate.Fragility;
+        cask.isLamp.Value = identityTemplate.isLamp.Value;
+        cask.ParentSheetIndex = identityTemplate.ParentSheetIndex;
+        ResetParentSheetIndexMethod?.Invoke(cask, Array.Empty<object>());
+        cask.modData[MetalCaskMarkerKey] = "true";
+    }
+
+    private void RehydrateMetalCasks()
+    {
+        foreach (GameLocation location in EnumerateLoadedLocations())
+            RehydrateMetalCasks(location);
+    }
+
+    private void RehydrateMetalCasks(GameLocation location)
+    {
+        foreach (KeyValuePair<Vector2, StardewValley.Object> pair in location.objects.Pairs)
+        {
+            if (pair.Value is not Cask cask || !IsMetalCask(cask))
+                continue;
+
+            if (cask.QualifiedItemId == PowerConstants.Q(PowerConstants.MetalCaskId))
+                continue;
+
+            ApplyMetalCaskIdentity(cask);
+        }
+    }
+
+    private void RefreshMetalCaskTelemetry()
+    {
+        foreach (GameLocation location in EnumerateLoadedLocations())
+            RefreshMetalCaskTelemetry(location);
+    }
+
+    private void RefreshMetalCaskTelemetry(GameLocation location)
+    {
+        foreach (KeyValuePair<Vector2, StardewValley.Object> pair in location.objects.Pairs)
+        {
+            if (pair.Value is not Cask cask || !IsMetalCask(cask))
+                continue;
+
+            float observedSpeedup = GetObservedSpeedup(location, cask);
+            UpdateMetalCaskPowerTelemetry(cask, location, observedSpeedup, lastAppliedBonusDays: null);
+        }
+    }
+
+    private bool IsValidMetalCaskLocation(GameLocation location)
+    {
+        if (location == null || location.IsOutdoors)
+            return false;
+
+        return location is Cellar
+            || location is FarmHouse
+            || location is Cabin
+            || location is Shed
+            || location is AnimalHouse
+            || location is SlimeHutch
+            || string.Equals(location.NameOrUniqueName, "Greenhouse", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(location.NameOrUniqueName, "IslandFarmHouse", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void ApplyMetalCaskPowerBonus(Cask cask, GameLocation? location)
+    {
+        float observedSpeedup = 0f;
+        float? appliedBonusDays = null;
+
+        if (location != null
+            && cask.heldObject.Value != null
+            && TryGetMetalCaskDaysToMature(cask, out float currentDays)
+            && currentDays > 0f)
+        {
+            float configuredMaxSpeedup = ClampSpeedup(Config.MetalCaskMaxSpeedup);
+            if (configuredMaxSpeedup > 0f)
+            {
+                observedSpeedup = GetObservedSpeedup(location, cask);
+                if (observedSpeedup > 0f)
+                {
+                    float normalizedPower = Math.Clamp(observedSpeedup / configuredMaxSpeedup, 0f, 1f);
+                    float bonusDays = normalizedPower * MetalCaskPoweredBonusDaysAtFullPower;
+                    if (bonusDays > 0f && CaskDaysToMatureField?.GetValue(cask) is NetFloat daysToMature)
+                    {
+                        daysToMature.Value = Math.Max(0f, daysToMature.Value - bonusDays);
+                        CaskCheckForMaturityMethod?.Invoke(cask, Array.Empty<object>());
+                        appliedBonusDays = bonusDays;
+                    }
+                }
+            }
+        }
+
+        UpdateMetalCaskPowerTelemetry(cask, location, observedSpeedup, appliedBonusDays);
+    }
+
+    private float GetObservedSpeedup(GameLocation location, Cask cask)
+    {
+        AllocationResult? allocation = PowerMgr.GetLastAllocationAtTile(location.NameOrUniqueName, cask.TileLocation);
+        return allocation?.SpeedupFraction ?? 0f;
+    }
+
+    private void UpdateMetalCaskPowerTelemetry(Cask cask, GameLocation? location, float observedSpeedup, float? lastAppliedBonusDays)
+    {
+        cask.modData[MetalCaskPowerModeKey] = "days";
+
+        if (lastAppliedBonusDays.HasValue && lastAppliedBonusDays.Value > 0f)
+        {
+            cask.modData[MetalCaskLastAppliedBonusDaysKey] = lastAppliedBonusDays.Value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+            cask.modData[MetalCaskLastAppliedDateKey] = BuildCurrentGameDateLabel();
+        }
+
+        cask.modData[MetalCaskObservedSpeedupKey] = observedSpeedup.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture);
+
+        if (TryGetMetalCaskDaysToMature(cask, out float daysRemaining))
+            cask.modData[MetalCaskDaysToNextQualityKey] = daysRemaining.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+        else
+            cask.modData.Remove(MetalCaskDaysToNextQualityKey);
+
+        string state = cask.heldObject.Value == null
+            ? "empty"
+            : !TryGetMetalCaskDaysToMature(cask, out daysRemaining)
+                ? "aging"
+                : daysRemaining <= 0f
+                    ? "ready"
+                    : observedSpeedup > 0f
+                        ? "powered"
+                        : "unpowered";
+
+        cask.modData[MetalCaskObservedPowerStateKey] = state;
+    }
+
+    private static bool TryGetMetalCaskDaysToMature(Cask cask, out float daysRemaining)
+    {
+        daysRemaining = 0f;
+        if (CaskDaysToMatureField?.GetValue(cask) is not NetFloat netFloat)
+            return false;
+
+        daysRemaining = netFloat.Value;
+        return true;
+    }
+
+    private static string BuildCurrentGameDateLabel()
+    {
+        if (!Context.IsWorldReady)
+            return "unknown";
+
+        return $"Year {Game1.year} {Game1.currentSeason} {Game1.dayOfMonth}";
+    }
+
+    private bool IsMetalCask(Cask cask)
+    {
+        return cask.QualifiedItemId == PowerConstants.Q(PowerConstants.MetalCaskId)
+            || (cask.modData?.ContainsKey(MetalCaskMarkerKey) ?? false);
     }
 
     private static string? GetWindGeneratorState(StardewValley.Object obj)
@@ -2302,6 +2742,7 @@ internal sealed class ModEntry : Mod
             PowerConstants.IridiumBatteryId => "IridiumBattery",
             PowerConstants.PowerConduitId => "PowerConduit",
             PowerConstants.IndustrialPreservesJarId => IndustrialPreservesJarSpriteName,
+            PowerConstants.MetalCaskId => MetalCaskSpriteName,
             PowerConstants.MetalKegId => MetalKegSpriteName,
             PowerConstants.HardIridiumKegId => HardIridiumKegSpriteName,
             _ => null

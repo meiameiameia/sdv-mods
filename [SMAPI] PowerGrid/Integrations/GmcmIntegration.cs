@@ -183,6 +183,29 @@ internal static class GmcmIntegration
             () => "Lower values receive power first when supply is limited.",
             min: 0, max: 100, interval: 1);
 
+        gmcmApi.AddSectionTitle(manifest, () => "Metal Cask");
+
+        gmcmApi.AddNumberOption(manifest,
+            () => config.MetalCaskEUPerMinute,
+            (int val) => config.MetalCaskEUPerMinute = val,
+            () => "EU per Minute",
+            () => "Power demand for each PowerGrid Metal Cask. This is multiplied by the 10-minute PowerGrid tick.",
+            min: 0, max: 100, interval: 1);
+
+        gmcmApi.AddNumberOption(manifest,
+            () => (int)MathF.Round(config.MetalCaskMaxSpeedup * 100f),
+            (int val) => config.MetalCaskMaxSpeedup = Math.Clamp(val / 100f, 0f, 1f),
+            () => "Max Speedup Percent",
+            () => "Maximum Metal Cask overnight aging bonus when fully powered.",
+            min: 0, max: 100, interval: 1);
+
+        gmcmApi.AddNumberOption(manifest,
+            () => config.MetalCaskPriority,
+            (int val) => config.MetalCaskPriority = val,
+            () => "Priority",
+            () => "Lower values receive power first when supply is limited.",
+            min: 0, max: 100, interval: 1);
+
         gmcmApi.AddSectionTitle(manifest, () => "Metal Keg");
 
         gmcmApi.AddNumberOption(manifest,

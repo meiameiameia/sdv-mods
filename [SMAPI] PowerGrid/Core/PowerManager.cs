@@ -555,6 +555,9 @@ internal sealed class PowerManager
 
     private static bool IsMachineProcessing(StardewValley.Object obj)
     {
+        if (obj is StardewValley.Objects.Cask cask)
+            return cask.heldObject.Value != null;
+
         // Many modded machines (including BigCraftable-based ones) may not populate heldObject
         // consistently while processing. MinutesUntilReady is the most reliable signal.
         return obj.MinutesUntilReady > 0;

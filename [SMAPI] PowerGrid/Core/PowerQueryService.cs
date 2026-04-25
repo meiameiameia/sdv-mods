@@ -9,13 +9,12 @@ namespace Meiameiameia.PowerGrid.Core;
 
 internal sealed class PowerQueryService
 {
-    private const string MetalCaskItemId = "meiameiameia.MetalKegs_MetalCask";
-    private const string MetalCaskMarkerKey = "meiameiameia.MetalKegs/MetalCask";
-    private const string MetalCaskPowerModeKey = "meiameiameia.MetalKegs/PowerMode";
-    private const string MetalCaskObservedPowerStateKey = "meiameiameia.MetalKegs/ObservedPowerState";
-    private const string MetalCaskDaysToNextQualityKey = "meiameiameia.MetalKegs/DaysToNextQuality";
-    private const string MetalCaskLastAppliedBonusDaysKey = "meiameiameia.MetalKegs/LastAppliedBonusDays";
-    private const string MetalCaskLastAppliedDateKey = "meiameiameia.MetalKegs/LastAppliedDate";
+    private const string MetalCaskMarkerKey = "meiameiameia.PowerGrid/MetalCask";
+    private const string MetalCaskPowerModeKey = "meiameiameia.PowerGrid/MetalCaskPowerMode";
+    private const string MetalCaskObservedPowerStateKey = "meiameiameia.PowerGrid/MetalCaskObservedPowerState";
+    private const string MetalCaskDaysToNextQualityKey = "meiameiameia.PowerGrid/MetalCaskDaysToNextQuality";
+    private const string MetalCaskLastAppliedBonusDaysKey = "meiameiameia.PowerGrid/MetalCaskLastAppliedBonusDays";
+    private const string MetalCaskLastAppliedDateKey = "meiameiameia.PowerGrid/MetalCaskLastAppliedDate";
     private static readonly FieldInfo? CaskDaysToMatureField = typeof(Cask).GetField("daysToMature", BindingFlags.Instance | BindingFlags.NonPublic);
 
     private readonly PowerManager powerManager;
@@ -287,7 +286,7 @@ internal sealed class PowerQueryService
             return "days";
         }
 
-        if (consumer.ItemId == MetalCaskItemId)
+        if (consumer.ItemId == PowerConstants.MetalCaskId)
             return "days";
 
         return "minutes";
@@ -358,8 +357,8 @@ internal sealed class PowerQueryService
 
     private static bool IsMetalCask(Cask cask, PowerNode consumer)
     {
-        return consumer.ItemId == MetalCaskItemId
-            || cask.QualifiedItemId == "(BC)" + MetalCaskItemId
+        return consumer.ItemId == PowerConstants.MetalCaskId
+            || cask.QualifiedItemId == PowerConstants.Q(PowerConstants.MetalCaskId)
             || cask.modData.ContainsKey(MetalCaskMarkerKey);
     }
 

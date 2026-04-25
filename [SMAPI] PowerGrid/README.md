@@ -139,11 +139,13 @@ PowerGrid owns these powered artisan machines directly:
 | Machine | EU/minute | Max Speedup | Priority |
 |---------|-----------|-------------|----------|
 | Industrial Preserves Jar | 3 EU/min (30 EU/tick) | 20% | 10 |
+| Metal Cask | 6 EU/min (60 EU/tick) | 50% overnight aging bonus | 8 |
 | Metal Keg | 2 EU/min (20 EU/tick) | 20% | 10 |
 | Hard Iridium Keg | 4 EU/min (40 EU/tick) | 20% | 10 |
 
 - If insufficient EU, machines process at **normal speed** (no penalty)
 - No output changes, no recipe changes, no item duplication
+- Metal Cask clones vanilla Cask behavior, can be placed only in player-owned indoor spaces, and applies its PowerGrid bonus during day update
 - Metal Keg clones vanilla Keg behavior
 - Hard Iridium Keg uses Hardwood Keg behavior when that template is present, and falls back to vanilla Keg behavior otherwise
 
@@ -206,6 +208,18 @@ Otherwise, edit `config.json` in the mod folder. Key settings:
   "BasicBatteryCapacity": 500,
   "IridiumBatteryCapacity": 2000,
   "BatteryDailyLeakPercent": 2.0,
+  "IndustrialPreservesJarEUPerMinute": 3,
+  "IndustrialPreservesJarMaxSpeedup": 0.2,
+  "IndustrialPreservesJarPriority": 10,
+  "MetalCaskEUPerMinute": 6,
+  "MetalCaskMaxSpeedup": 0.5,
+  "MetalCaskPriority": 8,
+  "MetalKegEUPerMinute": 2,
+  "MetalKegMaxSpeedup": 0.2,
+  "MetalKegPriority": 10,
+  "HardIridiumKegEUPerMinute": 4,
+  "HardIridiumKegMaxSpeedup": 0.2,
+  "HardIridiumKegPriority": 10,
   "DebugOverlayEnabled": false,
   "DebugOverlayKeybind": "F8"
 }
@@ -332,9 +346,9 @@ To install: copy the entire `[SMAPI] PowerGrid` folder into your `Stardew Valley
 - **No conflict.** PowerGrid is a SMAPI C# mod; FishSmoker Recipe is a Content Patcher pack. They operate in completely different domains. PowerGrid does not touch `Data/ObjectInformation` or fish smoker recipes.
 
 ### With [SMAPI] Metal Kegs
-- PowerGrid now includes its own PowerGrid-native Metal Keg and Hard Iridium Keg items.
+- PowerGrid now includes its own PowerGrid-native Metal Cask, Metal Keg, and Hard Iridium Keg items.
 - For testing the PowerGrid-owned versions, disable/remove the separate `[SMAPI] Metal Kegs` mod to avoid duplicate player-facing machine names.
-- The separate Metal Kegs mod is not deleted by this package and still owns its legacy item IDs if installed.
+- The separate Metal Kegs deployable is not needed for these machines once the PowerGrid-owned versions pass validation. It is not deleted by this package and still owns its legacy item IDs if installed.
 
 ### With Automate
 - **Partially compatible by design.** Automate handles machine input/output chains; PowerGrid handles speed boosts.
@@ -479,6 +493,7 @@ player_add (BC)meiameiameia.PowerGrid_CopperCable 20
 player_add (BC)meiameiameia.PowerGrid_SteamGenerator 3
 player_add (BC)meiameiameia.PowerGrid_BasicBattery 2
 player_add (BC)meiameiameia.PowerGrid_PowerConduit 2
+player_add (BC)meiameiameia.PowerGrid_MetalCask 2
 player_add (BC)meiameiameia.PowerGrid_MetalKeg 2
 player_add (BC)meiameiameia.PowerGrid_HardIridiumKeg 2
 
