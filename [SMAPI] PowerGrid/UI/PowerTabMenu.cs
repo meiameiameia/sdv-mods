@@ -25,9 +25,19 @@ internal sealed class PowerTabMenu : IClickableMenu
     private readonly FuelManager fuelMgr;
     private readonly ConduitManager conduitMgr;
 
+    private enum PowerTabView
+    {
+        Overview,
+        Networks,
+        Machines,
+        Conduits
+    }
+
+    private PowerTabView currentView = PowerTabView.Overview;
     private int scrollOffset;
-    private readonly int maxVisibleLines = 20;
+    private readonly int maxVisibleLines = 19;
     private readonly List<DisplayLine> lines = new();
+    private readonly List<ClickableComponent> tabButtons = new();
     private readonly Dictionary<int, string> conduitLineToKey = new();
     private readonly Dictionary<string, ConduitEntry> conduitsByKey = new();
     private string? selectedConduitKey;
@@ -70,12 +80,13 @@ internal sealed class PowerTabMenu : IClickableMenu
         this.batteryState = batteryState;
         this.fuelMgr = fuelMgr;
         this.conduitMgr = conduitMgr;
+        RebuildTabButtons();
         BuildLines();
     }
 
     private int LineHeight => (int)(Game1.smallFont.LineSpacing * 1.1f);
     private int TextLeft => xPositionOnScreen + 32;
-    private int TextTop => yPositionOnScreen + 32;
+    private int TextTop => yPositionOnScreen + 106;
 
     private static string MakeConduitKey(string locationName, Vector2 tile)
     {
@@ -172,7 +183,7 @@ internal sealed class PowerTabMenu : IClickableMenu
         if (consumer.IsPowered)
             return new StatusBadge("READY", PositiveColor);
 
-        return new StatusBadge("IDLE", NegativeColor);
+        return new StatusBadge("IDLE", MutedColor);
     }
 
     private static string FormatMachineSummary(ConsumerCounts counts)
@@ -222,28 +233,48 @@ internal sealed class PowerTabMenu : IClickableMenu
         return value[..(maxLength - 3)] + "...";
     }
 
+    private static string TrimProgressText(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return "";
+
+        string text = value
+            .Replace("Day-based aging: ", "", StringComparison.Ordinal)
+            .Replace("Powered now at ", "powered ", StringComparison.Ordinal)
+            .Replace("; overnight bonus applies on day change.", " (overnight bonus)", StringComparison.Ordinal)
+            .Replace("Not powered for the next overnight bonus.", "no overnight bonus", StringComparison.Ordinal)
+            .Replace("Day-based aging machine. ", "", StringComparison.Ordinal);
+
+        return TrimDetail(text, 82);
+    }
+
     private static string FormatConsumerDetail(PowerConsumerSnapshot consumer)
     {
         if (consumer.ProgressMode == "days" && !string.IsNullOrWhiteSpace(consumer.ProgressText))
-            return TrimDetail($"EU {consumer.EUAllocated}/{consumer.DemandPerTick} | Speed {consumer.SpeedupFraction:P0} | {consumer.ProgressText}");
+            return $"EU {consumer.EUAllocated}/{consumer.DemandPerTick} | speed {consumer.SpeedupFraction:P0} | {TrimProgressText(consumer.ProgressText)}";
 
         if (consumer.IsProcessing)
-            return $"EU {consumer.EUAllocated}/{consumer.DemandPerTick} | Speed {consumer.SpeedupFraction:P0} | +{consumer.MinutesAccelerated}m/tick | ~{consumer.MinutesRemaining}m left";
+            return $"EU {consumer.EUAllocated}/{consumer.DemandPerTick} | speed {consumer.SpeedupFraction:P0} | +{consumer.MinutesAccelerated}m/tick | ~{consumer.MinutesRemaining}m left";
 
         if (consumer.IsPowered)
-            return $"EU {consumer.EUAllocated}/{consumer.DemandPerTick} | Speed {consumer.SpeedupFraction:P0} | Ready for work";
+            return $"EU {consumer.EUAllocated}/{consumer.DemandPerTick} | speed {consumer.SpeedupFraction:P0} | ready for work";
 
-        return $"EU {consumer.EUAllocated}/{consumer.DemandPerTick} | No allocation on latest tick";
+        return $"EU {consumer.EUAllocated}/{consumer.DemandPerTick} | idle";
     }
 
     private static string FormatGeneratorDetail(PowerGeneratorSnapshot generator)
     {
-        string state = generator.IsOnline ? "ONLINE" : generator.RequiresFuel ? "NO FUEL / OFFLINE" : "OFFLINE";
-        string fuelInfo = generator.RequiresFuel
-            ? $"fuel {generator.FuelTicksRemaining}"
-            : "passive";
+        if (!generator.RequiresFuel)
+            return generator.IsOnline
+                ? $"online | {generator.GenerationPerTick} EU/tick | passive"
+                : $"offline | {generator.GenerationPerTick} EU/tick | passive";
 
-        return $"{state} | {generator.GenerationPerTick} EU/tick | {fuelInfo}";
+        if (generator.IsOnline)
+            return $"online | {generator.GenerationPerTick} EU/tick | {generator.FuelTicksRemaining} fuel ticks";
+
+        return generator.FuelTicksRemaining > 0
+            ? $"fueled | waiting for power tick | {generator.FuelTicksRemaining} fuel ticks"
+            : $"offline | no fuel | {generator.GenerationPerTick} EU/tick";
     }
 
     private static string FormatBatteryDetail(PowerBatterySnapshot battery)
@@ -260,6 +291,99 @@ internal sealed class PowerTabMenu : IClickableMenu
             return WarningColor;
 
         return NegativeColor;
+    }
+
+    private static Color GetGeneratorColor(PowerGeneratorSnapshot generator)
+    {
+        if (generator.IsOnline)
+            return PositiveColor;
+
+        if (generator.RequiresFuel && generator.FuelTicksRemaining <= 0)
+            return WarningColor;
+
+        return MutedColor;
+    }
+
+    private static string FormatConsumerName(PowerConsumerSnapshot consumer)
+    {
+        return $"{consumer.DisplayName} ({consumer.LocationName} {consumer.TileX},{consumer.TileY})";
+    }
+
+    private static string FormatNetworkPower(PowerNetworkSnapshot net)
+    {
+        return $"Supply {net.LastTickGenerated}/{net.TotalGenerationPerTick} EU/tick | Used {net.LastTickConsumed}/{net.TotalDemandPerTick} | Battery {net.LastTickFromBatteries} out, {net.LastTickStoredInBatteries} in | Throughput {FormatThroughput(net.CableThroughputCap)}";
+    }
+
+    private static string FormatTabLabel(PowerTabView view)
+    {
+        return view switch
+        {
+            PowerTabView.Overview => "Overview",
+            PowerTabView.Networks => "Networks",
+            PowerTabView.Machines => "Machines",
+            PowerTabView.Conduits => "Conduits",
+            _ => view.ToString()
+        };
+    }
+
+    private static string FormatHealthLine(PowerNetworkSnapshot net, IReadOnlyList<PowerConsumerSnapshot> consumers)
+    {
+        int waiting = consumers.Count(consumer => consumer.IsProcessing && !consumer.IsPowered);
+        int active = consumers.Count(consumer => consumer.IsProcessing && consumer.IsPowered);
+
+        if (waiting > 0)
+            return $"{waiting} machine(s) waiting for power";
+
+        if (active > 0)
+            return $"{active} active machine(s) powered";
+
+        if (net.TotalStoredEU > 0 || net.LastTickGenerated > 0)
+            return "ready, no active machine demand";
+
+        return "offline";
+    }
+
+    private static string BuildPowerFixHint(PowerConsumerSnapshot consumer, PowerNetworkSnapshot? network)
+    {
+        if (network == null)
+            return "Check that the machine is connected to a valid PowerGrid network.";
+
+        if (network.GeneratorCount == 0 && network.BatteryCount == 0)
+            return $"Connect Net #{consumer.NetworkId} to a generator/battery network with a conduit pair.";
+
+        if (network.TotalStoredEU <= 0 && network.LastTickGenerated <= 0)
+            return $"Net #{consumer.NetworkId} has no usable power right now; add generation, fuel, or battery charge.";
+
+        if (network.LastTickGenerated + network.LastTickFromBatteries < consumer.DemandPerTick)
+            return $"Net #{consumer.NetworkId} needs {consumer.DemandPerTick} EU/tick for this machine; add supply or reduce demand.";
+
+        return $"Net #{consumer.NetworkId} has power available; check cable adjacency and conduit pairing.";
+    }
+
+    private void RebuildTabButtons()
+    {
+        tabButtons.Clear();
+
+        int tabX = TextLeft;
+        int tabY = yPositionOnScreen + 62;
+        foreach (PowerTabView view in Enum.GetValues<PowerTabView>())
+        {
+            string label = FormatTabLabel(view);
+            int tabWidth = Math.Max(136, (int)Game1.smallFont.MeasureString(label).X + 34);
+            tabButtons.Add(new ClickableComponent(new Rectangle(tabX, tabY, tabWidth, 32), view.ToString(), label));
+            tabX += tabWidth + 8;
+        }
+    }
+
+    private void SetView(PowerTabView view)
+    {
+        if (currentView == view)
+            return;
+
+        currentView = view;
+        scrollOffset = 0;
+        selectedConduitKey = null;
+        BuildLines();
     }
 
     private void AddLine(string text = "", Color? color = null, string? conduitKey = null)
@@ -331,47 +455,157 @@ internal sealed class PowerTabMenu : IClickableMenu
         if (selectedConduitKey != null && !conduitsByKey.ContainsKey(selectedConduitKey))
             selectedConduitKey = null;
 
-        AddSectionTitle("=== Power Tab ===");
-        AddLine("Open with your Power Tab keybind (default P or K) or `powergrid_tab`. Click conduit A, then B to link. Delete unlinks. R refreshes.", InfoColor);
+        BuildCurrentView(
+            networkSnapshots,
+            consumerSnapshots,
+            generatorSnapshots,
+            batterySnapshots,
+            totalNetworks,
+            totalGenerators,
+            totalConsumers,
+            totalConduits,
+            totalGeneration,
+            totalDemand,
+            totalCapacity,
+            totalStoredEu,
+            activeLocations,
+            crossLocationNetworks,
+            onlineGenerators,
+            globalConsumerCounts,
+            storagePercent);
+    }
+
+    private void BuildCurrentView(
+        IReadOnlyList<PowerNetworkSnapshot> networkSnapshots,
+        IReadOnlyList<PowerConsumerSnapshot> consumerSnapshots,
+        IReadOnlyList<PowerGeneratorSnapshot> generatorSnapshots,
+        IReadOnlyList<PowerBatterySnapshot> batterySnapshots,
+        int totalNetworks,
+        int totalGenerators,
+        int totalConsumers,
+        int totalConduits,
+        int totalGeneration,
+        int totalDemand,
+        int totalCapacity,
+        int totalStoredEu,
+        int activeLocations,
+        int crossLocationNetworks,
+        int onlineGenerators,
+        ConsumerCounts globalConsumerCounts,
+        float storagePercent)
+    {
+        switch (currentView)
+        {
+            case PowerTabView.Overview:
+                BuildOverviewLines(
+                    networkSnapshots,
+                    consumerSnapshots,
+                    generatorSnapshots,
+                    totalNetworks,
+                    totalGenerators,
+                    totalGeneration,
+                    totalDemand,
+                    totalCapacity,
+                    totalStoredEu,
+                    activeLocations,
+                    crossLocationNetworks,
+                    onlineGenerators,
+                    globalConsumerCounts,
+                    storagePercent);
+                break;
+
+            case PowerTabView.Networks:
+                BuildNetworkLines(networkSnapshots, consumerSnapshots, generatorSnapshots, batterySnapshots);
+                break;
+
+            case PowerTabView.Machines:
+                BuildMachineLines(consumerSnapshots);
+                break;
+
+            case PowerTabView.Conduits:
+                BuildConduitLines();
+                break;
+        }
+    }
+
+    private void BuildOverviewLines(
+        IReadOnlyList<PowerNetworkSnapshot> networkSnapshots,
+        IReadOnlyList<PowerConsumerSnapshot> consumerSnapshots,
+        IReadOnlyList<PowerGeneratorSnapshot> generatorSnapshots,
+        int totalNetworks,
+        int totalGenerators,
+        int totalGeneration,
+        int totalDemand,
+        int totalCapacity,
+        int totalStoredEu,
+        int activeLocations,
+        int crossLocationNetworks,
+        int onlineGenerators,
+        ConsumerCounts globalConsumerCounts,
+        float storagePercent)
+    {
+        bool hasWaitingConsumers = globalConsumerCounts.WaitingForPower > 0;
+        Color globalStatusColor = hasWaitingConsumers ? WarningColor : totalNetworks == 0 ? NegativeColor : PositiveColor;
+        string globalStatus = hasWaitingConsumers
+            ? $"{globalConsumerCounts.WaitingForPower} machine(s) need power"
+            : totalNetworks == 0
+                ? "No power networks detected"
+                : "All active machines powered";
+
+        AddLine(hasWaitingConsumers ? "Action needed" : "Power status", SectionColor);
+        AddLine(globalStatus, globalStatusColor);
+        AddLine($"{onlineGenerators}/{totalGenerators} generators online | {totalGeneration} EU/tick supply | {totalDemand} EU/tick demand", HeaderColor);
+        AddLine($"{totalStoredEu}/{totalCapacity} EU stored ({storagePercent:P0}) | {totalNetworks} networks, {crossLocationNetworks} linked | {activeLocations} locations", HeaderColor);
+        AddLine($"{globalConsumerCounts.ActivePowered} active | {globalConsumerCounts.WaitingForPower} waiting | {globalConsumerCounts.Ready} ready | {globalConsumerCounts.Idle} idle", HeaderColor);
         AddLine();
 
-        AddSectionTitle("=== Overview ===");
-        AddLine($"Networks {totalNetworks} | Cross-location {crossLocationNetworks} | Active locations {activeLocations}", HeaderColor);
-        AddLine($"Generators online {onlineGenerators}/{totalGenerators} | Consumers powered {globalConsumerCounts.Powered}/{totalConsumers} | Waiting {globalConsumerCounts.WaitingForPower}", HeaderColor);
-        AddLine($"Battery charge {totalStoredEu}/{totalCapacity} EU ({storagePercent:P0}) | Generation {totalGeneration} EU/tick | Demand {totalDemand} EU/tick", HeaderColor);
-        AddLine($"Tracked battery charge: {batteryState.TotalStoredEU()} EU | Registered conduits: {totalConduits}", HeaderColor);
-        AddLine();
-
-        AddSectionTitle("=== Needs Attention ===");
+        AddSectionTitle("What Needs Attention");
         List<PowerConsumerSnapshot> waitingConsumers = consumerSnapshots
             .Where(consumer => consumer.IsProcessing && !consumer.IsPowered)
             .OrderBy(consumer => consumer.LocationName, StringComparer.Ordinal)
             .ThenBy(consumer => consumer.TileY)
             .ThenBy(consumer => consumer.TileX)
+            .Take(5)
             .ToList();
 
         if (waitingConsumers.Count == 0)
         {
-            AddLine("No machines are currently waiting for power.", PositiveColor);
+            AddLine("All processing machines currently have power.", PositiveColor);
         }
         else
         {
             foreach (PowerConsumerSnapshot consumer in waitingConsumers)
-                AddLine($"WAIT  {consumer.LocationName} ({consumer.TileX},{consumer.TileY}) {consumer.DisplayName} | Net #{consumer.NetworkId} | {TrimDetail(FormatConsumerDetail(consumer), 85)}", WarningColor);
+            {
+                PowerNetworkSnapshot? network = networkSnapshots.FirstOrDefault(net => net.NetworkId == consumer.NetworkId);
+                AddLine($"{consumer.DisplayName} at {consumer.LocationName} ({consumer.TileX},{consumer.TileY}) is processing without power.", WarningColor);
+                AddLine($"  Needs {consumer.DemandPerTick} EU/tick. {BuildPowerFixHint(consumer, network)}", MutedColor);
+                AddLine($"  Current: {TrimDetail(FormatConsumerDetail(consumer), 88)}", MutedColor);
+            }
         }
 
         AddLine();
-        AddSectionTitle("=== Networks ===");
+        AddSectionTitle("Network Summary");
 
         if (networkSnapshots.Count == 0)
         {
-            AddLine("No active networks detected.", NegativeColor);
+            AddLine("No active networks detected. Place adjacent PowerGrid objects to form a network.", NegativeColor);
             AddLine();
         }
         else
         {
-            foreach (PowerNetworkSnapshot net in networkSnapshots.OrderBy(net => net.NetworkId))
+            foreach (PowerNetworkSnapshot net in networkSnapshots
+                .OrderByDescending(net => consumerSnapshots.Any(consumer => consumer.NetworkId == net.NetworkId && consumer.IsProcessing && !consumer.IsPowered))
+                .ThenBy(net => net.NetworkId))
             {
+                List<PowerConsumerSnapshot> networkConsumers = consumerSnapshots
+                    .Where(generator => generator.NetworkId == net.NetworkId)
+                    .OrderByDescending(consumer => consumer.IsProcessing && !consumer.IsPowered)
+                    .ThenByDescending(consumer => consumer.IsProcessing && consumer.IsPowered)
+                    .ThenBy(consumer => consumer.LocationName, StringComparer.Ordinal)
+                    .ThenBy(consumer => consumer.TileY)
+                    .ThenBy(consumer => consumer.TileX)
+                    .ToList();
+
                 List<PowerGeneratorSnapshot> networkGenerators = generatorSnapshots
                     .Where(generator => generator.NetworkId == net.NetworkId)
                     .OrderBy(generator => generator.LocationName, StringComparer.Ordinal)
@@ -379,68 +613,116 @@ internal sealed class PowerTabMenu : IClickableMenu
                     .ThenBy(generator => generator.TileX)
                     .ToList();
 
-                List<PowerConsumerSnapshot> networkConsumers = consumerSnapshots
-                    .Where(consumer => consumer.NetworkId == net.NetworkId)
-                    .OrderBy(consumer => consumer.LocationName, StringComparer.Ordinal)
-                    .ThenBy(consumer => consumer.TileY)
-                    .ThenBy(consumer => consumer.TileX)
-                    .ToList();
-
-                List<PowerBatterySnapshot> networkBatteries = batterySnapshots
-                    .Where(battery => battery.NetworkId == net.NetworkId)
-                    .OrderBy(battery => battery.LocationName, StringComparer.Ordinal)
-                    .ThenBy(battery => battery.TileY)
-                    .ThenBy(battery => battery.TileX)
-                    .ToList();
-
-                ConsumerCounts networkCounts = CountConsumers(networkConsumers);
                 StatusBadge badge = GetNetworkBadge(net, networkConsumers, networkGenerators);
-                float networkStoragePercent = net.TotalBatteryCapacity > 0 ? (float)net.TotalStoredEU / net.TotalBatteryCapacity : 0f;
+                AddLine($"Net #{net.NetworkId}: {badge.Label} - {FormatLocationScope(net.LocationNames)}", badge.Color);
+                AddLine($"  {FormatHealthLine(net, networkConsumers)} | {net.TotalStoredEU}/{net.TotalBatteryCapacity} EU stored | {net.LastTickGenerated}/{net.TotalGenerationPerTick} EU/tick supply", MutedColor);
 
-                AddLine($"--- Net #{net.NetworkId} | {badge.Label} | {FormatLocationScope(net.LocationNames)} ---", badge.Color);
-                AddLine($"Power: gen {net.LastTickGenerated} | used {net.LastTickConsumed} | batt out {net.LastTickFromBatteries} | batt in {net.LastTickStoredInBatteries} | throughput {FormatThroughput(net.CableThroughputCap)}", MutedColor);
-                AddLine($"Storage: {net.TotalStoredEU}/{net.TotalBatteryCapacity} EU ({networkStoragePercent:P0}) | Nodes {net.GeneratorCount} gen, {net.BatteryCount} batt, {net.ConsumerCount} cons, {net.ConduitCount} conduit", MutedColor);
-                AddLine($"Machines: {FormatMachineSummary(networkCounts)}", MutedColor);
-
-                foreach (string locationName in net.LocationNames.OrderBy(name => name, StringComparer.Ordinal))
-                {
-                    List<PowerGeneratorSnapshot> locationGenerators = networkGenerators
-                        .Where(generator => string.Equals(generator.LocationName, locationName, StringComparison.Ordinal))
-                        .ToList();
-                    List<PowerConsumerSnapshot> locationConsumers = networkConsumers
-                        .Where(consumer => string.Equals(consumer.LocationName, locationName, StringComparison.Ordinal))
-                        .ToList();
-                    List<PowerBatterySnapshot> locationBatteries = networkBatteries
-                        .Where(battery => string.Equals(battery.LocationName, locationName, StringComparison.Ordinal))
-                        .ToList();
-
-                    if (locationGenerators.Count == 0 && locationConsumers.Count == 0 && locationBatteries.Count == 0)
-                        continue;
-
-                    AddLine($"  [{locationName}] {FormatLocationSummary(locationGenerators, locationConsumers, locationBatteries)}", InfoColor);
-
-                    foreach (PowerGeneratorSnapshot generator in locationGenerators)
-                    {
-                        Color generatorColor = generator.IsOnline ? PositiveColor : generator.RequiresFuel ? WarningColor : MutedColor;
-                        AddLine($"    Gen  ({generator.TileX},{generator.TileY}) {generator.DisplayName} | {FormatGeneratorDetail(generator)}", generatorColor);
-                    }
-
-                    foreach (PowerConsumerSnapshot consumer in locationConsumers)
-                    {
-                        StatusBadge consumerBadge = GetConsumerBadge(consumer);
-                        AddLine($"    Cons ({consumer.TileX},{consumer.TileY}) {consumer.DisplayName} | {consumerBadge.Label}", consumerBadge.Color);
-                        AddLine($"      {TrimDetail(FormatConsumerDetail(consumer))}", MutedColor);
-                    }
-
-                    foreach (PowerBatterySnapshot battery in locationBatteries)
-                        AddLine($"    Bat  ({battery.TileX},{battery.TileY}) {battery.DisplayName} | {FormatBatteryDetail(battery)}", GetBatteryColor(battery));
-                }
-
-                AddLine();
+                PowerConsumerSnapshot? topMachine = networkConsumers.FirstOrDefault(consumer => consumer.IsProcessing);
+                if (topMachine != null)
+                    AddLine($"  Main machine: {topMachine.DisplayName} ({topMachine.LocationName} {topMachine.TileX},{topMachine.TileY}) - {TrimDetail(FormatConsumerDetail(topMachine), 74)}", topMachine.IsPowered ? PositiveColor : WarningColor);
             }
         }
+    }
 
-        AddSectionTitle("=== Conduits ===");
+    private void BuildNetworkLines(
+        IReadOnlyList<PowerNetworkSnapshot> networkSnapshots,
+        IReadOnlyList<PowerConsumerSnapshot> consumerSnapshots,
+        IReadOnlyList<PowerGeneratorSnapshot> generatorSnapshots,
+        IReadOnlyList<PowerBatterySnapshot> batterySnapshots)
+    {
+        AddSectionTitle("Networks");
+
+        if (networkSnapshots.Count == 0)
+        {
+            AddLine("No active networks detected.", NegativeColor);
+            return;
+        }
+
+        foreach (PowerNetworkSnapshot net in networkSnapshots.OrderBy(net => net.NetworkId))
+        {
+            List<PowerGeneratorSnapshot> networkGenerators = generatorSnapshots
+                .Where(generator => generator.NetworkId == net.NetworkId)
+                .OrderBy(generator => generator.LocationName, StringComparer.Ordinal)
+                .ThenBy(generator => generator.TileY)
+                .ThenBy(generator => generator.TileX)
+                .ToList();
+
+            List<PowerConsumerSnapshot> networkConsumers = consumerSnapshots
+                .Where(consumer => consumer.NetworkId == net.NetworkId)
+                .OrderBy(consumer => consumer.LocationName, StringComparer.Ordinal)
+                .ThenBy(consumer => consumer.TileY)
+                .ThenBy(consumer => consumer.TileX)
+                .ToList();
+
+            List<PowerBatterySnapshot> networkBatteries = batterySnapshots
+                .Where(battery => battery.NetworkId == net.NetworkId)
+                .OrderBy(battery => battery.LocationName, StringComparer.Ordinal)
+                .ThenBy(battery => battery.TileY)
+                .ThenBy(battery => battery.TileX)
+                .ToList();
+
+            ConsumerCounts networkCounts = CountConsumers(networkConsumers);
+            StatusBadge badge = GetNetworkBadge(net, networkConsumers, networkGenerators);
+            float networkStoragePercent = net.TotalBatteryCapacity > 0 ? (float)net.TotalStoredEU / net.TotalBatteryCapacity : 0f;
+
+            AddLine($"Net #{net.NetworkId}: {badge.Label} - {FormatLocationScope(net.LocationNames)}", badge.Color);
+            AddLine($"  {net.LastTickGenerated}/{net.TotalGenerationPerTick} EU/tick supply | {net.LastTickConsumed}/{net.TotalDemandPerTick} used | throughput {FormatThroughput(net.CableThroughputCap)}", MutedColor);
+            AddLine($"  Storage {net.TotalStoredEU}/{net.TotalBatteryCapacity} EU ({networkStoragePercent:P0}) | {FormatMachineSummary(networkCounts)}", MutedColor);
+
+            foreach (string locationName in net.LocationNames.OrderBy(name => name, StringComparer.Ordinal))
+            {
+                List<PowerGeneratorSnapshot> locationGenerators = networkGenerators
+                    .Where(generator => string.Equals(generator.LocationName, locationName, StringComparison.Ordinal))
+                    .ToList();
+                List<PowerConsumerSnapshot> locationConsumers = networkConsumers
+                    .Where(consumer => string.Equals(consumer.LocationName, locationName, StringComparison.Ordinal))
+                    .ToList();
+                List<PowerBatterySnapshot> locationBatteries = networkBatteries
+                    .Where(battery => string.Equals(battery.LocationName, locationName, StringComparison.Ordinal))
+                    .ToList();
+
+                if (locationGenerators.Count == 0 && locationConsumers.Count == 0 && locationBatteries.Count == 0)
+                    continue;
+
+                AddLine($"  {locationName}: {FormatLocationSummary(locationGenerators, locationConsumers, locationBatteries)}", InfoColor);
+
+                foreach (PowerGeneratorSnapshot generator in locationGenerators)
+                    AddLine($"    Gen ({generator.TileX},{generator.TileY}) {generator.DisplayName}: {FormatGeneratorDetail(generator)}", GetGeneratorColor(generator));
+
+                foreach (PowerBatterySnapshot battery in locationBatteries)
+                    AddLine($"    Bat ({battery.TileX},{battery.TileY}) {battery.DisplayName}: {FormatBatteryDetail(battery)}", GetBatteryColor(battery));
+            }
+
+            AddLine();
+        }
+    }
+
+    private void BuildMachineLines(IReadOnlyList<PowerConsumerSnapshot> consumerSnapshots)
+    {
+        AddSectionTitle("Machines");
+
+        if (consumerSnapshots.Count == 0)
+        {
+            AddLine("No powered machines detected.", MutedColor);
+            return;
+        }
+
+        foreach (PowerConsumerSnapshot consumer in consumerSnapshots
+            .OrderByDescending(consumer => consumer.IsProcessing && !consumer.IsPowered)
+            .ThenByDescending(consumer => consumer.IsProcessing && consumer.IsPowered)
+            .ThenBy(consumer => consumer.LocationName, StringComparer.Ordinal)
+            .ThenBy(consumer => consumer.TileY)
+            .ThenBy(consumer => consumer.TileX))
+        {
+            StatusBadge badge = GetConsumerBadge(consumer);
+            AddLine($"{consumer.DisplayName} - {badge.Label}", badge.Color);
+            AddLine($"  {consumer.LocationName} ({consumer.TileX},{consumer.TileY}) | Net #{consumer.NetworkId} | {TrimDetail(FormatConsumerDetail(consumer), 96)}", MutedColor);
+        }
+    }
+
+    private void BuildConduitLines()
+    {
+        AddSectionTitle("Conduits");
         if (conduitsByKey.Count == 0)
         {
             AddLine("No conduits found.", NegativeColor);
@@ -448,7 +730,7 @@ internal sealed class PowerTabMenu : IClickableMenu
         }
 
         int linkedConduits = conduitsByKey.Values.Count(conduit => conduitMgr.GetPartner(conduit.LocationName, conduit.Tile) != null);
-        AddLine($"Linked entries {linkedConduits}/{conduitsByKey.Count} | Click conduit A, then B to link | Delete unlinks selected", InfoColor);
+        AddLine($"{linkedConduits}/{conduitsByKey.Count} linked. Select two conduits to link them; Delete unlinks selected.", InfoColor);
 
         foreach (var pair in conduitsByKey.OrderBy(kvp => kvp.Value.LocationName).ThenBy(kvp => kvp.Value.Tile.Y).ThenBy(kvp => kvp.Value.Tile.X))
         {
@@ -529,6 +811,16 @@ internal sealed class PowerTabMenu : IClickableMenu
     {
         base.receiveLeftClick(x, y, playSound);
 
+        foreach (ClickableComponent tab in tabButtons)
+        {
+            if (!tab.containsPoint(x, y))
+                continue;
+
+            if (Enum.TryParse(tab.name, out PowerTabView view))
+                SetView(view);
+            return;
+        }
+
         if (x < TextLeft || x > xPositionOnScreen + width - 32 || y < TextTop || y > yPositionOnScreen + height - 32)
             return;
 
@@ -566,6 +858,39 @@ internal sealed class PowerTabMenu : IClickableMenu
             return;
         }
 
+        if (key == Keys.Tab)
+        {
+            PowerTabView next = currentView == PowerTabView.Conduits
+                ? PowerTabView.Overview
+                : (PowerTabView)((int)currentView + 1);
+            SetView(next);
+            return;
+        }
+
+        if (key is Keys.D1 or Keys.NumPad1)
+        {
+            SetView(PowerTabView.Overview);
+            return;
+        }
+
+        if (key is Keys.D2 or Keys.NumPad2)
+        {
+            SetView(PowerTabView.Networks);
+            return;
+        }
+
+        if (key is Keys.D3 or Keys.NumPad3)
+        {
+            SetView(PowerTabView.Machines);
+            return;
+        }
+
+        if (key is Keys.D4 or Keys.NumPad4)
+        {
+            SetView(PowerTabView.Conduits);
+            return;
+        }
+
         if (key == Keys.Up && scrollOffset > 0)
         {
             scrollOffset--;
@@ -585,6 +910,17 @@ internal sealed class PowerTabMenu : IClickableMenu
     {
         b.Draw(Game1.fadeToBlackRect, Game1.graphics.GraphicsDevice.Viewport.Bounds, Color.Black * 0.75f);
         drawTextureBox(b, xPositionOnScreen, yPositionOnScreen, width, height, Color.White);
+
+        b.DrawString(Game1.dialogueFont, "PowerGrid", new Vector2(TextLeft, yPositionOnScreen + 22), SectionColor);
+
+        foreach (ClickableComponent tab in tabButtons)
+        {
+            bool selected = Enum.TryParse(tab.name, out PowerTabView view) && view == currentView;
+            Color tabColor = selected ? new Color(255, 248, 220) : new Color(226, 170, 91);
+            Color textColor = selected ? SectionColor : new Color(80, 55, 30);
+            drawTextureBox(b, tab.bounds.X, tab.bounds.Y, tab.bounds.Width, tab.bounds.Height, tabColor);
+            b.DrawString(Game1.smallFont, tab.label, new Vector2(tab.bounds.X + 14, tab.bounds.Y + 5), textColor);
+        }
 
         int textY = TextTop;
         int endLine = Math.Min(scrollOffset + maxVisibleLines, lines.Count);

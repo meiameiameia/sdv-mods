@@ -494,6 +494,12 @@ internal sealed class ModEntry : Mod
         RehydrateMetalCasks();
         RefreshMetalCaskTelemetry();
         PowerMgr.ResetRuntimeState();
+        if (Context.IsMainPlayer)
+        {
+            PowerMgr.SimulateTick();
+            RefreshMetalCaskTelemetry();
+            TriggerSteamGeneratorWorkingAnimations();
+        }
         lastTimeOfDay = Game1.timeOfDay;
 
         TryGrantRecipes(reason: "DayStarted");

@@ -12,10 +12,13 @@ internal sealed class PowerQueryService
     private const string MetalCaskMarkerKey = "meiameiameia.PowerGrid/MetalCask";
     private const string MetalCaskPowerModeKey = "meiameiameia.PowerGrid/MetalCaskPowerMode";
     private const string MetalCaskObservedPowerStateKey = "meiameiameia.PowerGrid/MetalCaskObservedPowerState";
+    private const string MetalCaskObservedSpeedupKey = "meiameiameia.PowerGrid/MetalCaskObservedSpeedupFraction";
     private const string MetalCaskDaysToNextQualityKey = "meiameiameia.PowerGrid/MetalCaskDaysToNextQuality";
     private const string MetalCaskLastAppliedBonusDaysKey = "meiameiameia.PowerGrid/MetalCaskLastAppliedBonusDays";
     private const string MetalCaskLastAppliedDateKey = "meiameiameia.PowerGrid/MetalCaskLastAppliedDate";
+    private const float MetalCaskPoweredBonusMaturityPerDayAtFullPower = 1.50f;
     private static readonly FieldInfo? CaskDaysToMatureField = typeof(Cask).GetField("daysToMature", BindingFlags.Instance | BindingFlags.NonPublic);
+    private static readonly FieldInfo? CaskAgingRateField = typeof(Cask).GetField("agingRate", BindingFlags.Instance | BindingFlags.NonPublic);
 
     private readonly PowerManager powerManager;
     private readonly BatteryStateManager batteryState;
@@ -97,8 +100,9 @@ internal sealed class PowerQueryService
 
                 StardewValley.Object? obj = location.getObjectAtTile((int)consumer.Tile.X, (int)consumer.Tile.Y);
                 allocations.TryGetValue(consumer.UniqueKey, out AllocationResult? allocation);
+                AllocationResult? displayAllocation = allocation ?? BuildObservedCaskAllocation(obj, consumer);
                 string progressMode = GetProgressMode(obj, consumer);
-                string progressText = BuildProgressText(obj, consumer, allocation, progressMode);
+                string progressText = BuildProgressText(obj, consumer, displayAllocation, progressMode);
                 bool isProcessing = GetIsProcessing(obj, progressMode);
 
                 snapshots.Add(new PowerConsumerSnapshot
@@ -110,12 +114,12 @@ internal sealed class PowerQueryService
                     ItemId = consumer.ItemId,
                     DisplayName = GetConsumerDisplayName(obj, consumer),
                     IsProcessing = isProcessing,
-                    IsPowered = (allocation?.EUAllocated ?? 0) > 0,
+                    IsPowered = (displayAllocation?.EUAllocated ?? 0) > 0 || (displayAllocation?.SpeedupFraction ?? 0f) > 0f,
                     DemandPerTick = consumer.DemandPerTick,
-                    EUAllocated = allocation?.EUAllocated ?? 0,
-                    SpeedupFraction = allocation?.SpeedupFraction ?? 0f,
-                    MinutesAccelerated = allocation?.MinutesAccelerated ?? 0,
-                    MinutesRemaining = allocation?.MinutesRemaining ?? (obj?.MinutesUntilReady ?? 0),
+                    EUAllocated = displayAllocation?.EUAllocated ?? 0,
+                    SpeedupFraction = displayAllocation?.SpeedupFraction ?? 0f,
+                    MinutesAccelerated = displayAllocation?.MinutesAccelerated ?? 0,
+                    MinutesRemaining = displayAllocation?.MinutesRemaining ?? (obj?.MinutesUntilReady ?? 0),
                     MaxSpeedupFraction = consumer.MaxSpeedupFraction,
                     Priority = consumer.Priority,
                     ProgressMode = progressMode,
@@ -153,6 +157,9 @@ internal sealed class PowerQueryService
                 StardewValley.Object? obj = location.getObjectAtTile((int)generator.Tile.X, (int)generator.Tile.Y);
                 int generatedThisTick = GetGeneratedThisTick(report, generator.UniqueKey);
                 int fuelTicksRemaining = generator.RequiresFuel ? fuelManager.GetFuelTicksRemaining(generator.UniqueKey) : -1;
+                bool isOnline = generatedThisTick > 0
+                    || (report == null && generator.RequiresFuel && fuelTicksRemaining > 0)
+                    || (report == null && !generator.RequiresFuel);
 
                 snapshots.Add(new PowerGeneratorSnapshot
                 {
@@ -166,7 +173,7 @@ internal sealed class PowerQueryService
                     GeneratedThisTick = generatedThisTick,
                     RequiresFuel = generator.RequiresFuel,
                     FuelTicksRemaining = fuelTicksRemaining,
-                    IsOnline = generatedThisTick > 0
+                    IsOnline = isOnline
                 });
             }
         }
@@ -242,6 +249,34 @@ internal sealed class PowerQueryService
             allocations[allocation.Consumer.UniqueKey] = allocation;
 
         return allocations;
+    }
+
+    private static AllocationResult? BuildObservedCaskAllocation(StardewValley.Object? obj, PowerNode consumer)
+    {
+        if (obj is not Cask cask || !IsMetalCask(cask, consumer))
+            return null;
+
+        if (!cask.modData.TryGetValue(MetalCaskObservedSpeedupKey, out string? rawSpeedup)
+            || !float.TryParse(rawSpeedup, NumberStyles.Float, CultureInfo.InvariantCulture, out float observedSpeedup)
+            || observedSpeedup <= 0f)
+        {
+            return null;
+        }
+
+        float maxSpeedup = Math.Max(consumer.MaxSpeedupFraction, 0f);
+        int estimatedEuAllocated = maxSpeedup <= 0f
+            ? 0
+            : (int)MathF.Round(consumer.DemandPerTick * Math.Clamp(observedSpeedup / maxSpeedup, 0f, 1f));
+
+        return new AllocationResult
+        {
+            Consumer = consumer,
+            EUAllocated = estimatedEuAllocated,
+            EUDemanded = consumer.DemandPerTick,
+            SpeedupFraction = observedSpeedup,
+            MinutesAccelerated = (int)(PowerConstants.TickIntervalMinutes * observedSpeedup),
+            MinutesRemaining = obj.MinutesUntilReady
+        };
     }
 
     private static int GetGeneratedThisTick(TickReport? report, string generatorKey)
@@ -324,7 +359,7 @@ internal sealed class PowerQueryService
             || TryGetMetalCaskDaysTelemetry(cask, out daysRemaining);
 
         string daysText = hasDaysRemaining
-            ? $"{daysRemaining:0.##} day(s) to next quality"
+            ? BuildNextQualityEtaText(cask, consumer, allocation, daysRemaining)
             : "next-quality timing unavailable";
 
         string powerState = cask.modData.TryGetValue(MetalCaskObservedPowerStateKey, out string? stateText)
@@ -355,6 +390,59 @@ internal sealed class PowerQueryService
         return $"Day-based aging: {daysText}. {livePowerText}";
     }
 
+    private static string BuildNextQualityEtaText(Cask cask, PowerNode consumer, AllocationResult? allocation, float maturityRemaining)
+    {
+        StardewValley.Object? heldObject = cask.heldObject.Value;
+        if (heldObject == null)
+            return "quality timing unavailable";
+
+        int currentQuality = heldObject.Quality;
+        if (currentQuality >= 4)
+            return "final quality reached";
+
+        int nextQuality = cask.GetNextQuality(currentQuality);
+        float nextQualityThreshold = cask.GetDaysForQuality(nextQuality);
+        float maturityToNextQuality = Math.Max(0f, maturityRemaining - nextQualityThreshold);
+        float projectedDailyMaturity = GetProjectedDailyCaskMaturity(cask, consumer, allocation);
+
+        if (projectedDailyMaturity <= 0f)
+            return $"next quality: {FormatQualityName(nextQuality)} timing unavailable";
+
+        if (maturityToNextQuality <= 0f)
+            return $"next quality: {FormatQualityName(nextQuality)} next overnight";
+
+        int overnights = Math.Max(1, (int)Math.Ceiling(maturityToNextQuality / projectedDailyMaturity));
+        return $"next quality: {FormatQualityName(nextQuality)} in {overnights} overnight(s) at current power";
+    }
+
+    private static float GetProjectedDailyCaskMaturity(Cask cask, PowerNode consumer, AllocationResult? allocation)
+    {
+        float agingRate = TryGetCaskAgingRate(cask, out float parsedAgingRate)
+            ? Math.Max(0f, parsedAgingRate)
+            : 0f;
+
+        float poweredBonus = 0f;
+        float speedupFraction = allocation?.SpeedupFraction ?? 0f;
+        if (speedupFraction > 0f && consumer.MaxSpeedupFraction > 0f)
+        {
+            float normalizedPower = Math.Clamp(speedupFraction / consumer.MaxSpeedupFraction, 0f, 1f);
+            poweredBonus = normalizedPower * MetalCaskPoweredBonusMaturityPerDayAtFullPower;
+        }
+
+        return agingRate + poweredBonus;
+    }
+
+    private static string FormatQualityName(int quality)
+    {
+        return quality switch
+        {
+            1 => "silver",
+            2 => "gold",
+            4 => "iridium",
+            _ => "higher quality"
+        };
+    }
+
     private static bool IsMetalCask(Cask cask, PowerNode consumer)
     {
         return consumer.ItemId == PowerConstants.MetalCaskId
@@ -369,6 +457,16 @@ internal sealed class PowerQueryService
             return false;
 
         daysRemaining = netFloat.Value;
+        return true;
+    }
+
+    private static bool TryGetCaskAgingRate(Cask cask, out float agingRate)
+    {
+        agingRate = 0f;
+        if (CaskAgingRateField?.GetValue(cask) is not NetFloat netFloat)
+            return false;
+
+        agingRate = netFloat.Value;
         return true;
     }
 
