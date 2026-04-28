@@ -11,12 +11,16 @@ Small Stardew Valley mods by meiameiameia.
 
 - `mods/PowerGrid/[SMAPI] PowerGrid`
 - `mods/FishSmokerRecipe/[CP] FishSmoker Recipe`
-- `scripts/release-mod.ps1`
+- `scripts/build-mod.ps1`
 
-## Build
+## Downloads
+
+Packaged mod downloads are published on Nexus Mods. GitHub is the source repository, not the canonical package download location.
+
+## Build Locally
 
 ```powershell
-.\scripts\release-mod.ps1 -Mods PowerGrid -Bump none
+.\scripts\build-mod.ps1 -Mods PowerGrid -Bump none
 ```
 
-Packaged zips are written to `artifacts/mod-zips/`.
+Local build zips are written to `artifacts/mod-zips/`.

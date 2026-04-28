@@ -307,7 +307,7 @@ foreach ($modName in $Mods) {
 Sync-ZipArchive -outputDir $OutputDir
 
 Write-Host ""
-Write-Host "Release summary:"
+Write-Host "Build summary:"
 $results | ForEach-Object {
     Write-Host "- $($_.Mod) $($_.Version) -> $($_.ZipPath)"
 }

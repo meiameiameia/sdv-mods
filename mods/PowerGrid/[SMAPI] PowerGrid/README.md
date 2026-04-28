@@ -1,598 +1,231 @@
-# [SMAPI] PowerGrid
+# PowerGrid
 
-A cable-based electrical power network mod for Stardew Valley 1.6+.
-Build generators, run cables, store energy in batteries, and power your machines for speed boosts.
+PowerGrid adds electrical infrastructure to Stardew Valley. Build generators, connect machines with cables, store extra power in batteries, and use powered artisan machines for faster processing.
 
-**Author:** meiameiameia
-**Version:** 0.1.0
-**Requires:** SMAPI 4.0.0+, Stardew Valley 1.6+
+Power only makes machines faster. It does not duplicate items, change outputs, or skip input requirements.
 
----
+## Requirements
 
-## Table of Contents
+- Stardew Valley 1.6+
+- SMAPI 4.0.0+
+- Optional: Generic Mod Config Menu for in-game settings
+- Optional: Automate or Event Driven Automation for chest-based machine logistics
 
-- [Overview](#overview)
-- [How It Works](#how-it-works)
-- [Craftable Items](#craftable-items)
-- [Power Simulation](#power-simulation)
-- [Cross-Location Power (Conduits)](#cross-location-power-conduits)
-- [PowerGrid-Owned Machines](#powergrid-owned-machines)
-- [Power Monitor UI](#power-monitor-ui)
-- [Configuration (GMCM)](#configuration-gmcm)
-- [Console Commands](#console-commands)
-- [API for Other Mods](#api-for-other-mods)
-- [Building from Source](#building-from-source)
-- [Compatibility](#compatibility)
-- [Sprite Upgrade Guide](#sprite-upgrade-guide)
-- [Testing Guide (Dev Sandbox)](#testing-guide-dev-sandbox)
-- [Troubleshooting](#troubleshooting)
+## Download
 
----
+The packaged mod should be downloaded from Nexus Mods once published. GitHub is the source repository, not the main place to download release zips.
 
-## Overview
+## Installation
 
-PowerGrid adds a Factorio/IndustrialCraft-inspired electrical system to Stardew Valley:
+1. Install SMAPI.
+2. Download PowerGrid from Nexus Mods.
+3. Unzip the mod into your `Stardew Valley/Mods` folder.
+4. Launch the game through SMAPI.
 
-- **Generators** produce EU (Energy Units) from fuel or passively
-- **Cables** connect components via 4-directional adjacency
-- **Batteries** store excess EU for later use
-- **Consumers** (machines) receive EU for speed boosts
+The installed folder should look like this:
 
-**Core principle:** Power provides ONLY speed boosts. It never spawns items, never duplicates outputs, never removes input requirements. No cheating.
-
----
-
-## How It Works
-
-1. **Place a Generator** (Steam, Combustion, or Wind) on your farm or in a building
-2. **Run Cables** from the generator to your machines (copper/iron/iridium tiers)
-3. **Optionally add Batteries** to store excess energy
-4. **Machines connected via cables** get speed boosts proportional to available EU
-
-All components must be adjacent (4-direction: up/down/left/right) to form a connected network.
-
----
-
-## Craftable Items
-
-### Cables
-
-| Item | Recipe | Throughput |
-|------|--------|------------|
-| **Copper Cable** | Copper Bar x3 (crafts 10) | 50 EU/tick |
-| **Iron Cable** | Iron Bar x3 (crafts 10) | 150 EU/tick |
-| **Iridium Cable** | Iridium Bar x2 + Refined Quartz x1 (crafts 10) | 500 EU/tick |
-
-Throughput is limited by the **weakest cable** in the network (bottleneck).
-
-### Generators
-
-| Item | Recipe | Output | Fuel |
-|------|--------|--------|------|
-| **Steam Generator** | Iron Bar x6, Copper Bar x3, Coal x8, Refined Quartz x2 | 50 EU/tick | Coal (120min), Wood (40min), Hardwood (80min) |
-| **Combustion Generator** | Steam Generator x1, Iron Bar x10, Gold Bar x6, Refined Quartz x4 | 120 EU/tick | Biofuel (180min) |
-| **Wind Generator** | Iron Bar x6, Refined Quartz x4, Battery Pack x1, Coal x4 | 25 EU/tick base | None (passive, weather-dependent) |
-
-Wind Generator output varies:
-- **Rain/Storm:** 150% output
-- **Snow:** 70% output
-- **Clear:** 100% output
-
-To fuel a Steam Generator or Combustion Generator: **right-click it with valid fuel in hand**.
-
-### Fuel
-
-| Item | Recipe | Use |
-|------|--------|-----|
-| **Biofuel** | Sap x30, Coal x2 | Midgame fuel for the Combustion Generator |
-
-### Batteries
-
-| Item | Recipe | Capacity | Daily Leak |
-|------|--------|----------|------------|
-| **Basic Power Battery** | Battery Pack x1, Copper Bar x5, Refined Quartz x2 | 500 EU | 2% |
-| **Iridium Power Battery** | Battery Pack x3, Iridium Bar x2, Refined Quartz x5 | 2,000 EU | 2% |
-
-### Power Conduit
-
-| Item | Recipe | Function |
-|------|--------|----------|
-| **Power Conduit** | Iridium Bar x1, Battery Pack x1, Refined Quartz x2 | Links power across locations |
-
----
-
-## Power Simulation
-
-Every **10 in-game minutes**, the simulation runs:
-
-1. **Generate EU** — Each generator produces its output (fuel consumed if needed)
-2. **Pool available EU** — Generation + battery drain if demand exceeds generation
-3. **Apply cable throughput cap** — Energy limited by weakest cable in network
-4. **Allocate to consumers** — Sorted by priority (lower = first). Partial allocation if insufficient
-5. **Store excess in batteries** — Remaining EU charges batteries up to capacity
-
-### Tick Acceleration
-
-Powered machines get their `MinutesUntilReady` reduced proportionally:
-
-```
-minutesAccelerated = tickInterval (10min) × speedupFraction
-speedupFraction = (EU allocated / EU demanded) × maxSpeedup
+```text
+Stardew Valley/Mods/[SMAPI] PowerGrid/manifest.json
 ```
 
-Example: A Metal Keg with full power at 20% max speedup processes 2 extra minutes every 10-minute tick.
+## What PowerGrid Adds
 
----
+### Power Infrastructure
 
-## Cross-Location Power (Conduits)
+- `Copper Cable`, `Iron Cable`, and `Iridium Cable`
+- `Steam Generator`
+- `Combustion Generator`
+- `Wind Generator`
+- `Basic Power Battery`
+- `Iridium Power Battery`
+- `Power Conduit`
+- `Biofuel`
 
-**Use case:** Generator hub on your farm, machines inside a Shed or Cellar.
+### Powered Machines
 
-1. Craft two **Power Conduits**
-2. Place one in Location A (e.g., Farm) connected to your generator network via cables
-3. Place one in Location B (e.g., Shed interior) connected to your machines via cables
-4. Link them either by:
-   - **Power Tab**: open it with your keybind (default `P` or `K`), click conduit A then conduit B
-   - **World interaction**: right-click conduit A, then right-click conduit B in the other location
-5. To remove a conduit link in-world, **Shift + right-click** the conduit. If you started pairing by mistake, **Shift + right-click** also cancels the pending pairing.
+- `Industrial Preserves Jar`
+- `Metal Keg`
+- `Hard Iridium Keg`
+- `Metal Cask`
 
-The two locations now share a single power network. Energy flows bidirectionally.
+## Basic Use
 
----
+1. Place a generator.
+2. Add fuel if the generator needs fuel.
+3. Place cables next to the generator and the machines you want to power.
+4. Add batteries if you want to store extra power.
+5. Open the Power Tab with `P` or `K` to inspect your grid.
 
-## PowerGrid-Owned Machines
+Power networks connect through 4-directional adjacency: up, down, left, and right. Diagonal tiles do not connect.
 
-PowerGrid owns these powered artisan machines directly:
+## Generators And Fuel
 
-Crafting recipes:
+| Generator | Output | Fuel |
+| --- | ---: | --- |
+| Steam Generator | 50 EU/tick | Coal, Wood, Hardwood |
+| Combustion Generator | 120 EU/tick | Biofuel |
+| Wind Generator | 25 EU/tick base | Passive |
 
-| Machine | Recipe |
-|---------|--------|
-| Industrial Preserves Jar | Wood x30, Coal x10, Iron Bar x8, Refined Quartz x1 |
-| Metal Cask | Hardwood x10, Iron Bar x12, Iridium Bar x3, Refined Quartz x1 |
-| Metal Keg | Iron Bar x12, Copper Bar x6, Refined Quartz x1 |
-| Hard Iridium Keg | Iridium Bar x5, Iron Bar x8, Refined Quartz x2 |
+Wind Generator output changes with weather:
 
-| Machine | EU/minute | Max Speedup | Priority |
-|---------|-----------|-------------|----------|
-| Industrial Preserves Jar | 2 EU/min (20 EU/tick) | 20% | 10 |
-| Metal Cask | 4 EU/min (40 EU/tick) | 50% overnight aging bonus | 8 |
-| Metal Keg | 1 EU/min (10 EU/tick) | 20% | 10 |
-| Hard Iridium Keg | 3 EU/min (30 EU/tick) | 20% | 10 |
+- Clear weather: normal output
+- Rain or storm: higher output
+- Snow: lower output
 
-- If insufficient EU, machines process at **normal speed** (no penalty)
-- No output changes, no recipe changes, no item duplication
-- Metal Cask clones vanilla Cask behavior, can be placed only in player-owned indoor spaces, and applies its PowerGrid bonus during day update
-- Metal Keg clones vanilla Keg behavior
-- Hard Iridium Keg uses Hardwood Keg behavior when that template is present, and falls back to vanilla Keg behavior otherwise
+Right-click a Steam Generator with Coal, Wood, or Hardwood to fuel it. Right-click a Combustion Generator with Biofuel to fuel it.
 
----
+## Biofuel
 
-## Power Monitor UI
+Biofuel is a crafted midgame fuel for the Combustion Generator.
 
-PowerGrid includes a global **Power Tab** (default keybind: `P` or `K`) where you can:
+| Item | Recipe |
+| --- | --- |
+| Biofuel | Sap x30, Coal x2 |
 
-- Inspect network totals across locations
-- Inspect per-location/per-network generator/cable/battery/consumer data
-- View all conduits and current links
-- Link conduits directly from the menu (click conduit A, then conduit B)
-- Unlink a selected conduit (`Delete`) and refresh data (`R`)
+## Cables
 
-Legacy location-scoped monitor is still available with **Shift + right-click** on any Battery or Generator. On conduits, **Shift + right-click** unlinks/cancels pairing instead.
+| Cable | Recipe | Throughput |
+| --- | --- | ---: |
+| Copper Cable | Copper Bar x3, crafts 10 | 50 EU/tick |
+| Iron Cable | Iron Bar x3, crafts 10 | 150 EU/tick |
+| Iridium Cable | Iridium Bar x2, Refined Quartz x1, crafts 10 | 500 EU/tick |
 
-Generator fuel insertion:
-- Right-click a Steam Generator while holding Coal/Wood/Hardwood to add fuel
-- Right-click a Combustion Generator while holding Biofuel to add fuel
-- This no longer opens the monitor on normal right-click when inserting fuel
+Throughput is the maximum amount of power a network can move each tick. If a network contains multiple cable tiers, the weakest cable limits the network.
 
-The monitor shows:
+## Batteries
 
-- Stored EU / capacity for each battery
-- Generation rate and fuel status
-- Consumption rate per consumer
-- Cable throughput cap
-- Active consumers list with tile position, EU use, and current speedup
+| Battery | Recipe | Capacity |
+| --- | --- | ---: |
+| Basic Power Battery | Battery Pack x1, Copper Bar x5, Refined Quartz x2 | 500 EU |
+| Iridium Power Battery | Battery Pack x3, Iridium Bar x2, Refined Quartz x5 | 2,000 EU |
 
-### Debug Overlay
+Batteries store extra power and help cover demand when generators cannot keep up. By default, batteries leak a small amount of stored energy each morning.
 
-Press **F8** (configurable) to toggle a colored overlay on the world map:
-- **Green** = Cables
-- **Orange** = Generators  
-- **Green (bright)** = Batteries
-- **Blue** = Consumers/Machines
-- **Yellow** = Conduits
+## Power Conduits
 
-Enable in config: `DebugOverlayEnabled: true`
+Power Conduits link power between locations, such as from the Farm to a Shed or FarmHouse.
 
----
+To link conduits:
 
-## Configuration (GMCM)
+1. Place one conduit in each location.
+2. Connect each conduit to its local power network with cables.
+3. Open the Power Tab and select one conduit, then the other.
 
-If [Generic Mod Config Menu](https://www.nexusmods.com/stardewvalley/mods/5098) is installed, all settings are editable in-game.
+You can also right-click one conduit, then right-click the other conduit. To unlink or cancel pairing, Shift + right-click a conduit.
 
-Otherwise, edit `config.json` in the mod folder. Key settings:
+## Powered Machines
 
-```json
-{
-  "UnlockMode": "existingProgress",
-  "AutoGrantRecipes": true,
-  "EnablePowerTab": true,
-  "PowerTabKeybind": "P, K",
-  "CopperCableThroughput": 50,
-  "IronCableThroughput": 150,
-  "IridiumCableThroughput": 500,
-  "SteamGeneratorEUPerTick": 50,
-  "CombustionGeneratorEUPerTick": 120,
-  "WindGeneratorEUPerTick": 25,
-  "BasicBatteryCapacity": 500,
-  "IridiumBatteryCapacity": 2000,
-  "BatteryDailyLeakPercent": 2.0,
-  "CoalFuelTicks": 12,
-  "WoodFuelTicks": 4,
-  "HardwoodFuelTicks": 8,
-  "BiofuelFuelTicks": 18,
-  "IndustrialPreservesJarEUPerMinute": 2,
-  "IndustrialPreservesJarMaxSpeedup": 0.2,
-  "IndustrialPreservesJarPriority": 10,
-  "MetalCaskEUPerMinute": 4,
-  "MetalCaskMaxSpeedup": 0.5,
-  "MetalCaskPriority": 8,
-  "MetalKegEUPerMinute": 1,
-  "MetalKegMaxSpeedup": 0.2,
-  "MetalKegPriority": 10,
-  "HardIridiumKegEUPerMinute": 3,
-  "HardIridiumKegMaxSpeedup": 0.2,
-  "HardIridiumKegPriority": 10,
-  "DebugOverlayEnabled": false,
-  "DebugOverlayKeybind": "F8"
-}
-```
+| Machine | Recipe | Power Use |
+| --- | --- | ---: |
+| Industrial Preserves Jar | Wood x30, Coal x10, Iron Bar x8, Refined Quartz x1 | 20 EU/tick |
+| Metal Keg | Iron Bar x12, Copper Bar x6, Refined Quartz x1 | 10 EU/tick |
+| Hard Iridium Keg | Iridium Bar x5, Iron Bar x8, Refined Quartz x2 | 30 EU/tick |
+| Metal Cask | Hardwood x10, Iron Bar x12, Iridium Bar x3, Refined Quartz x1 | 40 EU/tick |
 
-### Unlocking
+Powered machines work normally without power. When powered, they receive a speed bonus. Metal Casks use power for faster aging progress.
 
-PowerGrid recipes can be granted automatically on save load/day start:
+## Recipe Unlocks
 
-- `UnlockMode: "existingProgress"` (default): grant recipe bundles as you hit these progression milestones:
-  - `Grid Starter` (`Copper Cable`, `Steam Generator`, `Basic Power Battery`): **Mining level 5** or know **Lightning Rod**
-  - `Powered Artisan` (`Industrial Preserves Jar`, `Metal Keg`): know **Preserves Jar** or **Keg**
-  - `Fuel Tech` (`Biofuel`, `Iron Cable`, `Combustion Generator`): **Mining level 7** and know **Lightning Rod**
-  - `Advanced Grid` (`Iridium Cable`, `Wind Generator`, `Iridium Power Battery`, `Power Conduit`, `Metal Cask`, `Hard Iridium Keg`): **Mining level 9** and know **Lightning Rod**
-- `UnlockMode: "always"`: always grant recipes (good for testing).
-- `UnlockMode: "disabled"`: never auto-grant (use the console command below).
+By default, PowerGrid grants recipes as you progress:
 
----
+| Bundle | Unlock |
+| --- | --- |
+| Grid Starter | Mining 5 or know Lightning Rod |
+| Powered Artisan | know Preserves Jar or Keg |
+| Fuel Tech | Mining 7 and know Lightning Rod |
+| Advanced Grid | Mining 9 and know Lightning Rod |
 
-## Console Commands
+This can be changed in the config.
 
-Open the SMAPI console (`~` key) and type:
+## Power Tab
 
-| Command | Description |
-|---------|-------------|
-| `powergrid_status` | Print power network status for current location |
-| `powergrid_debug` | Toggle debug overlay |
-| `powergrid_conduit_reset` | Cancel pending conduit pairing |
-| `powergrid_unlock [force]` | Grant PowerGrid crafting recipes (use `force` to bypass unlock conditions) |
-| `powergrid_tab` | Open the global Power Tab menu |
+Press `P` or `K` to open the Power Tab.
 
----
+The Power Tab shows:
 
-## API for Other Mods
+- overall power status
+- networks by location
+- generators and fuel
+- machine power state
+- conduit links
+- battery storage
 
-Other SMAPI mods can register custom consumers:
-
-```csharp
-var api = helper.ModRegistry.GetApi<IPowerGridApi>("meiameiameia.PowerGrid");
-if (api != null)
-{
-    api.RegisterConsumer(
-        qualifiedItemId: "(BC)mymod_MyMachine",
-        demandPerTick: 30,
-        maxSpeedupFraction: 0.15f,
-        priority: 20,
-        displayName: "My Custom Machine"
-    );
-}
-```
-
-Available methods:
-- `RegisterConsumer(...)` / `UnregisterConsumer(...)`
-- `IsTilePowered(locationName, tile)`
-- `GetSpeedupAtTile(locationName, tile)`
-- `GetTotalStoredEU(locationName)`
-- `GetNetworkSnapshots(locationName?)`
-- `GetConsumerSnapshots(locationName?)`
-- `GetGeneratorSnapshots(locationName?)`
-- `GetBatterySnapshots(locationName?)`
-
-These snapshot methods are read-only and are intended for monitoring UIs or terminal-style dashboards.
-
-### Power metadata (`modData`)
-
-PowerGrid writes live status to object `modData` each simulation tick using keys prefixed with `meiameiameia.PowerGrid/`.
-That prefix intentionally stays unchanged for save/modData compatibility even though the mod UniqueID is now `meiameiameia.PowerGrid`.
-
-Shared keys:
-- `type` (e.g. `Cable`, `Generator`, `Battery`, `Conduit`, `Consumer`, `Standalone`)
-- `connected` (`0`/`1`)
-- `networkId` (int, `-1` when standalone)
-- `lastTickTime` (in-game time, e.g. `610`)
-
-Cable keys:
-- `cableTier` (`Copper`/`Iron`/`Iridium`)
-- `throughputCap` (int)
-- `connectionMask` (0-15)
-- `connectedSides` (e.g. `U,R,D`)
-
-Generator keys:
-- `euPerTick` (int)
-- `generatedThisTick` (int)
-- `requiresFuel` (`0`/`1`)
-- `fuelTicksRemaining` (int, `-1` for passive generators)
-- `online` (`0`/`1`)
-
-Battery keys:
-- `charge` (int)
-- `capacity` (int)
-- `chargePercent` (float 0-1)
-- `drainedThisTick` (int)
-- `storedThisTick` (int)
-
-Conduit keys:
-- `linked` (`0`/`1`)
-- `partnerLocation` (string)
-- `partnerTile` (`x,y`)
-
-Consumer keys:
-- `powered` (`0`/`1`)
-- `euAllocated` (int)
-- `euDemanded` (int)
-- `speedupFraction` (float)
-- `minutesAccelerated` (int per tick)
-- `minutesRemaining` (int)
-
-Tooltip/hover mods can read these keys to show consistent real-time power status.
-
----
-
-## Building from Source
-
-```powershell
-cd "c:\dev\sdv-mod\mods\PowerGrid\[SMAPI] PowerGrid"
-dotnet build
-```
-
-This builds `PowerGrid.dll` and copies it to the mod root folder. The mod is self-contained.
-
-To install: copy the entire `[SMAPI] PowerGrid` folder into your `Stardew Valley/Mods/` directory (or symlink it).
-
----
+Use this tab when something is not receiving power. It is the easiest way to see whether the problem is fuel, cables, throughput, missing conduit links, or not enough generation.
 
 ## Compatibility
 
-### With [CP] FishSmoker Recipe
-- **No conflict.** PowerGrid is a SMAPI C# mod; FishSmoker Recipe is a Content Patcher pack. They operate in completely different domains. PowerGrid does not touch `Data/ObjectInformation` or fish smoker recipes.
+### Automate / Event Driven Automation
 
-### With Automate / Event Driven Automation
-- **Partially compatible by design.** Automate-style mods handle machine input/output chains; PowerGrid handles speed boosts.
-- Metal Keg and Hard Iridium Keg machines can still be automated normally.
-- Steam Generators can auto-refuel from a connected chest through either original Automate or Event Driven Automation.
-- PowerGrid cables, batteries, and conduits are not automation connectors, so they won't appear as connected in automation overlays.
-- Use PowerGrid's `Power Tab`, `powergrid_status`, and `DebugOverlay` to inspect electrical connectivity.
+PowerGrid is designed to work alongside automation mods:
+
+- Automate-style mods move items.
+- PowerGrid provides speed boosts.
+- Steam Generators can draw supported fuel from connected chests.
+- Combustion Generators can draw Biofuel from connected chests.
+
+Cables, batteries, and conduits are not automation connectors.
+
+### Generic Mod Config Menu
+
+If GMCM is installed, PowerGrid settings are available in-game. Without GMCM, edit `config.json` in the mod folder after launching the game once.
 
 ### Multiplayer
-- **Host-authoritative:** Only the host runs the power simulation.
-- Clients see synced `MinutesUntilReady` values naturally via SDV's built-in object sync.
 
----
+The host runs the power simulation. Clients receive normal synced machine state from Stardew Valley.
 
-## Sprite Upgrade Guide
+## Testing Before A Real Save
 
-The authoritative sprite workflow, locked specs, and ready-to-paste external prompts now live under `mod-context/art/`.
-Prefer those files over the legacy guidance below when generating or replacing shipped art.
-
-The mod ships with **runtime-generated placeholder sprites** (tinted vanilla textures). Here's how to replace them with custom art.
-
-### Step 1: Recommended Free Tools
-
-| Tool | Platform | Best For |
-|------|----------|----------|
-| [LibreSprite](https://libresprite.github.io/) | Win/Mac/Linux | Full pixel art editor (Aseprite fork, free) |
-| [Piskel](https://www.piskelapp.com/) | Browser | Quick online pixel art, good for beginners |
-| [Paint.NET](https://www.getpaint.net/) | Windows | General image editing with pixel-level control |
-| [GIMP](https://www.gimp.org/) | Win/Mac/Linux | Advanced image editing |
-| [Lospec Palette List](https://lospec.com/palette-list) | Browser | Find Stardew-like color palettes |
-
-### Step 2: Sprite Size Requirements
-
-All PowerGrid items are **BigCraftables**.
-
-**For Generators, Batteries, and Conduits:**
-- **Canvas size:** 16×32 pixels (1 tile wide, 2 tiles tall)
-- **Transparent background** (PNG with alpha channel)
-- The bottom 16×16 is the "base" that sits on the ground tile
-- The top 16×16 is the upper portion visible above
-
-**For Cables (Autotiling):**
-- **Canvas size:** 64×128 pixels (A 4×4 grid of 16×32 frames)
-- Cables dynamically draw connections to adjacent grid items.
-- The spritesheet contains 16 frames based on a bitmask (Up=1, Right=2, Down=4, Left=8).
-- **Frame Layout (Column = mask % 4, Row = mask / 4):**
-  - **Row 0:** [0] None  | [1] U      | [2] R      | [3] U,R
-  - **Row 1:** [4] D     | [5] U,D    | [6] R,D    | [7] U,R,D
-  - **Row 2:** [8] L     | [9] U,L    | [10] R,L   | [11] U,R,L
-  - **Row 3:** [12] D,L  | [13] U,D,L | [14] R,D,L | [15] U,R,D,L
-- Even though the cable is drawn flat on the ground, each frame is still 16×32 (the cable should be drawn in the bottom 16×16 area of each frame, with the top 16×16 left transparent).
-
-### Step 3: Kitbashing from Vanilla Sprites
-
-"Kitbashing" = starting from a similar vanilla sprite and modifying it. This is the fastest path to decent sprites.
-
-1. **Export vanilla base sprites** using a tool like [Stardew Valley Sprite Viewer](https://mouseypounds.github.io/stardew-checkup/) or extract from `Content/TileSheets/Craftables.png`
-2. **Pick a similar vanilla sprite:**
-   - Cables: use Chest, Torch, or path tile as base
-   - Generators: use Furnace, Kiln, or Oil Maker as base
-   - Batteries: use Lightning Rod or Crystalarium as base
-3. **Modify 3-5 key features:**
-   - Change the silhouette (add/remove protrusions)
-   - Swap primary color palette
-   - Add a distinguishing icon/marking
-   - Modify highlight positions
-   - Change the top shape
-
-### Step 4: No-Design Workflow
-
-1. Pick a vanilla base sprite that matches the "feel" (e.g., Furnace for generators)
-2. Open in LibreSprite/Piskel
-3. Duplicate to a new file at 16×32
-4. **Recolor:** Select the main body color and shift hue (e.g., gray → copper orange for copper cable)
-5. **Reshape:** Move 3-5 pixels on the outline to create a new silhouette
-6. **Add detail:** Draw 1-2 small distinctive marks (a lightning bolt, gear, wire, etc.)
-7. Save as PNG with transparency
-8. Test in-game (see Step 6)
-9. Iterate until satisfied
-
-### Step 5: Stardew Art Style Checklist
-
-- [ ] **1px dark outline** around the entire object (usually dark brown/black, ~RGB 50,30,20)
-- [ ] **Top-left light source** — highlights on top-left edges, shadows on bottom-right
-- [ ] **Limited palette** — Use 4-6 colors max per object (base, highlight, shadow, accent, outline)
-- [ ] **Consistent outline thickness** — Always 1px, never 2px or 0px
-- [ ] **No anti-aliasing** — Stardew uses hard pixel edges, not smooth gradients
-- [ ] **1px shading bands** — Light → base → shadow transitions are 1 pixel wide
-- [ ] **Readable at 1x zoom** — The sprite should be recognizable when tiny
-- [ ] **Stardew palette feel** — Warm, slightly desaturated colors. Avoid neon/pure colors.
-- [ ] **Ground contact** — Bottom row should suggest the object sits on the ground (shadow or flat base)
-
-### Step 6: Testing Sprites
-
-1. Place your PNG in `[SMAPI] PowerGrid/Assets/` with the exact filename:
-   - `CopperCable.png`, `IronCable.png`, `IridiumCable.png`
-   - `SteamGenerator.png`, `WindGenerator.png`
-   - `BasicBattery.png`, `IridiumBattery.png`
-   - `PowerConduit.png`
-2. **Hot-reload** in SMAPI console: type `patch reload meiameiameia.PowerGrid`
-   - If that doesn't work, try: `invalidate Mods/meiameiameia.PowerGrid/CopperCable` (etc.)
-3. **Common pitfalls:**
-   - Wrong file size (must be exactly 16×32)
-   - Non-transparent background (use PNG-24 with alpha)
-   - File named `.PNG` instead of `.png` (case matters on some systems)
-   - Forgot to save with transparency layer enabled
-   - Offset issues: the sprite may appear shifted if canvas isn't exactly 16×32
-
-## Testing Guide (Dev Sandbox)
-
-### Setting Up a Dev Save
-
-1. **Create a dedicated test save:**
-   - Start a new game with a simple farm (Four Corners or Standard)
-   - Name it something like "DEV_PowerGrid"
-   - Skip the intro: in SMAPI console, type `debug warp Farm` right after cutscene
-
-2. **Essential SMAPI console commands for testing:**
-
-```
-# Give yourself all PowerGrid recipes
-player_add recipe "Copper Cable"
-player_add recipe "Iron Cable"
-player_add recipe "Iridium Cable"
-player_add recipe "Steam Generator"
-player_add recipe "Wind Generator"
-player_add recipe "Basic Power Battery"
-player_add recipe "Iridium Power Battery"
-player_add recipe "Power Conduit"
-
-# Give yourself materials
-player_add 334 100    # Copper Bar
-player_add 335 100    # Iron Bar
-player_add 337 50     # Iridium Bar
-player_add 338 50     # Refined Quartz
-player_add 382 200    # Coal
-player_add 388 500    # Wood
-player_add 787 20     # Battery Pack
-player_add 92 50      # Sap
-
-# Give yourself PowerGrid items directly
-player_add (BC)meiameiameia.PowerGrid_CopperCable 20
-player_add (BC)meiameiameia.PowerGrid_SteamGenerator 3
-player_add (BC)meiameiameia.PowerGrid_BasicBattery 2
-player_add (BC)meiameiameia.PowerGrid_PowerConduit 2
-player_add (BC)meiameiameia.PowerGrid_MetalCask 2
-player_add (BC)meiameiameia.PowerGrid_MetalKeg 2
-player_add (BC)meiameiameia.PowerGrid_HardIridiumKeg 2
-
-# Time manipulation
-debug time 600        # Set time to 6:00 AM
-debug speed 10        # Speed up time (careful!)
-debug newday          # Skip to next day
-
-# Warp commands
-debug warp Farm
-debug warp Shed       # Warp into a shed
-debug warp Cellar     # Warp into cellar
-
-# Check PowerGrid status
-powergrid_status
-powergrid_debug
-```
-
-3. **Testing workflow:**
-   - Place generators + cables + batteries + machines in a line
-   - Run `powergrid_status` to verify network detection
-   - Toggle `powergrid_debug` to see the overlay
-   - Advance time with `debug time XXXX` and watch `MinutesUntilReady` decrease
-   - Test conduit pairing between Farm and Shed
-
-4. **Building and testing quickly:**
-
-```powershell
-# Build the mod
-cd "c:\dev\sdv-mod\mods\PowerGrid\[SMAPI] PowerGrid"
-dotnet build
-
-# Option A: Symlink (recommended, one-time setup)
-# Run PowerShell as Administrator:
-New-Item -ItemType Junction -Path "C:\Program Files (x86)\Steam\steamapps\common\Stardew Valley\Mods\[SMAPI] PowerGrid" -Target "c:\dev\sdv-mod\mods\PowerGrid\[SMAPI] PowerGrid"
-
-# Option B: Copy after each build
-Copy-Item -Recurse -Force "c:\dev\sdv-mod\mods\PowerGrid\[SMAPI] PowerGrid" "C:\Program Files (x86)\Steam\steamapps\common\Stardew Valley\Mods\"
-```
-
-5. **Verify no conflicts:**
-   - Ensure `[CP] FishSmoker Recipe` loads without errors if you use it
-   - Check SMAPI log for any `[PowerGrid] ERROR` lines
-
-### Debugging Tips
-
-- **SMAPI log location:** `%AppData%\StardewValley\ErrorLogs\SMAPI-latest.txt`
-- **Verbose logging:** Set SMAPI to `VerboseLogging: true` in `smapi-internal/config.json`
-- **Hot reload DLL:** Unfortunately, DLL hot-reload isn't supported by SMAPI. You must restart the game after rebuilding. However, you can use `debug save` + `debug load` to quickly reload a save without fully restarting.
-- **Check network graph:** Run `powergrid_status` after placing items to verify the graph builder detected everything correctly.
-
----
+If you want to try PowerGrid before using it on your real farm, use Cinderleaf's sandbox capabilities and a test save. That is the recommended way to experiment with recipes, layouts, conduits, automation, and balance without risking your main save.
 
 ## Troubleshooting
 
-**Q: Machines aren't getting speed boost**
-- Ensure cables connect the generator to the machine (4-directional adjacency, no gaps)
-- Check `powergrid_status` - the machine should appear as a "Consumer"
-- Verify the machine is actively processing (has an item inside and MinutesUntilReady > 0)
-- Check if cable throughput is sufficient
+### My machine is not powered
 
-**Q: Generator not producing EU**
-- Steam Generator: needs fuel inside. Right-click with Coal/Wood/Hardwood
-- Wind Generator: always produces some EU, but output varies with weather
+- Check that cables connect the machine to a generator network.
+- Check that the generator is fueled or producing power.
+- Open the Power Tab and look at the machine's network.
+- Make sure the machine is actively processing something.
 
-**Q: Conduits not linking**
-- Use the Power Tab: click conduit A, then conduit B
-- Or right-click conduit A, then right-click conduit B in the other location
-- If you get "Pairing cancelled", try again. Use `powergrid_conduit_reset` to clear state.
+### My generator is offline
 
-**Q: Battery charge disappearing**
-- By default, batteries leak 2% of stored EU each morning. Adjust `BatteryDailyLeakPercent` in config.
+- Steam Generator needs Coal, Wood, or Hardwood.
+- Combustion Generator needs Biofuel.
+- Wind Generator is passive and should not need fuel.
 
----
+### My conduit link is wrong
+
+- Open the Power Tab and check the Conduits tab.
+- Shift + right-click a conduit to unlink it or cancel pairing.
+- Link conduits again from the Power Tab if needed.
+
+### I do not see recipes
+
+- Check your unlock progress.
+- If needed, use GMCM to change recipe settings.
+- You can also use the SMAPI console command `powergrid_unlock force`.
+
+## Console Commands
+
+| Command | Description |
+| --- | --- |
+| `powergrid_status` | Print power status for the current location |
+| `powergrid_tab` | Open the Power Tab |
+| `powergrid_debug` | Toggle debug overlay |
+| `powergrid_conduit_reset` | Cancel pending conduit pairing |
+| `powergrid_unlock [force]` | Grant recipes, optionally bypassing unlock checks |
+
+## Building From Source
+
+Players should download packaged releases from Nexus Mods. This section is only for people building from source.
+
+From the repository root:
+
+```powershell
+.\scripts\build-mod.ps1 -Mods PowerGrid -Bump none
+```
+
+The local zip is written to `artifacts/mod-zips/`.
 
 ## License
 
-This mod is part of the meiameiameia SDV modding monorepo. All rights reserved until a specific license is chosen for distribution.
-
+All rights reserved until a specific license is chosen for distribution.
