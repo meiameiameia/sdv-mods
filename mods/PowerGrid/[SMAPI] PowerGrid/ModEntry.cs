@@ -174,10 +174,12 @@ internal sealed class ModEntry : Mod
     {
         Instance = this;
         Config = helper.ReadConfig<ModConfig>() ?? new ModConfig();
-        if (TryMigrateLegacyBalanceConfig(Config))
+        bool migratedConfig = TryMigrateLegacyBalanceConfig(Config);
+        migratedConfig |= TryMigrateHardIridiumKegSpeedConfig(Config);
+        if (migratedConfig)
         {
             helper.WriteConfig(Config);
-            Monitor.Log("[PowerGrid] Migrated legacy default balance values in config.json to the current Steam-era defaults.", LogLevel.Info);
+            Monitor.Log("[PowerGrid] Migrated legacy default balance values in config.json to the current defaults.", LogLevel.Info);
         }
 
         BatteryState = new BatteryStateManager(Monitor, Config);
@@ -192,6 +194,7 @@ internal sealed class ModEntry : Mod
         helper.Events.GameLoop.GameLaunched += OnGameLaunched;
         helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
         helper.Events.GameLoop.Saving += OnSaving;
+        helper.Events.GameLoop.DayEnding += OnDayEnding;
         helper.Events.GameLoop.DayStarted += OnDayStarted;
         helper.Events.GameLoop.ReturnedToTitle += OnReturnedToTitle;
         helper.Events.GameLoop.TimeChanged += OnTimeChanged;
@@ -299,6 +302,18 @@ internal sealed class ModEntry : Mod
         config.MetalCaskEUPerMinute = 4;
         config.MetalKegEUPerMinute = 1;
         config.HardIridiumKegEUPerMinute = 3;
+        return true;
+    }
+
+    private static bool TryMigrateHardIridiumKegSpeedConfig(ModConfig config)
+    {
+        if (config.HardIridiumKegEUPerMinute != 3
+            || Math.Abs(config.HardIridiumKegMaxSpeedup - 0.20f) > 0.0001f)
+        {
+            return false;
+        }
+
+        config.HardIridiumKegMaxSpeedup = 0.30f;
         return true;
     }
 
@@ -529,9 +544,31 @@ internal sealed class ModEntry : Mod
 
     private void OnSaving(object? sender, SavingEventArgs e)
     {
+        SavePowerState();
+    }
+
+    private void SavePowerState()
+    {
         Helper.Data.WriteSaveData(PowerConstants.SaveDataKey, BatteryState.ExportState());
         Helper.Data.WriteSaveData(PowerConstants.ConduitSaveDataKey, ConduitMgr.ExportState());
         Helper.Data.WriteSaveData(PowerConstants.FuelSaveDataKey, FuelMgr.ExportState());
+    }
+
+    private void OnDayEnding(object? sender, DayEndingEventArgs e)
+    {
+        if (!Context.IsMainPlayer || !Context.IsWorldReady || lastTimeOfDay <= 0)
+            return;
+
+        int elapsed = TimeDiffMinutes(lastTimeOfDay, 2600);
+        if (elapsed < PowerConstants.TickIntervalMinutes)
+            return;
+
+        int ticks = elapsed / PowerConstants.TickIntervalMinutes;
+        for (int i = 0; i < ticks; i++)
+            PowerMgr.SimulateTick();
+
+        lastTimeOfDay = 2600;
+        SavePowerState();
     }
 
     private void OnDayStarted(object? sender, DayStartedEventArgs e)

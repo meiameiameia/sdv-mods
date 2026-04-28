@@ -331,11 +331,12 @@ internal sealed class PowerQueryService
     {
         if (progressMode == "days" && obj is Cask cask)
         {
-            if (cask.heldObject.Value == null)
+            StardewValley.Object? heldObject = cask.heldObject.Value;
+            if (heldObject == null)
                 return false;
 
             if (TryGetCaskDaysToMature(cask, out float daysRemaining) || TryGetMetalCaskDaysTelemetry(cask, out daysRemaining))
-                return daysRemaining > 0f;
+                return daysRemaining > 0f || heldObject.Quality < 4;
 
             return !cask.modData.TryGetValue(MetalCaskObservedPowerStateKey, out string? stateText)
                 || !string.Equals(stateText, "ready", StringComparison.Ordinal);
@@ -352,7 +353,8 @@ internal sealed class PowerQueryService
         if (obj is not Cask cask || !IsMetalCask(cask, consumer))
             return "Day-based machine. Minute ETA not applicable.";
 
-        if (cask.heldObject.Value == null)
+        StardewValley.Object? heldObject = cask.heldObject.Value;
+        if (heldObject == null)
             return "Day-based aging machine. Empty right now.";
 
         bool hasDaysRemaining = TryGetCaskDaysToMature(cask, out float daysRemaining)
@@ -372,7 +374,7 @@ internal sealed class PowerQueryService
             ? dateText ?? "n/a"
             : "n/a";
 
-        if (hasDaysRemaining && daysRemaining <= 0f)
+        if (hasDaysRemaining && daysRemaining <= 0f && heldObject.Quality >= 4)
             return "Day-based aging complete. Ready to collect.";
 
         if (!hasDaysRemaining && string.Equals(powerState, "ready", StringComparison.Ordinal))
@@ -401,8 +403,10 @@ internal sealed class PowerQueryService
             return "final quality reached";
 
         int nextQuality = cask.GetNextQuality(currentQuality);
-        float nextQualityThreshold = cask.GetDaysForQuality(nextQuality);
-        float maturityToNextQuality = Math.Max(0f, maturityRemaining - nextQualityThreshold);
+        float nextQualityElapsedDays = cask.GetDaysForQuality(nextQuality);
+        float finalQualityElapsedDays = Math.Max(nextQualityElapsedDays, cask.GetDaysForQuality(4));
+        float nextQualityRemainingThreshold = Math.Max(0f, finalQualityElapsedDays - nextQualityElapsedDays);
+        float maturityToNextQuality = Math.Max(0f, maturityRemaining - nextQualityRemainingThreshold);
         float projectedDailyMaturity = GetProjectedDailyCaskMaturity(cask, consumer, allocation);
 
         if (projectedDailyMaturity <= 0f)

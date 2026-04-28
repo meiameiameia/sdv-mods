@@ -8,6 +8,7 @@ Power only makes machines faster. It does not duplicate items, change outputs, o
 
 - Stardew Valley 1.6+
 - SMAPI 4.0.0+
+- Grapes of Ferngill for Hard Iridium Keg to use Hardwood Keg behavior
 - Optional: Generic Mod Config Menu for in-game settings
 - Optional: Automate or Event Driven Automation for chest-based machine logistics
 
@@ -115,14 +116,16 @@ You can also right-click one conduit, then right-click the other conduit. To unl
 
 ## Powered Machines
 
-| Machine | Recipe | Power Use |
-| --- | --- | ---: |
-| Industrial Preserves Jar | Wood x30, Coal x10, Iron Bar x8, Refined Quartz x1 | 20 EU/tick |
-| Metal Keg | Iron Bar x12, Copper Bar x6, Refined Quartz x1 | 10 EU/tick |
-| Hard Iridium Keg | Iridium Bar x5, Iron Bar x8, Refined Quartz x2 | 30 EU/tick |
-| Metal Cask | Hardwood x10, Iron Bar x12, Iridium Bar x3, Refined Quartz x1 | 40 EU/tick |
+| Machine | Recipe | Power Use | Max Power Bonus |
+| --- | --- | ---: | ---: |
+| Industrial Preserves Jar | Wood x30, Coal x10, Iron Bar x8, Refined Quartz x1 | 20 EU/tick | 20% faster |
+| Metal Keg | Iron Bar x12, Copper Bar x6, Refined Quartz x1 | 10 EU/tick | 20% faster |
+| Hard Iridium Keg | Iridium Bar x5, Iron Bar x8, Refined Quartz x2 | 30 EU/tick | 30% faster |
+| Metal Cask | Hardwood x10, Iron Bar x12, Iridium Bar x3, Refined Quartz x1 | 40 EU/tick | 50% faster aging |
 
 Powered machines work normally without power. When powered, they receive a speed bonus. Metal Casks use power for faster aging progress.
+
+Hard Iridium Keg is designed to use Grapes of Ferngill's Hardwood Keg behavior. If Grapes of Ferngill is not installed, PowerGrid falls back to vanilla Keg behavior so the machine can still work.
 
 ## Recipe Unlocks
 
@@ -168,6 +171,10 @@ Cables, batteries, and conduits are not automation connectors.
 ### Generic Mod Config Menu
 
 If GMCM is installed, PowerGrid settings are available in-game. Without GMCM, edit `config.json` in the mod folder after launching the game once.
+
+### Grapes of Ferngill
+
+Grapes of Ferngill provides the Hardwood Keg behavior used by Hard Iridium Keg. PowerGrid can load without it, but Hard Iridium Keg will behave like a vanilla Keg instead of a Hardwood Keg.
 
 ### Multiplayer
 

@@ -79,6 +79,7 @@ internal sealed class PowerManager
     private const string MdSpeedup = MdPrefix + "speedupFraction";
     private const string MdMinutesAccelerated = MdPrefix + "minutesAccelerated";
     private const string MdMinutesRemaining = MdPrefix + "minutesRemaining";
+    private const string MdBonusMinutesCarry = MdPrefix + "bonusMinutesCarry";
     private const string MdLastTickTime = MdPrefix + "lastTickTime";
 
     private static readonly string[] AllPowerMetadataKeys = new[]
@@ -88,7 +89,7 @@ internal sealed class PowerManager
         MdEuPerTick, MdGeneratedThisTick, MdRequiresFuel, MdFuelTicksRemaining, MdOnline,
         MdCharge, MdCapacity, MdChargePercent, MdDrainedThisTick, MdStoredThisTick,
         MdLinked, MdPartnerLocation, MdPartnerTile,
-        MdPowered, MdEnergized, MdEuAllocated, MdEuDemanded, MdSpeedup, MdMinutesAccelerated, MdMinutesRemaining, MdLastTickTime
+        MdPowered, MdEnergized, MdEuAllocated, MdEuDemanded, MdSpeedup, MdMinutesAccelerated, MdMinutesRemaining, MdBonusMinutesCarry, MdLastTickTime
     };
 
     private ConduitManager? conduitMgr;
@@ -475,9 +476,9 @@ internal sealed class PowerManager
                 : 0f;
             float speedup = fraction * consumer.MaxSpeedupFraction;
 
-            int minutesAccelerated = (int)(PowerConstants.TickIntervalMinutes * speedup);
-            if (minutesAccelerated > 0)
-                AccelerateMachine(machineObj, minutesAccelerated);
+            float bonusMinutes = PowerConstants.TickIntervalMinutes * speedup;
+            AccelerateMachine(machineObj, bonusMinutes);
+            int minutesAccelerated = (int)MathF.Round(bonusMinutes);
 
             var activeAllocation = new AllocationResult
             {
@@ -563,14 +564,34 @@ internal sealed class PowerManager
         return obj.MinutesUntilReady > 0;
     }
 
-    private static void AccelerateMachine(StardewValley.Object machine, int minutesToSubtract)
+    private static int AccelerateMachine(StardewValley.Object machine, float bonusMinutes)
     {
-        if (machine.MinutesUntilReady <= 0)
-            return;
+        if (machine is StardewValley.Objects.Cask || machine.MinutesUntilReady <= 0 || bonusMinutes <= 0f)
+            return 0;
 
-        // Never reduce below 10 minutes (avoid completing early in a weird state)
-        int newMinutes = Math.Max(10, machine.MinutesUntilReady - minutesToSubtract);
-        machine.MinutesUntilReady = newMinutes;
+        float carry = 0f;
+        if (machine.modData.TryGetValue(MdBonusMinutesCarry, out string? rawCarry))
+            float.TryParse(rawCarry, NumberStyles.Float, CultureInfo.InvariantCulture, out carry);
+
+        carry += bonusMinutes;
+        int ticksToApply = (int)(carry / PowerConstants.TickIntervalMinutes);
+        if (ticksToApply <= 0)
+        {
+            machine.modData[MdBonusMinutesCarry] = carry.ToString("0.###", CultureInfo.InvariantCulture);
+            return 0;
+        }
+
+        int requestedMinutes = ticksToApply * PowerConstants.TickIntervalMinutes;
+        int appliedMinutes = Math.Min(requestedMinutes, machine.MinutesUntilReady);
+        machine.MinutesUntilReady = Math.Max(0, machine.MinutesUntilReady - appliedMinutes);
+
+        carry -= requestedMinutes;
+        if (machine.MinutesUntilReady <= 0 || carry <= 0.001f)
+            machine.modData.Remove(MdBonusMinutesCarry);
+        else
+            machine.modData[MdBonusMinutesCarry] = carry.ToString("0.###", CultureInfo.InvariantCulture);
+
+        return appliedMinutes;
     }
 
     private static string MakeTileKey(string locationName, Vector2 tile)

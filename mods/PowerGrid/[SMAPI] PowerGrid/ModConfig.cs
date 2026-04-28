@@ -47,7 +47,7 @@ internal sealed class ModConfig
     public float MetalKegMaxSpeedup { get; set; } = 0.20f;
     public int MetalKegPriority { get; set; } = 10;
     public int HardIridiumKegEUPerMinute { get; set; } = 3;
-    public float HardIridiumKegMaxSpeedup { get; set; } = 0.20f;
+    public float HardIridiumKegMaxSpeedup { get; set; } = 0.30f;
     public int HardIridiumKegPriority { get; set; } = 10;
 
     // --- Debug ---
