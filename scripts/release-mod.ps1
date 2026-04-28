@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("PowerGrid", "MetalKegs", "FishSmoker")]
+    [ValidateSet("PowerGrid", "FishSmoker")]
     [string[]]$Mods,
 
     [ValidateSet("none", "patch", "minor", "major")]
@@ -50,26 +50,17 @@ function Resolve-ModDefinition([string]$repoRoot, [string]$modName) {
             return @{
                 Name = "PowerGrid"
                 FolderName = "[SMAPI] PowerGrid"
-                ModDir = Join-Path $repoRoot "[SMAPI] PowerGrid"
-                ManifestPath = Join-Path $repoRoot "[SMAPI] PowerGrid\manifest.json"
-                CsprojPath = Join-Path $repoRoot "[SMAPI] PowerGrid\PowerGrid.csproj"
-            }
-        }
-        "MetalKegs" {
-            return @{
-                Name = "MetalKegs"
-                FolderName = "[SMAPI] Metal Kegs"
-                ModDir = Join-Path $repoRoot "[SMAPI] Metal Kegs"
-                ManifestPath = Join-Path $repoRoot "[SMAPI] Metal Kegs\manifest.json"
-                CsprojPath = Join-Path $repoRoot "[SMAPI] Metal Kegs\MetalKegs.csproj"
+                ModDir = Join-Path $repoRoot "mods\PowerGrid\[SMAPI] PowerGrid"
+                ManifestPath = Join-Path $repoRoot "mods\PowerGrid\[SMAPI] PowerGrid\manifest.json"
+                CsprojPath = Join-Path $repoRoot "mods\PowerGrid\[SMAPI] PowerGrid\PowerGrid.csproj"
             }
         }
         "FishSmoker" {
             return @{
                 Name = "FishSmoker"
                 FolderName = "[CP] FishSmoker Recipe"
-                ModDir = Join-Path $repoRoot "[CP] FishSmoker Recipe"
-                ManifestPath = Join-Path $repoRoot "[CP] FishSmoker Recipe\manifest.json"
+                ModDir = Join-Path $repoRoot "mods\FishSmokerRecipe\[CP] FishSmoker Recipe"
+                ManifestPath = Join-Path $repoRoot "mods\FishSmokerRecipe\[CP] FishSmoker Recipe\manifest.json"
                 CsprojPath = $null
             }
         }

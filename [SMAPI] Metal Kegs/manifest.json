@@ -1,9 +1,0 @@
-{
-  "Name": "[SMAPI] Metal Kegs",
-  "Author": "darth",
-  "Version": "1.0.24",
-  "Description": "Adds Metal Cask, Metal Keg (vanilla Keg behavior), and Hard Iridium Keg (GOF Hardwood Keg behavior).",
-  "UniqueID": "meiameiameia.MetalKegs",
-  "EntryDll": "MetalKegs.dll",
-  "MinimumApiVersion": "4.0.0"
-}

@@ -13,8 +13,7 @@
 *working*.png
 
 # SMAPI runtime-generated config files
-/[[]SMAPI[]] PowerGrid/config.json
-/[[]SMAPI[]] Metal Kegs/config.json
+/mods/PowerGrid/[[]SMAPI[]] PowerGrid/config.json
 
 # Local reference dumps and personal sandbox exports
 /reference-files/
@@ -41,12 +40,9 @@
 Thumbs.db
 
 # Compiled mod outputs copied into mod roots
-[SMAPI] */*.dll
-[SMAPI] */*.deps.json
-[SMAPI] */*.pdb
-shared/**/*.dll
-shared/**/*.deps.json
-shared/**/*.pdb
+**/[[]SMAPI[]] */*.dll
+**/[[]SMAPI[]] */*.deps.json
+**/[[]SMAPI[]] */*.pdb
 
 # Compiled binaries and runtime metadata
 *.dll
