@@ -50,10 +50,28 @@ The audit command writes:
 
 Generated audit files are local artifacts. Re-run the command whenever balance defaults or benchmark scenarios change.
 
+## Generate Progression Data
+
+Use `progression` when you want to audit whether PowerGrid grows well across a save:
+
+```powershell
+dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- progression tools/PowerGrid.Balancer/profiles/powergrid-progression-ladder.json --out artifacts/balance-lab/progression
+```
+
+The progression command writes:
+
+- `progression-summary.md`: dated checkpoints from early grid to mature save adoption.
+- `progression-stages.csv`: EU demand, generator count, fuel pressure, cable zones, and headline signals.
+- `progression-resource-gaps.csv`: upfront recipe costs versus the stage stockpile.
+- `progression-fuel.csv`: sustained fuel window after upfront costs.
+
+The included profile uses approximate early/mid-game checkpoints and an anonymized mature Year 3 organized production benchmark.
+
 ## Files
 
 - `balance/powergrid-0.1.0.json`: current PowerGrid defaults.
 - `scenarios/*.json`: benchmark setups.
+- `profiles/*.json`: progression and stockpile benchmark ladders.
 - `src/PowerGrid.Balancer.Core`: reusable simulation logic.
 - `src/PowerGrid.Balancer.Cli`: command-line runner and Markdown reports.
 

@@ -75,6 +75,23 @@ try
                 return 0;
             }
 
+        case "progression":
+            {
+                string profilePath = args.Length >= 2 && !args[1].StartsWith("--", StringComparison.Ordinal)
+                    ? args[1]
+                    : FindDefaultProgressionPath();
+                string outputPath = ReadOption(args, "--out") ?? Path.Combine("artifacts", "balance-lab", "progression");
+
+                ProgressionProfile profile = LoadJson<ProgressionProfile>(profilePath, jsonOptions);
+                ProgressionReport.Write(outputPath, config, profile);
+                Console.WriteLine($"Wrote progression audit to {Path.GetFullPath(outputPath)}");
+                Console.WriteLine("- progression-summary.md");
+                Console.WriteLine("- progression-stages.csv");
+                Console.WriteLine("- progression-resource-gaps.csv");
+                Console.WriteLine("- progression-fuel.csv");
+                return 0;
+            }
+
         default:
             throw new InvalidOperationException($"Unknown command '{args[0]}'.");
     }
@@ -134,6 +151,20 @@ static string FindDefaultScenarioPath()
         ?? throw new DirectoryNotFoundException("Could not find default scenarios folder. Pass audit <scenario-folder-or-glob>.");
 }
 
+static string FindDefaultProgressionPath()
+{
+    string cwd = Directory.GetCurrentDirectory();
+    string[] candidates =
+    {
+        Path.Combine(cwd, "profiles", "powergrid-progression-ladder.json"),
+        Path.Combine(cwd, "tools", "PowerGrid.Balancer", "profiles", "powergrid-progression-ladder.json"),
+        Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "profiles", "powergrid-progression-ladder.json"))
+    };
+
+    return candidates.FirstOrDefault(File.Exists)
+        ?? throw new FileNotFoundException("Could not find default progression profile. Pass progression <profile.json>.");
+}
+
 static IReadOnlyList<string> ExpandScenarioFiles(string pattern)
 {
     if (File.Exists(pattern))
@@ -169,6 +200,7 @@ static void PrintHelp()
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- scenario <scenario.json>
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- batch <scenario-folder-or-glob>
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- audit [scenario-folder-or-glob] [--out <folder>]
+          dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- progression [profile.json] [--out <folder>]
 
         Options:
           --config <path>   Balance config JSON. Defaults to balance/powergrid-0.1.0.json.
@@ -178,5 +210,6 @@ static void PrintHelp()
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- scenario tools/PowerGrid.Balancer/scenarios/early-mixed-room.json
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- batch tools/PowerGrid.Balancer/scenarios
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- audit tools/PowerGrid.Balancer/scenarios --out artifacts/balance-lab/current
+          dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- progression tools/PowerGrid.Balancer/profiles/powergrid-progression-ladder.json --out artifacts/balance-lab/progression
         """);
 }

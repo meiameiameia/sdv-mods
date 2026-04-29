@@ -1,0 +1,195 @@
+{
+  "name": "PowerGrid Progression Ladder",
+  "description": "Editable balance checkpoints for a normal farm growing toward a mature organized artisan save. Stockpiles are approximate usable resources for each date; the final stages are anonymized from a real Year 3 save.",
+  "stages": [
+    {
+      "name": "First Powered Corner",
+      "year": 1,
+      "season": "Summer",
+      "day": 20,
+      "goal": "A tiny starter grid that teaches power without taking over the farm.",
+      "generator": "Steam Generator",
+      "cable": "Copper Cable",
+      "battery": "Basic Power Battery",
+      "batteryCount": 1,
+      "cableCount": 20,
+      "conduitCount": 0,
+      "poweredMachines": {
+        "Metal Keg": 1,
+        "Industrial Preserves Jar": 1
+      },
+      "stockpile": {
+        "Wood": 500,
+        "Hardwood": 40,
+        "Stone": 1000,
+        "Sap": 150,
+        "Coal": 80,
+        "Copper Bar": 30,
+        "Iron Bar": 35,
+        "Gold Bar": 0,
+        "Iridium Bar": 0,
+        "Refined Quartz": 10,
+        "Battery Pack": 1
+      }
+    },
+    {
+      "name": "Winter Y1 Partial Artisan Room",
+      "year": 1,
+      "season": "Winter",
+      "day": 10,
+      "goal": "A meaningful powered room before the farm has full shed-scale industry.",
+      "generator": "Steam Generator",
+      "cable": "Iron Cable",
+      "battery": "Basic Power Battery",
+      "batteryCount": 1,
+      "cableCount": 30,
+      "conduitCount": 2,
+      "poweredMachines": {
+        "Metal Keg": 8,
+        "Industrial Preserves Jar": 6
+      },
+      "stockpile": {
+        "Wood": 1200,
+        "Hardwood": 80,
+        "Stone": 3000,
+        "Sap": 500,
+        "Coal": 220,
+        "Copper Bar": 90,
+        "Iron Bar": 150,
+        "Gold Bar": 30,
+        "Iridium Bar": 4,
+        "Refined Quartz": 35,
+        "Battery Pack": 3
+      }
+    },
+    {
+      "name": "Summer Y2 Mid Shed",
+      "year": 2,
+      "season": "Summer",
+      "day": 15,
+      "goal": "Combustion power should make a partial shed feel scalable instead of cramped.",
+      "generator": "Combustion Generator",
+      "cable": "Iridium Cable",
+      "battery": "Iridium Power Battery",
+      "batteryCount": 2,
+      "cableCount": 50,
+      "conduitCount": 2,
+      "poweredMachines": {
+        "Metal Keg": 35,
+        "Industrial Preserves Jar": 10,
+        "Hard Iridium Keg": 4
+      },
+      "stockpile": {
+        "Wood": 2500,
+        "Hardwood": 160,
+        "Stone": 7000,
+        "Sap": 2500,
+        "Coal": 500,
+        "Copper Bar": 220,
+        "Iron Bar": 320,
+        "Gold Bar": 180,
+        "Iridium Bar": 60,
+        "Refined Quartz": 120,
+        "Battery Pack": 10
+      }
+    },
+    {
+      "name": "Winter Y2 First Big Shed",
+      "year": 2,
+      "season": "Winter",
+      "day": 20,
+      "goal": "A full big-shed style setup should be possible, but should start asking for better infrastructure.",
+      "generator": "Combustion Generator",
+      "cable": "Iridium Cable",
+      "battery": "Iridium Power Battery",
+      "batteryCount": 3,
+      "cableCount": 70,
+      "conduitCount": 2,
+      "poweredMachines": {
+        "Metal Keg": 67,
+        "Industrial Preserves Jar": 15,
+        "Hard Iridium Keg": 12
+      },
+      "stockpile": {
+        "Wood": 3500,
+        "Hardwood": 240,
+        "Stone": 10000,
+        "Sap": 5000,
+        "Coal": 900,
+        "Copper Bar": 400,
+        "Iron Bar": 620,
+        "Gold Bar": 300,
+        "Iridium Bar": 120,
+        "Refined Quartz": 220,
+        "Battery Pack": 18
+      }
+    },
+    {
+      "name": "Mature Y3 Organized Big Shed Conversion",
+      "year": 3,
+      "season": "Winter",
+      "day": 27,
+      "goal": "A real mature save converting most organized shed production to powered machines.",
+      "generator": "Combustion Generator",
+      "cable": "Iridium Cable",
+      "battery": "Iridium Power Battery",
+      "batteryCount": 4,
+      "cableCount": 100,
+      "conduitCount": 4,
+      "poweredMachines": {
+        "Metal Keg": 125,
+        "Industrial Preserves Jar": 43,
+        "Hard Iridium Keg": 40
+      },
+      "stockpile": {
+        "Wood": 1762,
+        "Hardwood": 130,
+        "Stone": 7469,
+        "Sap": 1,
+        "Coal": 313,
+        "Copper Bar": 466,
+        "Iron Bar": 108,
+        "Gold Bar": 550,
+        "Iridium Bar": 455,
+        "Refined Quartz": 96,
+        "Battery Pack": 11,
+        "Radioactive Ore": 9,
+        "Radioactive Bar": 0
+      }
+    },
+    {
+      "name": "Mature Y3 Cellar Expansion",
+      "year": 3,
+      "season": "Winter",
+      "day": 27,
+      "goal": "A premium cellar layer on top of the mature big shed conversion, not a baseline expectation.",
+      "generator": "Combustion Generator",
+      "cable": "Iridium Cable",
+      "battery": "Iridium Power Battery",
+      "batteryCount": 6,
+      "cableCount": 140,
+      "conduitCount": 8,
+      "poweredMachines": {
+        "Metal Keg": 125,
+        "Industrial Preserves Jar": 43,
+        "Hard Iridium Keg": 40,
+        "Metal Cask": 50
+      },
+      "stockpile": {
+        "Wood": 1762,
+        "Hardwood": 130,
+        "Stone": 7469,
+        "Sap": 1,
+        "Coal": 313,
+        "Copper Bar": 466,
+        "Iron Bar": 108,
+        "Gold Bar": 550,
+        "Iridium Bar": 455,
+        "Refined Quartz": 96,
+        "Battery Pack": 11,
+        "Radioactive Ore": 9,
+        "Radioactive Bar": 0
+      }
+    }
+  ]
+}

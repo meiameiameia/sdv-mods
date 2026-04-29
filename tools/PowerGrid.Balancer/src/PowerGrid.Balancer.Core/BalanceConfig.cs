@@ -10,6 +10,7 @@ public sealed class BalanceConfig
     public Dictionary<string, BatteryDefinition> Batteries { get; init; } = new(StringComparer.OrdinalIgnoreCase);
     public Dictionary<string, CableDefinition> Cables { get; init; } = new(StringComparer.OrdinalIgnoreCase);
     public Dictionary<string, FuelDefinition> Fuels { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, RecipeDefinition> Recipes { get; init; } = new(StringComparer.OrdinalIgnoreCase);
 }
 
 public sealed class MachineDefinition
@@ -45,4 +46,10 @@ public sealed class FuelDefinition
 {
     public required string Name { get; init; }
     public int TicksPerUnit { get; init; }
+}
+
+public sealed class RecipeDefinition
+{
+    public int OutputCount { get; init; } = 1;
+    public Dictionary<string, int> Ingredients { get; init; } = new(StringComparer.OrdinalIgnoreCase);
 }
