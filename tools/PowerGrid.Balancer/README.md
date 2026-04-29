@@ -67,9 +67,24 @@ The progression command writes:
 
 The included profile uses approximate early/mid-game checkpoints and an anonymized mature Year 3 organized production benchmark.
 
+## Compare Balance Configs
+
+Use `compare-progression` before applying balance changes to the mod:
+
+```powershell
+dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- compare-progression tools/PowerGrid.Balancer/balance/powergrid-0.1.0.json tools/PowerGrid.Balancer/balance/powergrid-0.1.x-test.json tools/PowerGrid.Balancer/profiles/powergrid-progression-ladder.json --out artifacts/balance-lab/comparison
+```
+
+The comparison command writes:
+
+- `progression-comparison.md`: readable current-vs-proposed summary.
+- `progression-comparison.csv`: sortable stage deltas.
+- `progression-comparison-gaps.csv`: resource gaps for both configs.
+
 ## Files
 
 - `balance/powergrid-0.1.0.json`: current PowerGrid defaults.
+- `balance/powergrid-0.1.x-test.json`: proposed tuning sandbox, not runtime defaults.
 - `scenarios/*.json`: benchmark setups.
 - `profiles/*.json`: progression and stockpile benchmark ladders.
 - `src/PowerGrid.Balancer.Core`: reusable simulation logic.

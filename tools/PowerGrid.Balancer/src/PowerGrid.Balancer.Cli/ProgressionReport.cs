@@ -18,7 +18,7 @@ internal static class ProgressionReport
         File.WriteAllText(Path.Combine(outputPath, "progression-fuel.csv"), RenderFuelCsv(rows));
     }
 
-    private static StageAnalysis Analyze(BalanceConfig config, ProgressionStage stage)
+    public static StageAnalysis Analyze(BalanceConfig config, ProgressionStage stage)
     {
         int demand = 0;
         foreach ((string id, int count) in stage.PoweredMachines)
@@ -304,7 +304,7 @@ internal static class ProgressionReport
         return value.Replace("|", "\\|", StringComparison.Ordinal);
     }
 
-    private sealed record StageAnalysis(
+    public sealed record StageAnalysis(
         ProgressionStage Stage,
         int DemandEuPerTick,
         string Generator,
@@ -318,7 +318,7 @@ internal static class ProgressionReport
         FuelAnalysis Fuel,
         IReadOnlyList<string> Signals);
 
-    private sealed record FuelAnalysis(
+    public sealed record FuelAnalysis(
         string Name,
         double FuelUnitsPerDay,
         double DirectFuelUnits,
@@ -326,5 +326,5 @@ internal static class ProgressionReport
         double DaysSustained,
         IReadOnlyList<ResourceNeed> RecipeNeeds);
 
-    private sealed record ResourceNeed(string Resource, int Count);
+    public sealed record ResourceNeed(string Resource, int Count);
 }

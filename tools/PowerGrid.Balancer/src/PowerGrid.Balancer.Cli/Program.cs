@@ -92,6 +92,37 @@ try
                 return 0;
             }
 
+        case "compare-progression":
+            {
+                if (args.Length < 3)
+                    throw new InvalidOperationException("Missing baseline and proposed config paths.");
+
+                string baselinePath = args[1];
+                string proposedPath = args[2];
+                string profilePath = args.Length >= 4 && !args[3].StartsWith("--", StringComparison.Ordinal)
+                    ? args[3]
+                    : FindDefaultProgressionPath();
+                string outputPath = ReadOption(args, "--out") ?? Path.Combine("artifacts", "balance-lab", "comparison");
+
+                BalanceConfig baseline = LoadJson<BalanceConfig>(baselinePath, jsonOptions);
+                BalanceConfig proposed = LoadJson<BalanceConfig>(proposedPath, jsonOptions);
+                ProgressionProfile profile = LoadJson<ProgressionProfile>(profilePath, jsonOptions);
+
+                ProgressionComparisonReport.Write(
+                    outputPath,
+                    Path.GetFileNameWithoutExtension(baselinePath),
+                    baseline,
+                    Path.GetFileNameWithoutExtension(proposedPath),
+                    proposed,
+                    profile);
+
+                Console.WriteLine($"Wrote progression comparison to {Path.GetFullPath(outputPath)}");
+                Console.WriteLine("- progression-comparison.md");
+                Console.WriteLine("- progression-comparison.csv");
+                Console.WriteLine("- progression-comparison-gaps.csv");
+                return 0;
+            }
+
         default:
             throw new InvalidOperationException($"Unknown command '{args[0]}'.");
     }
@@ -201,6 +232,7 @@ static void PrintHelp()
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- batch <scenario-folder-or-glob>
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- audit [scenario-folder-or-glob] [--out <folder>]
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- progression [profile.json] [--out <folder>]
+          dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- compare-progression <baseline-config.json> <proposed-config.json> [profile.json] [--out <folder>]
 
         Options:
           --config <path>   Balance config JSON. Defaults to balance/powergrid-0.1.0.json.
@@ -211,5 +243,6 @@ static void PrintHelp()
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- batch tools/PowerGrid.Balancer/scenarios
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- audit tools/PowerGrid.Balancer/scenarios --out artifacts/balance-lab/current
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- progression tools/PowerGrid.Balancer/profiles/powergrid-progression-ladder.json --out artifacts/balance-lab/progression
+          dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- compare-progression tools/PowerGrid.Balancer/balance/powergrid-0.1.0.json tools/PowerGrid.Balancer/balance/powergrid-0.1.x-test.json tools/PowerGrid.Balancer/profiles/powergrid-progression-ladder.json --out artifacts/balance-lab/comparison
         """);
 }
