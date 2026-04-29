@@ -72,7 +72,7 @@ The included profile uses approximate early/mid-game checkpoints and an anonymiz
 Use `compare-progression` before applying balance changes to the mod:
 
 ```powershell
-dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- compare-progression tools/PowerGrid.Balancer/balance/powergrid-0.1.0.json tools/PowerGrid.Balancer/balance/powergrid-0.1.x-test.json tools/PowerGrid.Balancer/profiles/powergrid-progression-ladder.json --out artifacts/balance-lab/comparison
+dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- compare-progression tools/PowerGrid.Balancer/balance/powergrid-0.1.0.json tools/PowerGrid.Balancer/balance/powergrid-0.1.x-moderate.json tools/PowerGrid.Balancer/profiles/powergrid-progression-ladder.json --out artifacts/balance-lab/comparison-moderate
 ```
 
 The comparison command writes:
@@ -84,7 +84,8 @@ The comparison command writes:
 ## Files
 
 - `balance/powergrid-0.1.0.json`: current PowerGrid defaults.
-- `balance/powergrid-0.1.x-test.json`: proposed tuning sandbox, not runtime defaults.
+- `balance/powergrid-0.1.x-test.json`: generous tuning sandbox, not runtime defaults.
+- `balance/powergrid-0.1.x-moderate.json`: moderate Biofuel tuning sandbox, not runtime defaults.
 - `scenarios/*.json`: benchmark setups.
 - `profiles/*.json`: progression and stockpile benchmark ladders.
 - `src/PowerGrid.Balancer.Core`: reusable simulation logic.
