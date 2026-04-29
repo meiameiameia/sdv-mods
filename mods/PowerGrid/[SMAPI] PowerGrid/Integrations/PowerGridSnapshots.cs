@@ -56,6 +56,7 @@ public sealed class PowerGeneratorSnapshot
     public bool RequiresFuel { get; init; }
     public int FuelTicksRemaining { get; init; }
     public bool IsOnline { get; init; }
+    public bool IsBlockedIndoors { get; init; }
 }
 
 public sealed class PowerBatterySnapshot

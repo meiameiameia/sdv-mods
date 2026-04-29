@@ -1,10 +1,10 @@
 # sdv-mods
 
-Small Stardew Valley mods by meiameiameia.
+Source repository for small Stardew Valley mods by meiameiameia.
 
 ## Mods
 
-- `PowerGrid`: electrical infrastructure for Stardew Valley, with generators, batteries, conduits, powered artisan machines, and automation-friendly fuel handling.
+- `PowerGrid`: electrical infrastructure for Stardew Valley, with generators, batteries, conduits, powered artisan machines, and automation-friendly fuel handling. Public releases are available on [Nexus Mods](https://www.nexusmods.com/stardewvalley/mods/45572).
 - `FishSmokerRecipe`: small Content Patcher recipe tweak for the Fish Smoker.
 
 ## Layout
@@ -15,7 +15,7 @@ Small Stardew Valley mods by meiameiameia.
 
 ## Downloads
 
-Packaged mod downloads are published on Nexus Mods. GitHub is the source repository, not the canonical package download location.
+Packaged mod downloads are published on Nexus Mods. GitHub is source-only and may contain work-in-progress code between packaged releases.
 
 ## Build Locally
 

@@ -385,7 +385,7 @@ internal sealed class PowerManager
             }
             else
             {
-                int output = CalculatePassiveGeneration(gen);
+                int output = CalculatePassiveGeneration(gen, genLoc);
                 generated += output;
                 generatorOutputByKey[gen.UniqueKey] = output;
             }
@@ -534,11 +534,14 @@ internal sealed class PowerManager
         List<PowerNetwork> Networks
     );
 
-    private int CalculatePassiveGeneration(PowerNode gen)
+    private int CalculatePassiveGeneration(PowerNode gen, GameLocation location)
     {
         // Wind generator: weather-based output
         if (gen.ItemId == PowerConstants.WindGeneratorId)
         {
+            if (!location.IsOutdoors)
+                return 0;
+
             if (Game1.isRaining || Game1.isLightning)
                 return (int)(gen.GenerationPerTick * 1.5f);
             if (Game1.isSnowing)

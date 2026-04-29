@@ -6,6 +6,6 @@
   "UniqueID": "meiameiameia.PowerGrid",
   "EntryDll": "PowerGrid.dll",
   "MinimumApiVersion": "4.0.0",
-  "UpdateKeys": [],
+  "UpdateKeys": [ "Nexus:45572" ],
   "Dependencies": []
 }

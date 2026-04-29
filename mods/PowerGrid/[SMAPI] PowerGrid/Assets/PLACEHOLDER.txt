@@ -1,3 +1,0 @@
-This folder contains PowerGrid sprites.
-
-Sprite files are shipped with the mod and should not need player changes.

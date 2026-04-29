@@ -16,6 +16,7 @@ internal sealed class PowerQueryService
     private const string MetalCaskDaysToNextQualityKey = "meiameiameia.PowerGrid/MetalCaskDaysToNextQuality";
     private const string MetalCaskLastAppliedBonusDaysKey = "meiameiameia.PowerGrid/MetalCaskLastAppliedBonusDays";
     private const string MetalCaskLastAppliedDateKey = "meiameiameia.PowerGrid/MetalCaskLastAppliedDate";
+    private const float MetalCaskBaseMaturityPerDay = 0.50f;
     private const float MetalCaskPoweredBonusMaturityPerDayAtFullPower = 1.50f;
     private static readonly FieldInfo? CaskDaysToMatureField = typeof(Cask).GetField("daysToMature", BindingFlags.Instance | BindingFlags.NonPublic);
     private static readonly FieldInfo? CaskAgingRateField = typeof(Cask).GetField("agingRate", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -157,9 +158,10 @@ internal sealed class PowerQueryService
                 StardewValley.Object? obj = location.getObjectAtTile((int)generator.Tile.X, (int)generator.Tile.Y);
                 int generatedThisTick = GetGeneratedThisTick(report, generator.UniqueKey);
                 int fuelTicksRemaining = generator.RequiresFuel ? fuelManager.GetFuelTicksRemaining(generator.UniqueKey) : -1;
+                bool isBlockedIndoors = generator.ItemId == PowerConstants.WindGeneratorId && !location.IsOutdoors;
                 bool isOnline = generatedThisTick > 0
                     || (report == null && generator.RequiresFuel && fuelTicksRemaining > 0)
-                    || (report == null && !generator.RequiresFuel);
+                    || (report == null && !generator.RequiresFuel && !isBlockedIndoors);
 
                 snapshots.Add(new PowerGeneratorSnapshot
                 {
@@ -173,7 +175,8 @@ internal sealed class PowerQueryService
                     GeneratedThisTick = generatedThisTick,
                     RequiresFuel = generator.RequiresFuel,
                     FuelTicksRemaining = fuelTicksRemaining,
-                    IsOnline = isOnline
+                    IsOnline = isOnline,
+                    IsBlockedIndoors = isBlockedIndoors
                 });
             }
         }
@@ -403,10 +406,8 @@ internal sealed class PowerQueryService
             return "final quality reached";
 
         int nextQuality = cask.GetNextQuality(currentQuality);
-        float nextQualityElapsedDays = cask.GetDaysForQuality(nextQuality);
-        float finalQualityElapsedDays = Math.Max(nextQualityElapsedDays, cask.GetDaysForQuality(4));
-        float nextQualityRemainingThreshold = Math.Max(0f, finalQualityElapsedDays - nextQualityElapsedDays);
-        float maturityToNextQuality = Math.Max(0f, maturityRemaining - nextQualityRemainingThreshold);
+        float nextQualityThreshold = cask.GetDaysForQuality(nextQuality);
+        float maturityToNextQuality = Math.Max(0f, maturityRemaining - nextQualityThreshold);
         float projectedDailyMaturity = GetProjectedDailyCaskMaturity(cask, consumer, allocation);
 
         if (projectedDailyMaturity <= 0f)
@@ -416,7 +417,7 @@ internal sealed class PowerQueryService
             return $"next quality: {FormatQualityName(nextQuality)} next overnight";
 
         int overnights = Math.Max(1, (int)Math.Ceiling(maturityToNextQuality / projectedDailyMaturity));
-        return $"next quality: {FormatQualityName(nextQuality)} in {overnights} overnight(s) at current power";
+        return $"next quality: {FormatQualityName(nextQuality)} in {overnights} overnight(s) at current speed";
     }
 
     private static float GetProjectedDailyCaskMaturity(Cask cask, PowerNode consumer, AllocationResult? allocation)
@@ -424,6 +425,8 @@ internal sealed class PowerQueryService
         float agingRate = TryGetCaskAgingRate(cask, out float parsedAgingRate)
             ? Math.Max(0f, parsedAgingRate)
             : 0f;
+        if (agingRate <= 0f && IsMetalCask(cask, consumer))
+            agingRate = MetalCaskBaseMaturityPerDay;
 
         float poweredBonus = 0f;
         float speedupFraction = allocation?.SpeedupFraction ?? 0f;

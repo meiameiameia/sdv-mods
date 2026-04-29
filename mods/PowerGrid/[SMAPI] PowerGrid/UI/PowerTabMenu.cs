@@ -267,6 +267,9 @@ internal sealed class PowerTabMenu : IClickableMenu
 
     private static string FormatGeneratorDetail(PowerGeneratorSnapshot generator)
     {
+        if (generator.IsBlockedIndoors)
+            return $"offline | outdoor placement required | {generator.GenerationPerTick} EU/tick";
+
         if (!generator.RequiresFuel)
             return generator.IsOnline
                 ? $"online | {generator.GenerationPerTick} EU/tick | passive"

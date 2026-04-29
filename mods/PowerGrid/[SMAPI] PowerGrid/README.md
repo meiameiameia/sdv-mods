@@ -8,13 +8,19 @@ Power only makes machines faster. It does not duplicate items, change outputs, o
 
 - Stardew Valley 1.6+
 - SMAPI 4.0.0+
+
+## Strongly Recommended
+
 - Grapes of Ferngill for Hard Iridium Keg to use Hardwood Keg behavior
-- Optional: Generic Mod Config Menu for in-game settings
-- Optional: Automate or Event Driven Automation for chest-based machine logistics
+- Automate or Event Driven Automation for chest-based machine logistics
+
+## Optional
+
+- Generic Mod Config Menu for in-game settings
 
 ## Download
 
-The packaged mod should be downloaded from Nexus Mods once published. GitHub is the source repository, not the main place to download release zips.
+Download packaged releases from [PowerGrid on Nexus Mods](https://www.nexusmods.com/stardewvalley/mods/45572). GitHub is the source repository, not the main place to download release zips.
 
 ## Installation
 
@@ -59,15 +65,17 @@ Stardew Valley/Mods/[SMAPI] PowerGrid/manifest.json
 
 Power networks connect through 4-directional adjacency: up, down, left, and right. Diagonal tiles do not connect.
 
+Powered machines can transmit power through adjacent powered machines. You do not need to place a cable between every machine; use cables to bridge gaps, reach generators or batteries, and route power around a room.
+
 ## Generators And Fuel
 
 | Generator | Output | Fuel |
 | --- | ---: | --- |
 | Steam Generator | 50 EU/tick | Coal, Wood, Hardwood |
 | Combustion Generator | 120 EU/tick | Biofuel |
-| Wind Generator | 25 EU/tick base | Passive |
+| Wind Generator | 25 EU/tick base | Passive, outdoors only |
 
-Wind Generator output changes with weather:
+Wind Generators only produce EU outdoors. Indoor wind generators stay offline. Outdoor Wind Generator output changes with weather:
 
 - Clear weather: normal output
 - Rain or storm: higher output
@@ -183,6 +191,8 @@ The host runs the power simulation. Clients receive normal synced machine state 
 ## Testing Before A Real Save
 
 If you want to try PowerGrid before using it on your real farm, use Cinderleaf's sandbox capabilities and a test save. That is the recommended way to experiment with recipes, layouts, conduits, automation, and balance without risking your main save.
+
+PowerGrid can be added to existing saves, but farms with packed Automate buildings may need some layout adjustment. The mod is easiest to learn on a new or test save where power rooms and machine rows can be planned from the start.
 
 ## Troubleshooting
 
