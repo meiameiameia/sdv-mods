@@ -176,6 +176,7 @@ internal sealed class ModEntry : Mod
         Config = helper.ReadConfig<ModConfig>() ?? new ModConfig();
         bool migratedConfig = TryMigrateLegacyBalanceConfig(Config);
         migratedConfig |= TryMigrateHardIridiumKegSpeedConfig(Config);
+        migratedConfig |= TryMigrateModerateBalanceConfig(Config);
         if (migratedConfig)
         {
             helper.WriteConfig(Config);
@@ -314,6 +315,42 @@ internal sealed class ModEntry : Mod
         }
 
         config.HardIridiumKegMaxSpeedup = 0.30f;
+        return true;
+    }
+
+    private static bool TryMigrateModerateBalanceConfig(ModConfig config)
+    {
+        bool matchesCurrentDefaults =
+            config.CopperCableThroughput == 50
+            && config.IronCableThroughput == 150
+            && config.IridiumCableThroughput == 500
+            && config.SteamGeneratorEUPerTick == 50
+            && config.CombustionGeneratorEUPerTick == 120
+            && config.WindGeneratorEUPerTick == 25
+            && config.CoalFuelTicks == 12
+            && config.WoodFuelTicks == 4
+            && config.HardwoodFuelTicks == 8
+            && config.BiofuelFuelTicks == 18
+            && config.IndustrialPreservesJarEUPerMinute == 2
+            && config.MetalCaskEUPerMinute == 4
+            && config.MetalKegEUPerMinute == 1
+            && config.HardIridiumKegEUPerMinute == 3
+            && Math.Abs(config.IndustrialPreservesJarMaxSpeedup - 0.20f) <= 0.0001f
+            && Math.Abs(config.MetalCaskMaxSpeedup - 0.50f) <= 0.0001f
+            && Math.Abs(config.MetalKegMaxSpeedup - 0.20f) <= 0.0001f
+            && Math.Abs(config.HardIridiumKegMaxSpeedup - 0.30f) <= 0.0001f;
+
+        if (!matchesCurrentDefaults)
+            return false;
+
+        config.IronCableThroughput = 250;
+        config.IridiumCableThroughput = 1000;
+        config.SteamGeneratorEUPerTick = 75;
+        config.CombustionGeneratorEUPerTick = 240;
+        config.CoalFuelTicks = 24;
+        config.WoodFuelTicks = 8;
+        config.HardwoodFuelTicks = 16;
+        config.BiofuelFuelTicks = 30;
         return true;
     }
 
@@ -1332,8 +1369,8 @@ internal sealed class ModEntry : Mod
         // Iridium Cable: 337 (Iridium Bar) x2, 338 (Refined Quartz) x1 => 10 cables
         dict["Iridium Cable"] = $"337 2 338 1/Field/{PowerConstants.IridiumCableId} 10/true/null/";
 
-        // Biofuel: 92 (Sap) x30, 382 (Coal) x2 => 1 Biofuel
-        dict[BiofuelRecipeKey] = $"92 30 382 2/Field/{PowerConstants.BiofuelId}/false/null/";
+        // Biofuel: 92 (Sap) x30, 382 (Coal) x2 => 2 Biofuel
+        dict[BiofuelRecipeKey] = $"92 30 382 2/Field/{PowerConstants.BiofuelId} 2/false/null/";
 
         // Steam Generator: 335 (Iron Bar) x6, 334 (Copper Bar) x3, 382 (Coal) x8, 338 (Refined Quartz) x2
         dict["Steam Generator"] = $"335 6 334 3 382 8 338 2/Field/{PowerConstants.SteamGeneratorId}/true/null/";
@@ -1353,25 +1390,25 @@ internal sealed class ModEntry : Mod
         string? preservesTemplate = dict.TryGetValue("Preserves Jar", out string? value) ? value : null;
         dict[IndustrialPreservesJarRecipeKey] = BuildRecipeFromTemplate(
             preservesTemplate,
-            ingredients: "388 30 382 10 335 8 338 1",
+            ingredients: "388 30 382 6 335 6 338 1",
             resultItemId: PowerConstants.IndustrialPreservesJarId);
 
         string? caskTemplate = dict.TryGetValue("Cask", out string? caskValue) ? caskValue : null;
         dict[MetalCaskRecipeKey] = BuildRecipeFromTemplate(
             caskTemplate,
-            ingredients: "709 10 335 12 337 3 338 1",
+            ingredients: "709 10 335 8 337 3 338 1",
             resultItemId: PowerConstants.MetalCaskId);
 
         string? kegTemplate = dict.TryGetValue("Keg", out string? kegValue) ? kegValue : null;
         dict[MetalKegRecipeKey] = BuildRecipeFromTemplate(
             kegTemplate,
-            ingredients: "335 12 334 6 338 1",
+            ingredients: "335 8 334 6 338 1",
             resultItemId: PowerConstants.MetalKegId);
 
         string? hardwoodKegTemplate = dict.TryGetValue("Hardwood Keg", out string? hardwoodValue) ? hardwoodValue : null;
         dict[HardIridiumKegRecipeKey] = BuildRecipeFromTemplate(
             hardwoodKegTemplate ?? kegTemplate,
-            ingredients: "337 5 335 8 338 2",
+            ingredients: "337 5 335 4 338 1",
             resultItemId: PowerConstants.HardIridiumKegId);
     }
 
