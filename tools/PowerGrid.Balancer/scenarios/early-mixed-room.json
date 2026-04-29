@@ -1,0 +1,37 @@
+{
+  "name": "Early Mixed Room",
+  "description": "One early Steam Generator trying to support one Metal Keg and two Industrial Preserves Jars.",
+  "days": 1,
+  "cable": "Copper Cable",
+  "initialBatteryChargePercent": 0.0,
+  "weather": {
+    "clear": 1.0
+  },
+  "machines": [
+    {
+      "id": "Metal Keg",
+      "count": 1,
+      "activeFraction": 1.0
+    },
+    {
+      "id": "Industrial Preserves Jar",
+      "count": 2,
+      "activeFraction": 1.0
+    }
+  ],
+  "generators": [
+    {
+      "id": "Steam Generator",
+      "count": 1
+    }
+  ],
+  "batteries": [
+    {
+      "id": "Basic Power Battery",
+      "count": 1
+    }
+  ],
+  "fuelInventory": {
+    "Coal": 10
+  }
+}

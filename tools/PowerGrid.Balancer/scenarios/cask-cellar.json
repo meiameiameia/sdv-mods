@@ -1,0 +1,32 @@
+{
+  "name": "Cask Cellar",
+  "description": "A small powered cask cellar fed by a conduit network.",
+  "days": 7,
+  "cable": "Iridium Cable",
+  "initialBatteryChargePercent": 1.0,
+  "weather": {
+    "clear": 1.0
+  },
+  "machines": [
+    {
+      "id": "Metal Cask",
+      "count": 8,
+      "activeFraction": 1.0
+    }
+  ],
+  "generators": [
+    {
+      "id": "Combustion Generator",
+      "count": 3
+    }
+  ],
+  "batteries": [
+    {
+      "id": "Iridium Power Battery",
+      "count": 1
+    }
+  ],
+  "fuelInventory": {
+    "Biofuel": 140
+  }
+}

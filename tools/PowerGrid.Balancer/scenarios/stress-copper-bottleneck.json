@@ -1,0 +1,32 @@
+{
+  "name": "Stress - Copper Bottleneck",
+  "description": "A setup with enough steam generation but too much demand for copper cable throughput.",
+  "days": 1,
+  "cable": "Copper Cable",
+  "initialBatteryChargePercent": 1.0,
+  "weather": {
+    "clear": 1.0
+  },
+  "machines": [
+    {
+      "id": "Metal Keg",
+      "count": 8,
+      "activeFraction": 1.0
+    }
+  ],
+  "generators": [
+    {
+      "id": "Steam Generator",
+      "count": 2
+    }
+  ],
+  "batteries": [
+    {
+      "id": "Basic Power Battery",
+      "count": 1
+    }
+  ],
+  "fuelInventory": {
+    "Coal": 20
+  }
+}
