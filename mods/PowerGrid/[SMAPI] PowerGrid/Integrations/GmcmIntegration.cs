@@ -1,5 +1,6 @@
 using StardewModdingAPI;
 using StardewModdingAPI.Utilities;
+using Meiameiameia.PowerGrid;
 
 namespace Meiameiameia.PowerGrid.Integrations;
 
@@ -29,249 +30,249 @@ internal static class GmcmIntegration
         });
 
         // --- Unlocking ---
-        gmcmApi.AddSectionTitle(manifest, () => "Unlocking");
+        gmcmApi.AddSectionTitle(manifest, () => I18n.Get("gmcm.section.unlocking"));
 
         gmcmApi.AddTextOption(manifest,
             () => config.UnlockMode,
             (string val) => config.UnlockMode = val,
-            () => "Unlock Mode",
-            () => "Controls when PowerGrid crafting recipes are granted.\n- existingProgress: unlock recipe bundles from vanilla-aligned progression milestones\n- always: always grant on load/day start\n- disabled: never auto-grant (use console command powergrid_unlock)",
+            () => I18n.Get("gmcm.unlock-mode.name"),
+            () => I18n.Get("gmcm.unlock-mode.tooltip"),
             allowedValues: new[] { "existingProgress", "always", "disabled" });
 
         gmcmApi.AddBoolOption(manifest,
             () => config.AutoGrantRecipes,
             (bool val) => config.AutoGrantRecipes = val,
-            () => "Auto-Grant Recipes",
-            () => "If enabled, recipes are granted automatically based on Unlock Mode. If disabled, use the console command powergrid_unlock.");
+            () => I18n.Get("gmcm.auto-grant.name"),
+            () => I18n.Get("gmcm.auto-grant.tooltip"));
 
         // --- Power Tab ---
-        gmcmApi.AddSectionTitle(manifest, () => "Power Tab UI");
+        gmcmApi.AddSectionTitle(manifest, () => I18n.Get("gmcm.section.power-tab"));
 
         gmcmApi.AddBoolOption(manifest,
             () => config.EnablePowerTab,
             (bool val) => config.EnablePowerTab = val,
-            () => "Enable Power Tab",
-            () => "Allow opening the global Power Tab menu via keybind and console command.");
+            () => I18n.Get("gmcm.enable-power-tab.name"),
+            () => I18n.Get("gmcm.enable-power-tab.tooltip"));
 
         gmcmApi.AddTextOption(manifest,
             () => config.PowerTabKeybind.ToString(),
             (string val) =>
             {
-                if (KeybindList.TryParse(val, out KeybindList parsed, out string[] _))
+                if (KeybindList.TryParse(val, out KeybindList? parsed, out string[] _) && parsed != null)
                     config.PowerTabKeybind = parsed;
             },
-            () => "Power Tab Keybind",
-            () => "Keybind list to open the global Power Tab menu (default: P, K). Examples: 'P', 'LeftShift + P', or 'P, K'.");
+            () => I18n.Get("gmcm.power-tab-keybind.name"),
+            () => I18n.Get("gmcm.power-tab-keybind.tooltip"));
 
         // --- Cable Throughput ---
-        gmcmApi.AddSectionTitle(manifest, () => "Cable Throughput (EU per tick)");
+        gmcmApi.AddSectionTitle(manifest, () => I18n.Get("gmcm.section.cable-throughput"));
 
         gmcmApi.AddNumberOption(manifest,
             () => config.CopperCableThroughput,
             (int val) => config.CopperCableThroughput = val,
-            () => "Copper Cable",
-            () => "Max EU transferred per 10-minute tick through copper cables.",
+            () => I18n.Get("item.copper-cable.name"),
+            () => I18n.Get("gmcm.copper-cable-throughput.tooltip"),
             min: 10, max: 1000, interval: 10);
 
         gmcmApi.AddNumberOption(manifest,
             () => config.IronCableThroughput,
             (int val) => config.IronCableThroughput = val,
-            () => "Iron Cable",
-            () => "Max EU transferred per 10-minute tick through iron cables.",
+            () => I18n.Get("item.iron-cable.name"),
+            () => I18n.Get("gmcm.iron-cable-throughput.tooltip"),
             min: 10, max: 2000, interval: 10);
 
         gmcmApi.AddNumberOption(manifest,
             () => config.IridiumCableThroughput,
             (int val) => config.IridiumCableThroughput = val,
-            () => "Iridium Cable",
-            () => "Max EU transferred per 10-minute tick through iridium cables.",
+            () => I18n.Get("item.iridium-cable.name"),
+            () => I18n.Get("gmcm.iridium-cable-throughput.tooltip"),
             min: 50, max: 5000, interval: 50);
 
         // --- Generators ---
-        gmcmApi.AddSectionTitle(manifest, () => "Generators (EU per tick)");
+        gmcmApi.AddSectionTitle(manifest, () => I18n.Get("gmcm.section.generators"));
 
         gmcmApi.AddNumberOption(manifest,
             () => config.SteamGeneratorEUPerTick,
             (int val) => config.SteamGeneratorEUPerTick = val,
-            () => "Steam Generator",
-            () => "EU produced per 10-minute tick when fueled.",
+            () => I18n.Get("item.steam-generator.name"),
+            () => I18n.Get("gmcm.steam-generator.tooltip"),
             min: 5, max: 500, interval: 5);
 
         gmcmApi.AddNumberOption(manifest,
             () => config.CombustionGeneratorEUPerTick,
             (int val) => config.CombustionGeneratorEUPerTick = val,
-            () => "Combustion Generator",
-            () => "EU produced per 10-minute tick when fueled by Biofuel.",
+            () => I18n.Get("item.combustion-generator.name"),
+            () => I18n.Get("gmcm.combustion-generator.tooltip"),
             min: 10, max: 1000, interval: 10);
 
         gmcmApi.AddNumberOption(manifest,
             () => config.WindGeneratorEUPerTick,
             (int val) => config.WindGeneratorEUPerTick = val,
-            () => "Wind Generator",
-            () => "Base EU produced per 10-minute tick (weather modifies this).",
+            () => I18n.Get("item.wind-generator.name"),
+            () => I18n.Get("gmcm.wind-generator.tooltip"),
             min: 5, max: 300, interval: 5);
 
         // --- Batteries ---
-        gmcmApi.AddSectionTitle(manifest, () => "Batteries");
+        gmcmApi.AddSectionTitle(manifest, () => I18n.Get("gmcm.section.batteries"));
 
         gmcmApi.AddNumberOption(manifest,
             () => config.BasicBatteryCapacity,
             (int val) => config.BasicBatteryCapacity = val,
-            () => "Basic Battery Capacity",
-            () => "Max EU stored in a Basic Power Battery.",
+            () => I18n.Get("gmcm.basic-battery-capacity.name"),
+            () => I18n.Get("gmcm.basic-battery-capacity.tooltip"),
             min: 100, max: 5000, interval: 100);
 
         gmcmApi.AddNumberOption(manifest,
             () => config.IridiumBatteryCapacity,
             (int val) => config.IridiumBatteryCapacity = val,
-            () => "Iridium Battery Capacity",
-            () => "Max EU stored in an Iridium Power Battery.",
+            () => I18n.Get("gmcm.iridium-battery-capacity.name"),
+            () => I18n.Get("gmcm.iridium-battery-capacity.tooltip"),
             min: 500, max: 20000, interval: 500);
 
         gmcmApi.AddNumberOption(manifest,
             () => (int)(config.BatteryDailyLeakPercent * 10),
             (int val) => config.BatteryDailyLeakPercent = val / 10f,
-            () => "Daily Leak (x0.1%)",
-            () => "Percent of stored EU lost each morning. Value is divided by 10 (e.g. 20 = 2.0%).",
+            () => I18n.Get("gmcm.daily-leak.name"),
+            () => I18n.Get("gmcm.daily-leak.tooltip"),
             min: 0, max: 100, interval: 1);
 
         // --- Fuel ---
-        gmcmApi.AddSectionTitle(manifest, () => "Fuel (ticks per unit)");
+        gmcmApi.AddSectionTitle(manifest, () => I18n.Get("gmcm.section.fuel"));
 
         gmcmApi.AddNumberOption(manifest,
             () => config.CoalFuelTicks,
             (int val) => config.CoalFuelTicks = val,
-            () => "Coal",
-            () => "Number of 10-minute ticks per Coal.",
+            () => I18n.Get("gmcm.coal.name"),
+            () => I18n.Get("gmcm.coal.tooltip"),
             min: 1, max: 30, interval: 1);
 
         gmcmApi.AddNumberOption(manifest,
             () => config.WoodFuelTicks,
             (int val) => config.WoodFuelTicks = val,
-            () => "Wood",
-            () => "Number of 10-minute ticks per Wood.",
+            () => I18n.Get("gmcm.wood.name"),
+            () => I18n.Get("gmcm.wood.tooltip"),
             min: 1, max: 20, interval: 1);
 
         gmcmApi.AddNumberOption(manifest,
             () => config.HardwoodFuelTicks,
             (int val) => config.HardwoodFuelTicks = val,
-            () => "Hardwood",
-            () => "Number of 10-minute ticks per Hardwood.",
+            () => I18n.Get("gmcm.hardwood.name"),
+            () => I18n.Get("gmcm.hardwood.tooltip"),
             min: 1, max: 20, interval: 1);
 
         gmcmApi.AddNumberOption(manifest,
             () => config.BiofuelFuelTicks,
             (int val) => config.BiofuelFuelTicks = val,
-            () => "Biofuel",
-            () => "Number of 10-minute ticks per Biofuel in a Combustion Generator.",
+            () => I18n.Get("item.biofuel.name"),
+            () => I18n.Get("gmcm.biofuel.tooltip"),
             min: 1, max: 60, interval: 1);
 
         // --- PowerGrid-owned machines ---
-        gmcmApi.AddSectionTitle(manifest, () => "Industrial Preserves Jar");
+        gmcmApi.AddSectionTitle(manifest, () => I18n.Get("item.industrial-preserves-jar.name"));
 
         gmcmApi.AddNumberOption(manifest,
             () => config.IndustrialPreservesJarEUPerMinute,
             (int val) => config.IndustrialPreservesJarEUPerMinute = val,
-            () => "EU per Minute",
-            () => "Power demand for each Industrial Preserves Jar. This is multiplied by the 10-minute PowerGrid tick.",
+            () => I18n.Get("gmcm.eu-per-minute.name"),
+            () => I18n.Get("gmcm.industrial-preserves-jar-eu.tooltip"),
             min: 0, max: 100, interval: 1);
 
         gmcmApi.AddNumberOption(manifest,
             () => (int)MathF.Round(config.IndustrialPreservesJarMaxSpeedup * 100f),
             (int val) => config.IndustrialPreservesJarMaxSpeedup = Math.Clamp(val / 100f, 0f, 1f),
-            () => "Max Speedup Percent",
-            () => "Maximum processing speedup when fully powered.",
+            () => I18n.Get("gmcm.max-speedup-percent.name"),
+            () => I18n.Get("gmcm.processing-speedup.tooltip"),
             min: 0, max: 100, interval: 1);
 
         gmcmApi.AddNumberOption(manifest,
             () => config.IndustrialPreservesJarPriority,
             (int val) => config.IndustrialPreservesJarPriority = val,
-            () => "Priority",
-            () => "Lower values receive power first when supply is limited.",
+            () => I18n.Get("gmcm.priority.name"),
+            () => I18n.Get("gmcm.priority.tooltip"),
             min: 0, max: 100, interval: 1);
 
-        gmcmApi.AddSectionTitle(manifest, () => "Metal Cask");
+        gmcmApi.AddSectionTitle(manifest, () => I18n.Get("item.metal-cask.name"));
 
         gmcmApi.AddNumberOption(manifest,
             () => config.MetalCaskEUPerMinute,
             (int val) => config.MetalCaskEUPerMinute = val,
-            () => "EU per Minute",
-            () => "Power demand for each PowerGrid Metal Cask. This is multiplied by the 10-minute PowerGrid tick.",
+            () => I18n.Get("gmcm.eu-per-minute.name"),
+            () => I18n.Get("gmcm.metal-cask-eu.tooltip"),
             min: 0, max: 100, interval: 1);
 
         gmcmApi.AddNumberOption(manifest,
             () => (int)MathF.Round(config.MetalCaskMaxSpeedup * 100f),
             (int val) => config.MetalCaskMaxSpeedup = Math.Clamp(val / 100f, 0f, 1f),
-            () => "Max Speedup Percent",
-            () => "Maximum Metal Cask overnight aging bonus when fully powered.",
+            () => I18n.Get("gmcm.max-speedup-percent.name"),
+            () => I18n.Get("gmcm.metal-cask-speedup.tooltip"),
             min: 0, max: 100, interval: 1);
 
         gmcmApi.AddNumberOption(manifest,
             () => config.MetalCaskPriority,
             (int val) => config.MetalCaskPriority = val,
-            () => "Priority",
-            () => "Lower values receive power first when supply is limited.",
+            () => I18n.Get("gmcm.priority.name"),
+            () => I18n.Get("gmcm.priority.tooltip"),
             min: 0, max: 100, interval: 1);
 
-        gmcmApi.AddSectionTitle(manifest, () => "Metal Keg");
+        gmcmApi.AddSectionTitle(manifest, () => I18n.Get("item.metal-keg.name"));
 
         gmcmApi.AddNumberOption(manifest,
             () => config.MetalKegEUPerMinute,
             (int val) => config.MetalKegEUPerMinute = val,
-            () => "EU per Minute",
-            () => "Power demand for each PowerGrid Metal Keg. This is multiplied by the 10-minute PowerGrid tick.",
+            () => I18n.Get("gmcm.eu-per-minute.name"),
+            () => I18n.Get("gmcm.metal-keg-eu.tooltip"),
             min: 0, max: 100, interval: 1);
 
         gmcmApi.AddNumberOption(manifest,
             () => (int)MathF.Round(config.MetalKegMaxSpeedup * 100f),
             (int val) => config.MetalKegMaxSpeedup = Math.Clamp(val / 100f, 0f, 1f),
-            () => "Max Speedup Percent",
-            () => "Maximum Metal Keg processing speedup when fully powered.",
+            () => I18n.Get("gmcm.max-speedup-percent.name"),
+            () => I18n.Get("gmcm.metal-keg-speedup.tooltip"),
             min: 0, max: 100, interval: 1);
 
         gmcmApi.AddNumberOption(manifest,
             () => config.MetalKegPriority,
             (int val) => config.MetalKegPriority = val,
-            () => "Priority",
-            () => "Lower values receive power first when supply is limited.",
+            () => I18n.Get("gmcm.priority.name"),
+            () => I18n.Get("gmcm.priority.tooltip"),
             min: 0, max: 100, interval: 1);
 
-        gmcmApi.AddSectionTitle(manifest, () => "Hard Iridium Keg");
+        gmcmApi.AddSectionTitle(manifest, () => I18n.Get("item.hard-iridium-keg.name"));
 
         gmcmApi.AddNumberOption(manifest,
             () => config.HardIridiumKegEUPerMinute,
             (int val) => config.HardIridiumKegEUPerMinute = val,
-            () => "EU per Minute",
-            () => "Power demand for each PowerGrid Hard Iridium Keg. This is multiplied by the 10-minute PowerGrid tick.",
+            () => I18n.Get("gmcm.eu-per-minute.name"),
+            () => I18n.Get("gmcm.hard-iridium-keg-eu.tooltip"),
             min: 0, max: 100, interval: 1);
 
         gmcmApi.AddNumberOption(manifest,
             () => (int)MathF.Round(config.HardIridiumKegMaxSpeedup * 100f),
             (int val) => config.HardIridiumKegMaxSpeedup = Math.Clamp(val / 100f, 0f, 1f),
-            () => "Max Speedup Percent",
-            () => "Maximum Hard Iridium Keg processing speedup when fully powered.",
+            () => I18n.Get("gmcm.max-speedup-percent.name"),
+            () => I18n.Get("gmcm.hard-iridium-keg-speedup.tooltip"),
             min: 0, max: 100, interval: 1);
 
         gmcmApi.AddNumberOption(manifest,
             () => config.HardIridiumKegPriority,
             (int val) => config.HardIridiumKegPriority = val,
-            () => "Priority",
-            () => "Lower values receive power first when supply is limited.",
+            () => I18n.Get("gmcm.priority.name"),
+            () => I18n.Get("gmcm.priority.tooltip"),
             min: 0, max: 100, interval: 1);
 
         // --- Debug ---
-        gmcmApi.AddSectionTitle(manifest, () => "Debug");
+        gmcmApi.AddSectionTitle(manifest, () => I18n.Get("gmcm.section.debug"));
 
         gmcmApi.AddBoolOption(manifest,
             () => config.DebugOverlayEnabled,
             (bool val) => config.DebugOverlayEnabled = val,
-            () => "Enable Debug Overlay",
-            () => "Allow toggling the debug overlay with a keybind.");
+            () => I18n.Get("gmcm.enable-debug-overlay.name"),
+            () => I18n.Get("gmcm.enable-debug-overlay.tooltip"));
 
         gmcmApi.AddTextOption(manifest,
             () => config.DebugOverlayKeybind,
             (string val) => config.DebugOverlayKeybind = val,
-            () => "Debug Overlay Keybind",
-            () => "Key to toggle the power grid debug overlay.");
+            () => I18n.Get("gmcm.debug-overlay-keybind.name"),
+            () => I18n.Get("gmcm.debug-overlay-keybind.tooltip"));
     }
 }

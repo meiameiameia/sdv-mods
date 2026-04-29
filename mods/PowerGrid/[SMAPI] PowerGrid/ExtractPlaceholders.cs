@@ -19,7 +19,6 @@ internal static class PlaceholderExtractor
 
         Texture2D craftables = Game1.content.Load<Texture2D>("TileSheets/Craftables");
         const int tileW = 16;
-        const int tileH = 32;
         int tilesPerRow = craftables.Width / tileW;
 
         // Non-cable items (single 16x32 sprites)

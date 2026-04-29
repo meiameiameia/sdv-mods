@@ -60,7 +60,6 @@ internal sealed class ModEntry : Mod
     private const string GofHardwoodKegId = "GOF_Hardwood_Keg";
     private const float MetalCaskBaseAgingMultiplier = 0.50f;
     private const float MetalCaskPoweredBonusDaysAtFullPower = 1.50f;
-    private const string MetalCaskPlacementError = "Metal Cask can only be placed in player-owned indoor spaces.";
     private const string MetalCaskMarkerKey = PersistedModDataPrefix + "MetalCask";
     private const string MetalCaskPowerModeKey = PersistedModDataPrefix + "MetalCaskPowerMode";
     private const string MetalCaskObservedPowerStateKey = PersistedModDataPrefix + "MetalCaskObservedPowerState";
@@ -173,6 +172,7 @@ internal sealed class ModEntry : Mod
     public override void Entry(IModHelper helper)
     {
         Instance = this;
+        I18n.Init(helper.Translation);
         Config = helper.ReadConfig<ModConfig>() ?? new ModConfig();
         bool migratedConfig = TryMigrateLegacyBalanceConfig(Config);
         migratedConfig |= TryMigrateHardIridiumKegSpeedConfig(Config);
@@ -205,13 +205,13 @@ internal sealed class ModEntry : Mod
         helper.Events.Display.RenderedWorld += OnRenderedWorld;
 
         // Console commands
-        helper.ConsoleCommands.Add("powergrid_status", "Print power network status for current location.", CmdStatus);
-        helper.ConsoleCommands.Add("powergrid_debug", "Toggle debug overlay.", CmdDebug);
-        helper.ConsoleCommands.Add("powergrid_conduit_reset", "Cancel pending conduit pairing.", CmdConduitReset);
-        helper.ConsoleCommands.Add("powergrid_extract_sprites", "Extract placeholder sprites to Assets folder for editing.", CmdExtractSprites);
-        helper.ConsoleCommands.Add("powergrid_unlock", "Grant PowerGrid crafting recipes.\nUsage: powergrid_unlock [force]\n- force: bypass unlock conditions.", CmdUnlock);
-        helper.ConsoleCommands.Add("powergrid_tab", "Open the global Power Tab menu.", CmdPowerTab);
-        helper.ConsoleCommands.Add("powergrid_query_dump", "Dump read-only PowerGrid query snapshots.\nUsage: powergrid_query_dump [locationName]", CmdQueryDump);
+        helper.ConsoleCommands.Add("powergrid_status", I18n.Get("command.powergrid_status"), CmdStatus);
+        helper.ConsoleCommands.Add("powergrid_debug", I18n.Get("command.powergrid_debug"), CmdDebug);
+        helper.ConsoleCommands.Add("powergrid_conduit_reset", I18n.Get("command.powergrid_conduit_reset"), CmdConduitReset);
+        helper.ConsoleCommands.Add("powergrid_extract_sprites", I18n.Get("command.powergrid_extract_sprites"), CmdExtractSprites);
+        helper.ConsoleCommands.Add("powergrid_unlock", I18n.Get("command.powergrid_unlock"), CmdUnlock);
+        helper.ConsoleCommands.Add("powergrid_tab", I18n.Get("command.powergrid_tab"), CmdPowerTab);
+        helper.ConsoleCommands.Add("powergrid_query_dump", I18n.Get("command.powergrid_query_dump"), CmdQueryDump);
     }
 
     private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
@@ -236,7 +236,7 @@ internal sealed class ModEntry : Mod
             DemandPerTick = GetDemandPerTick(Config.IndustrialPreservesJarEUPerMinute),
             MaxSpeedupFraction = ClampSpeedup(Config.IndustrialPreservesJarMaxSpeedup),
             Priority = Math.Max(0, Config.IndustrialPreservesJarPriority),
-            DisplayName = IndustrialPreservesJarRecipeKey
+            DisplayName = I18n.Get("item.industrial-preserves-jar.name")
         });
 
         ConsumerRegistry.Instance.Register(new ConsumerDefinition
@@ -245,7 +245,7 @@ internal sealed class ModEntry : Mod
             DemandPerTick = GetDemandPerTick(Config.MetalCaskEUPerMinute),
             MaxSpeedupFraction = ClampSpeedup(Config.MetalCaskMaxSpeedup),
             Priority = Math.Max(0, Config.MetalCaskPriority),
-            DisplayName = MetalCaskRecipeKey
+            DisplayName = I18n.Get("item.metal-cask.name")
         });
 
         ConsumerRegistry.Instance.Register(new ConsumerDefinition
@@ -254,7 +254,7 @@ internal sealed class ModEntry : Mod
             DemandPerTick = GetDemandPerTick(Config.MetalKegEUPerMinute),
             MaxSpeedupFraction = ClampSpeedup(Config.MetalKegMaxSpeedup),
             Priority = Math.Max(0, Config.MetalKegPriority),
-            DisplayName = MetalKegRecipeKey
+            DisplayName = I18n.Get("item.metal-keg.name")
         });
 
         ConsumerRegistry.Instance.Register(new ConsumerDefinition
@@ -263,7 +263,7 @@ internal sealed class ModEntry : Mod
             DemandPerTick = GetDemandPerTick(Config.HardIridiumKegEUPerMinute),
             MaxSpeedupFraction = ClampSpeedup(Config.HardIridiumKegMaxSpeedup),
             Priority = Math.Max(0, Config.HardIridiumKegPriority),
-            DisplayName = HardIridiumKegRecipeKey
+            DisplayName = I18n.Get("item.hard-iridium-keg.name")
         });
     }
 
@@ -684,16 +684,16 @@ internal sealed class ModEntry : Mod
                     if (ConduitMgr.RemoveConduitState(loc.NameOrUniqueName, tile))
                     {
                         PowerMgr.MarkAllDirty();
-                        Game1.addHUDMessage(new HUDMessage("Conduit link removed.", HUDMessage.error_type));
+                        Game1.addHUDMessage(new HUDMessage(I18n.Get("message.conduit.link-removed"), HUDMessage.error_type));
                     }
                     else if (ConduitMgr.HasPending)
                     {
                         ConduitMgr.CancelPairing();
-                        Game1.addHUDMessage(new HUDMessage("Conduit pairing cancelled.", HUDMessage.error_type));
+                        Game1.addHUDMessage(new HUDMessage(I18n.Get("message.conduit.pairing-cancelled"), HUDMessage.error_type));
                     }
                     else
                     {
-                        Game1.addHUDMessage(new HUDMessage("Conduit has no active link.", HUDMessage.newQuest_type));
+                        Game1.addHUDMessage(new HUDMessage(I18n.Get("message.conduit.no-active-link"), HUDMessage.newQuest_type));
                     }
 
                     Helper.Input.Suppress(e.Button);
@@ -703,19 +703,19 @@ internal sealed class ModEntry : Mod
                 if (!ConduitMgr.HasPending)
                 {
                     ConduitMgr.StartPairing(loc.NameOrUniqueName, tile);
-                    Game1.addHUDMessage(new HUDMessage("Conduit pairing started. Interact with another conduit to link.", HUDMessage.newQuest_type));
+                    Game1.addHUDMessage(new HUDMessage(I18n.Get("message.conduit.pairing-started"), HUDMessage.newQuest_type));
                 }
                 else
                 {
                     if (ConduitMgr.TryCompletePairing(loc.NameOrUniqueName, tile))
                     {
-                        Game1.addHUDMessage(new HUDMessage("Conduits linked!", HUDMessage.achievement_type));
+                        Game1.addHUDMessage(new HUDMessage(I18n.Get("message.conduit.linked"), HUDMessage.achievement_type));
                         PowerMgr.MarkAllDirty();
                     }
                     else
                     {
                         ConduitMgr.CancelPairing();
-                        Game1.addHUDMessage(new HUDMessage("Conduit pairing cancelled.", HUDMessage.error_type));
+                        Game1.addHUDMessage(new HUDMessage(I18n.Get("message.conduit.pairing-cancelled"), HUDMessage.error_type));
                     }
                 }
 
@@ -1138,30 +1138,30 @@ internal sealed class ModEntry : Mod
         }
 
         // Cables (inventory/world base icon uses sprite index 0; connected arms are overlaid dynamically).
-        RegisterBigCraftable(dict, template, PowerConstants.CopperCableId, "Copper Cable",
-            "A copper electrical cable. Connects power grid components. Throughput: low.", CopperCableTexture, passable: true);
-        RegisterBigCraftable(dict, template, PowerConstants.IronCableId, "Iron Cable",
-            "An iron electrical cable. Better throughput than copper.", IronCableTexture, passable: true);
-        RegisterBigCraftable(dict, template, PowerConstants.IridiumCableId, "Iridium Cable",
-            "An iridium electrical cable. Maximum throughput.", IridiumCableTexture, passable: true);
+        RegisterBigCraftable(dict, template, PowerConstants.CopperCableId, "Copper Cable", I18n.Get("item.copper-cable.name"),
+            I18n.Get("item.copper-cable.description"), CopperCableTexture, passable: true);
+        RegisterBigCraftable(dict, template, PowerConstants.IronCableId, "Iron Cable", I18n.Get("item.iron-cable.name"),
+            I18n.Get("item.iron-cable.description"), IronCableTexture, passable: true);
+        RegisterBigCraftable(dict, template, PowerConstants.IridiumCableId, "Iridium Cable", I18n.Get("item.iridium-cable.name"),
+            I18n.Get("item.iridium-cable.description"), IridiumCableTexture, passable: true);
 
         // Generators
-        RegisterBigCraftable(dict, template, PowerConstants.SteamGeneratorId, "Steam Generator",
-            "Burns fuel (Coal, Wood, Hardwood) to produce EU. Place fuel inside to power it.", SteamGeneratorTexture);
-        RegisterBigCraftable(dict, template, PowerConstants.CombustionGeneratorId, "Combustion Generator",
-            "Burns Biofuel to produce stable midgame EU. Place fuel inside to power it.", CombustionGeneratorTexture);
-        RegisterBigCraftable(dict, template, PowerConstants.WindGeneratorId, "Wind Generator",
-            "Produces EU passively. Output varies with weather (rain/storm = bonus, snow = reduced).", WindGeneratorTexture);
+        RegisterBigCraftable(dict, template, PowerConstants.SteamGeneratorId, "Steam Generator", I18n.Get("item.steam-generator.name"),
+            I18n.Get("item.steam-generator.description"), SteamGeneratorTexture);
+        RegisterBigCraftable(dict, template, PowerConstants.CombustionGeneratorId, CombustionGeneratorRecipeKey, I18n.Get("item.combustion-generator.name"),
+            I18n.Get("item.combustion-generator.description"), CombustionGeneratorTexture);
+        RegisterBigCraftable(dict, template, PowerConstants.WindGeneratorId, "Wind Generator", I18n.Get("item.wind-generator.name"),
+            I18n.Get("item.wind-generator.description"), WindGeneratorTexture);
 
         // Batteries
-        RegisterBigCraftable(dict, template, PowerConstants.BasicBatteryId, "Basic Power Battery",
-            "Stores EU for later use. Small capacity with minor daily leak.", BasicBatteryTexture);
-        RegisterBigCraftable(dict, template, PowerConstants.IridiumBatteryId, "Iridium Power Battery",
-            "High-capacity EU storage. Minor daily leak.", IridiumBatteryTexture);
+        RegisterBigCraftable(dict, template, PowerConstants.BasicBatteryId, "Basic Power Battery", I18n.Get("item.basic-battery.name"),
+            I18n.Get("item.basic-battery.description"), BasicBatteryTexture);
+        RegisterBigCraftable(dict, template, PowerConstants.IridiumBatteryId, "Iridium Power Battery", I18n.Get("item.iridium-battery.name"),
+            I18n.Get("item.iridium-battery.description"), IridiumBatteryTexture);
 
         // Power Conduit
-        RegisterBigCraftable(dict, template, PowerConstants.PowerConduitId, "Power Conduit",
-            "Links power networks across locations. Interact with two conduits to pair them.", PowerConduitTexture);
+        RegisterBigCraftable(dict, template, PowerConstants.PowerConduitId, "Power Conduit", I18n.Get("item.power-conduit.name"),
+            I18n.Get("item.power-conduit.description"), PowerConduitTexture);
 
         RegisterIndustrialPreservesJar(dict);
         RegisterMetalCask(dict);
@@ -1176,12 +1176,15 @@ internal sealed class ModEntry : Mod
 
     private ObjectData CreateBiofuelObjectData()
     {
+        string displayName = I18n.Get("item.biofuel.name");
+        string description = I18n.Get("item.biofuel.description");
+
         ObjectData? data = JsonSerializer.Deserialize<ObjectData>(
             $$"""
             {
               "Name": "{{BiofuelRecipeKey}}",
-              "DisplayName": "{{BiofuelRecipeKey}}",
-              "Description": "A dense processed fuel pellet for Combustion Generators.",
+              "DisplayName": "{{displayName}}",
+              "Description": "{{description}}",
               "Type": "Basic",
               "Category": 0,
               "Price": 80,
@@ -1221,8 +1224,8 @@ internal sealed class ModEntry : Mod
 
         BigCraftableData industrialData = CloneJson(template.Value);
         industrialData.Name = IndustrialPreservesJarRecipeKey;
-        industrialData.DisplayName = IndustrialPreservesJarRecipeKey;
-        industrialData.Description = "An industrial preserves jar built for powered throughput.";
+        industrialData.DisplayName = I18n.Get("item.industrial-preserves-jar.name");
+        industrialData.Description = I18n.Get("item.industrial-preserves-jar.description");
         industrialData.Texture = IndustrialPreservesJarTexture;
         industrialData.SpriteIndex = 0;
 
@@ -1250,8 +1253,8 @@ internal sealed class ModEntry : Mod
 
         BigCraftableData metalCaskData = CloneJson(template.Value);
         metalCaskData.Name = MetalCaskRecipeKey;
-        metalCaskData.DisplayName = MetalCaskRecipeKey;
-        metalCaskData.Description = "An industrial cask that can age artisan goods in player-owned indoor spaces. Slower than a cellar cask unless powered.";
+        metalCaskData.DisplayName = I18n.Get("item.metal-cask.name");
+        metalCaskData.Description = I18n.Get("item.metal-cask.description");
         metalCaskData.Texture = MetalCaskTexture;
         metalCaskData.SpriteIndex = 0;
         dict[PowerConstants.MetalCaskId] = metalCaskData;
@@ -1278,8 +1281,8 @@ internal sealed class ModEntry : Mod
 
         BigCraftableData metalKegData = CloneJson(kegTemplate.Value);
         metalKegData.Name = MetalKegRecipeKey;
-        metalKegData.DisplayName = MetalKegRecipeKey;
-        metalKegData.Description = "A sturdy metal keg built for powered throughput.";
+        metalKegData.DisplayName = I18n.Get("item.metal-keg.name");
+        metalKegData.Description = I18n.Get("item.metal-keg.description");
         metalKegData.Texture = MetalKegTexture;
         metalKegData.SpriteIndex = 0;
         dict[PowerConstants.MetalKegId] = metalKegData;
@@ -1295,19 +1298,19 @@ internal sealed class ModEntry : Mod
 
         BigCraftableData hardIridiumData = CloneJson(hardwoodTemplateOpt?.Value ?? kegTemplate.Value);
         hardIridiumData.Name = HardIridiumKegRecipeKey;
-        hardIridiumData.DisplayName = HardIridiumKegRecipeKey;
-        hardIridiumData.Description = "An iridium-reinforced keg. Uses Hardwood Keg behavior when available, otherwise vanilla Keg behavior.";
+        hardIridiumData.DisplayName = I18n.Get("item.hard-iridium-keg.name");
+        hardIridiumData.Description = I18n.Get("item.hard-iridium-keg.description");
         hardIridiumData.Texture = HardIridiumKegTexture;
         hardIridiumData.SpriteIndex = 0;
         dict[PowerConstants.HardIridiumKegId] = hardIridiumData;
     }
 
     private void RegisterBigCraftable(IDictionary<string, BigCraftableData> dict, BigCraftableData template,
-        string itemId, string displayName, string description, string textureAsset, bool passable = false)
+        string itemId, string internalName, string displayName, string description, string textureAsset, bool passable = false)
     {
         BigCraftableData data = CloneJson(template);
         data.DisplayName = displayName;
-        data.Name = displayName;
+        data.Name = internalName;
         data.Description = description;
         data.Texture = textureAsset;
         data.SpriteIndex = 0;
@@ -2150,7 +2153,7 @@ internal sealed class ModEntry : Mod
         if (Instance.IsValidMetalCaskLocation(location))
             return true;
 
-        Game1.showRedMessage(MetalCaskPlacementError);
+        Game1.showRedMessage(I18n.Get("message.metal-cask.placement-error"));
         __result = false;
         return false;
     }
@@ -3279,7 +3282,7 @@ internal sealed class ModEntry : Mod
         PowerMgr.MarkDirty(location.NameOrUniqueName);
 
         int minutesAdded = ticksAdded * PowerConstants.TickIntervalMinutes;
-        Game1.addHUDMessage(new HUDMessage($"+{minutesAdded}m generator fuel", HUDMessage.newQuest_type));
+        Game1.addHUDMessage(new HUDMessage(I18n.Get("message.generator.fuel-added", new { minutes = minutesAdded }), HUDMessage.newQuest_type));
         return true;
     }
 
@@ -3345,7 +3348,7 @@ internal sealed class ModEntry : Mod
 
         generator.heldObject.Value = null;
         int minutesAdded = ticksAdded * PowerConstants.TickIntervalMinutes;
-        Game1.addHUDMessage(new HUDMessage($"Migrated +{minutesAdded}m legacy fuel", HUDMessage.newQuest_type));
+        Game1.addHUDMessage(new HUDMessage(I18n.Get("message.generator.legacy-fuel-migrated", new { minutes = minutesAdded }), HUDMessage.newQuest_type));
         return true;
     }
 
