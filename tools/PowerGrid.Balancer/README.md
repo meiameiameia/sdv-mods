@@ -31,6 +31,25 @@ dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- scen
 dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- batch tools/PowerGrid.Balancer/scenarios
 ```
 
+## Generate Balance Data
+
+Use `audit` when you want files that can shape balance decisions:
+
+```powershell
+dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- audit tools/PowerGrid.Balancer/scenarios --out artifacts/balance-lab/current
+```
+
+The audit command writes:
+
+- `summary.md`: readable balance signals and scenario summary.
+- `scenario-results.csv`: one row per benchmark scenario.
+- `fuel-use.csv`: fuel consumed and shortfall by scenario.
+- `generator-capacity.md`: readable generator-to-machine capacity table.
+- `generator-capacity.csv`: sortable generator capacity data.
+- `machine-defaults.csv`: current machine EU demand and speed bonuses.
+
+Generated audit files are local artifacts. Re-run the command whenever balance defaults or benchmark scenarios change.
+
 ## Files
 
 - `balance/powergrid-0.1.0.json`: current PowerGrid defaults.

@@ -49,6 +49,32 @@ try
             Console.WriteLine(MarkdownReport.RenderBatch(results));
             return results.Any(result => result.TotalUnmetEu > 0) ? 2 : 0;
 
+        case "audit":
+            {
+                string scenarioInput = args.Length >= 2 && !args[1].StartsWith("--", StringComparison.Ordinal)
+                    ? args[1]
+                    : FindDefaultScenarioPath();
+                string outputPath = ReadOption(args, "--out") ?? Path.Combine("artifacts", "balance-lab", "current");
+
+                IReadOnlyList<string> auditFiles = ExpandScenarioFiles(scenarioInput);
+                if (auditFiles.Count == 0)
+                    throw new InvalidOperationException($"No scenario files matched '{scenarioInput}'.");
+
+                List<SimulationResult> auditResults = auditFiles
+                    .Select(file => simulator.Simulate(config, LoadJson<Scenario>(file, jsonOptions)))
+                    .ToList();
+
+                AuditReport.Write(outputPath, config, auditResults);
+                Console.WriteLine($"Wrote balance audit to {Path.GetFullPath(outputPath)}");
+                Console.WriteLine("- summary.md");
+                Console.WriteLine("- scenario-results.csv");
+                Console.WriteLine("- fuel-use.csv");
+                Console.WriteLine("- generator-capacity.md");
+                Console.WriteLine("- generator-capacity.csv");
+                Console.WriteLine("- machine-defaults.csv");
+                return 0;
+            }
+
         default:
             throw new InvalidOperationException($"Unknown command '{args[0]}'.");
     }
@@ -94,6 +120,20 @@ static string FindDefaultConfig()
         ?? throw new FileNotFoundException("Could not find default balance config. Pass --config <path>.");
 }
 
+static string FindDefaultScenarioPath()
+{
+    string cwd = Directory.GetCurrentDirectory();
+    string[] candidates =
+    {
+        Path.Combine(cwd, "scenarios"),
+        Path.Combine(cwd, "tools", "PowerGrid.Balancer", "scenarios"),
+        Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "scenarios"))
+    };
+
+    return candidates.FirstOrDefault(Directory.Exists)
+        ?? throw new DirectoryNotFoundException("Could not find default scenarios folder. Pass audit <scenario-folder-or-glob>.");
+}
+
 static IReadOnlyList<string> ExpandScenarioFiles(string pattern)
 {
     if (File.Exists(pattern))
@@ -128,12 +168,15 @@ static void PrintHelp()
         Usage:
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- scenario <scenario.json>
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- batch <scenario-folder-or-glob>
+          dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- audit [scenario-folder-or-glob] [--out <folder>]
 
         Options:
           --config <path>   Balance config JSON. Defaults to balance/powergrid-0.1.0.json.
+          --out <folder>    Audit output folder. Defaults to artifacts/balance-lab/current.
 
         Examples:
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- scenario tools/PowerGrid.Balancer/scenarios/early-mixed-room.json
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- batch tools/PowerGrid.Balancer/scenarios
+          dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- audit tools/PowerGrid.Balancer/scenarios --out artifacts/balance-lab/current
         """);
 }
