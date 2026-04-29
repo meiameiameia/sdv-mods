@@ -67,6 +67,8 @@ Power networks connect through 4-directional adjacency: up, down, left, and righ
 
 Powered machines can transmit power through adjacent powered machines. You do not need to place a cable between every machine; use cables to bridge gaps, reach generators or batteries, and route power around a room.
 
+Cables currently occupy their own tile. A future wiring polish pass may explore cable-underlay or buried-cable behavior so machines and other objects can be placed over wiring, but that is not part of the current release.
+
 ## Generators And Fuel
 
 | Generator | Output | Fuel |
@@ -110,6 +112,8 @@ Throughput is the maximum amount of power a network can move each tick. If a net
 
 Batteries store extra power and help cover demand when generators cannot keep up. By default, batteries leak a small amount of stored energy each morning.
 
+Battery Packs are currently used in the recipes for Wind Generators, Basic Power Batteries, Iridium Power Batteries, and Power Conduits. Future PowerGrid updates may give Battery Packs more electrical uses, but they are not direct generator fuel in the current release.
+
 ## Power Conduits
 
 Power Conduits link power between locations, such as from the Farm to a Shed or FarmHouse.
@@ -134,6 +138,15 @@ You can also right-click one conduit, then right-click the other conduit. To unl
 Powered machines work normally without power. When powered, they receive a speed bonus. Metal Casks use power for faster aging progress.
 
 Hard Iridium Keg is designed to use Grapes of Ferngill's Hardwood Keg behavior. If Grapes of Ferngill is not installed, PowerGrid falls back to vanilla Keg behavior so the machine can still work.
+
+The default powered machine bonuses are:
+
+- Industrial Preserves Jar: up to 20% faster
+- Metal Keg: up to 20% faster
+- Hard Iridium Keg: up to 30% faster
+- Metal Cask: up to 50% faster aging bonus
+
+If Generic Mod Config Menu is installed, each powered machine's EU demand, maximum speed bonus, and priority can be configured in-game.
 
 ## Recipe Unlocks
 
