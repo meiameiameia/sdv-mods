@@ -94,6 +94,28 @@ try
                 return 0;
             }
 
+        case "plan":
+            {
+                string loadoutPath = args.Length >= 2 && !args[1].StartsWith("--", StringComparison.Ordinal)
+                    ? args[1]
+                    : FindDefaultLoadoutPath();
+                string? outputPath = ReadOption(args, "--out");
+
+                LoadoutPlan loadout = LoadJson<LoadoutPlan>(loadoutPath, jsonOptions);
+                if (string.IsNullOrWhiteSpace(outputPath))
+                {
+                    Console.WriteLine(LoadoutPlanReport.RenderConsole(config, loadout));
+                    return 0;
+                }
+
+                LoadoutPlanReport.Write(outputPath, config, loadout);
+                Console.WriteLine($"Wrote loadout plan to {Path.GetFullPath(outputPath)}");
+                Console.WriteLine("- loadout-plan.md");
+                Console.WriteLine("- loadout-plan.csv");
+                Console.WriteLine("- loadout-resource-gaps.csv");
+                return 0;
+            }
+
         case "compare-progression":
             {
                 if (args.Length < 3)
@@ -198,6 +220,20 @@ static string FindDefaultProgressionPath()
         ?? throw new FileNotFoundException("Could not find default progression profile. Pass progression <profile.json>.");
 }
 
+static string FindDefaultLoadoutPath()
+{
+    string cwd = Directory.GetCurrentDirectory();
+    string[] candidates =
+    {
+        Path.Combine(cwd, "loadouts", "sample-big-shed.json"),
+        Path.Combine(cwd, "tools", "PowerGrid.Balancer", "loadouts", "sample-big-shed.json"),
+        Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "loadouts", "sample-big-shed.json"))
+    };
+
+    return candidates.FirstOrDefault(File.Exists)
+        ?? throw new FileNotFoundException("Could not find default loadout. Pass plan <loadout.json>.");
+}
+
 static IReadOnlyList<string> ExpandScenarioFiles(string pattern)
 {
     if (File.Exists(pattern))
@@ -234,6 +270,7 @@ static void PrintHelp()
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- batch <scenario-folder-or-glob>
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- audit [scenario-folder-or-glob] [--out <folder>]
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- progression [profile.json] [--out <folder>]
+          dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- plan [loadout.json] [--out <folder>]
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- compare-progression <baseline-config.json> <proposed-config.json> [profile.json] [--out <folder>]
 
         Options:
@@ -245,6 +282,7 @@ static void PrintHelp()
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- batch tools/PowerGrid.Balancer/scenarios
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- audit tools/PowerGrid.Balancer/scenarios --out artifacts/balance-lab/current
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- progression tools/PowerGrid.Balancer/profiles/powergrid-progression-ladder.json --out artifacts/balance-lab/progression
+          dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- plan tools/PowerGrid.Balancer/loadouts/sample-big-shed.json --config tools/PowerGrid.Balancer/balance/powergrid-0.1.x-moderate.json --out artifacts/balance-lab/loadout-sample
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- compare-progression tools/PowerGrid.Balancer/balance/powergrid-0.1.0.json tools/PowerGrid.Balancer/balance/powergrid-0.1.x-test.json tools/PowerGrid.Balancer/profiles/powergrid-progression-ladder.json --out artifacts/balance-lab/comparison
         """);
 }

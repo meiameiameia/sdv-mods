@@ -69,6 +69,20 @@ The progression command writes:
 
 The included profile uses approximate early/mid-game checkpoints and an anonymized mature Year 3 organized production benchmark.
 
+## Plan A Custom Loadout
+
+Use `plan` when you want to ask, "If I build this room, what power setup do I need?"
+
+```powershell
+dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- plan tools/PowerGrid.Balancer/loadouts/sample-big-shed.json --config tools/PowerGrid.Balancer/balance/powergrid-0.1.x-moderate.json --out artifacts/balance-lab/loadout-sample
+```
+
+The plan command writes:
+
+- `loadout-plan.md`: readable power plan, machine mix, resource check, and recommendations.
+- `loadout-plan.csv`: one-row summary for comparisons.
+- `loadout-resource-gaps.csv`: resource need versus stockpile.
+
 ## Compare Balance Configs
 
 Use `compare-progression` before applying balance changes to the mod:
@@ -89,6 +103,7 @@ The comparison command writes:
 - `balance/powergrid-0.1.x-test.json`: generous tuning sandbox, not runtime defaults.
 - `balance/powergrid-0.1.x-moderate.json`: moderate Biofuel tuning sandbox, not runtime defaults.
 - `scenarios/*.json`: benchmark setups.
+- `loadouts/*.json`: custom machine mixes for setup planning.
 - `profiles/*.json`: progression and stockpile benchmark ladders.
 - `src/PowerGrid.Balancer.Core`: reusable simulation logic.
 - `src/PowerGrid.Balancer.Cli`: command-line runner and Markdown reports.

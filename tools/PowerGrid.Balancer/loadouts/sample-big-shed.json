@@ -1,0 +1,29 @@
+{
+  "name": "Sample Big Shed Conversion",
+  "description": "A late Year 2 style shed plan used to estimate infrastructure before converting a large machine room.",
+  "generator": "Combustion Generator",
+  "cable": "Iridium Cable",
+  "battery": "Basic Power Battery",
+  "batteryCount": 2,
+  "cableCount": 80,
+  "conduitCount": 2,
+  "reserveDays": 14,
+  "comfortHeadroom": 0.15,
+  "poweredMachines": {
+    "Metal Keg": 67,
+    "Industrial Preserves Jar": 15,
+    "Hard Iridium Keg": 12
+  },
+  "stockpile": {
+    "Sap": 1200,
+    "Coal": 220,
+    "Wood": 900,
+    "Hardwood": 160,
+    "Copper Bar": 450,
+    "Iron Bar": 850,
+    "Gold Bar": 180,
+    "Iridium Bar": 80,
+    "Refined Quartz": 180,
+    "Battery Pack": 12
+  }
+}
