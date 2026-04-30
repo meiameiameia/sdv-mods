@@ -123,6 +123,21 @@ The sustainability command writes:
 
 Use this before changing fuel or recipe defaults. A resource can be technically available and still be bad balance if PowerGrid consumes too much of what players need for the rest of Stardew.
 
+## Compare Sustainability Candidates
+
+Use `compare-sustainability` when you want to compare several balance candidates against the same safe resource budget:
+
+```powershell
+dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- compare-sustainability tools/PowerGrid.Balancer/balance/powergrid-0.1.x-moderate.json tools/PowerGrid.Balancer/balance/powergrid-0.1.x-biofuel-*.json tools/PowerGrid.Balancer/loadouts --out artifacts/balance-lab/biofuel-sustainability
+```
+
+The comparison command writes:
+
+- `resource-sustainability-comparison.md`: readable candidate comparison focused on safe weekly resource use.
+- `resource-sustainability-comparison.csv`: sortable comparison data.
+
+Use this alongside `compare-resources`. Resource pressure answers "what blocks the setup?" Sustainability answers "does this setup crowd out normal Stardew play?"
+
 ## Compare Resource Candidates
 
 Use `compare-resources` when you want to test several balance candidates against the same loadout suite:

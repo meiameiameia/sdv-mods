@@ -25,7 +25,7 @@ internal static class ResourceSustainabilityReport
         return RenderMarkdown(profile, Analyze(config, loadouts, profile));
     }
 
-    private static IReadOnlyList<SustainabilityRow> Analyze(
+    public static IReadOnlyList<SustainabilityRow> Analyze(
         BalanceConfig config,
         IReadOnlyList<LoadoutPlan> loadouts,
         ResourceBudgetProfile profile)
@@ -249,7 +249,7 @@ internal static class ResourceSustainabilityReport
         return value.Replace("|", "\\|", StringComparison.Ordinal);
     }
 
-    private sealed record SustainabilityRow(
+    public sealed record SustainabilityRow(
         string Loadout,
         string Stage,
         string Resource,
