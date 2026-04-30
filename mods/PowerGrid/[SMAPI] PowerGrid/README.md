@@ -73,8 +73,8 @@ Cables currently occupy their own tile. I know that farm space and tidy layouts 
 
 | Generator | Output | Fuel |
 | --- | ---: | --- |
-| Steam Generator | 50 EU/tick | Coal, Wood, Hardwood |
-| Combustion Generator | 120 EU/tick | Biofuel |
+| Steam Generator | 75 EU/tick | Coal, Wood, Hardwood |
+| Combustion Generator | 240 EU/tick | Biofuel |
 | Wind Generator | 25 EU/tick base | Passive, outdoors only |
 
 Wind Generators only produce EU outdoors. Indoor wind generators stay offline. Outdoor Wind Generator output changes with weather:
@@ -91,15 +91,15 @@ Biofuel is a crafted midgame fuel for the Combustion Generator.
 
 | Item | Recipe |
 | --- | --- |
-| Biofuel | Sap x30, Coal x2 |
+| Biofuel | Sap x30, Coal x2, crafts 2 |
 
 ## Cables
 
 | Cable | Recipe | Throughput |
 | --- | --- | ---: |
 | Copper Cable | Copper Bar x3, crafts 10 | 50 EU/tick |
-| Iron Cable | Iron Bar x3, crafts 10 | 150 EU/tick |
-| Iridium Cable | Iridium Bar x2, Refined Quartz x1, crafts 10 | 500 EU/tick |
+| Iron Cable | Iron Bar x3, crafts 10 | 250 EU/tick |
+| Iridium Cable | Iridium Bar x2, Refined Quartz x1, crafts 10 | 1,000 EU/tick |
 
 Throughput is how much power a network can move each tick. If a network contains multiple cable tiers, the weakest cable limits the network.
 
@@ -130,10 +130,10 @@ You can also right-click one conduit, then right-click the other conduit. To unl
 
 | Machine | Recipe | Power Use | Max Power Bonus |
 | --- | --- | ---: | ---: |
-| Industrial Preserves Jar | Wood x30, Coal x10, Iron Bar x8, Refined Quartz x1 | 20 EU/tick | 20% faster |
-| Metal Keg | Iron Bar x12, Copper Bar x6, Refined Quartz x1 | 10 EU/tick | 20% faster |
-| Hard Iridium Keg | Iridium Bar x5, Iron Bar x8, Refined Quartz x2 | 30 EU/tick | 30% faster |
-| Metal Cask | Hardwood x10, Iron Bar x12, Iridium Bar x3, Refined Quartz x1 | 40 EU/tick | 50% faster aging |
+| Industrial Preserves Jar | Wood x30, Coal x6, Iron Bar x6, Refined Quartz x1 | 20 EU/tick | 20% faster |
+| Metal Keg | Iron Bar x8, Copper Bar x6, Refined Quartz x1 | 10 EU/tick | 20% faster |
+| Hard Iridium Keg | Iridium Bar x5, Iron Bar x4, Refined Quartz x1 | 30 EU/tick | 30% faster |
+| Metal Cask | Hardwood x10, Iron Bar x8, Iridium Bar x3, Refined Quartz x1 | 40 EU/tick | 50% faster aging |
 
 Powered machines still work normally without power. PowerGrid is a bonus layer, not a punishment layer. When a powered machine has enough EU, it gets a speed bonus. Metal Casks use power for faster aging progress.
 
