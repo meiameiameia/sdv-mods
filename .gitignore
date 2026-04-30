@@ -27,6 +27,7 @@
 .vscode/
 .idea/
 .windsurf/
+.playwright-mcp/
 *.suo
 *.user
 *.userosscache

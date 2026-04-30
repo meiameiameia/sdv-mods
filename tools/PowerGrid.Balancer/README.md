@@ -124,6 +124,8 @@ dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- sust
 
 This command compares each loadout against a resource budget profile. Setup costs are checked against stockpiles after a protected reserve floor. Ongoing fuel costs are checked against a safe share of expected weekly income.
 
+Flexible direct-fuel generators such as Steam Generator are reported as a combined fuel-mix sustainability row, so Wood/Coal/Hardwood pressure is judged as one pool instead of being pinned to a single fuel.
+
 The sustainability command writes:
 
 - `resource-sustainability.md`: readable setup and weekly fuel pressure notes.

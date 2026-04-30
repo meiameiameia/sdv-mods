@@ -37,10 +37,12 @@ internal static class ResourceSustainabilityReport
         foreach (LoadoutPlan loadout in loadouts)
         {
             stages.TryGetValue(loadout.Name, out ResourceBudgetStage? stage);
+            GeneratorDefinition generator = Resolve(config.Generators, loadout.Generator, "generator");
             LoadoutPlanReport.ResourceSnapshot snapshot = LoadoutPlanReport.AnalyzeResources(config, loadout);
             Dictionary<string, int> fuelReserve = snapshot.CostBySource.TryGetValue("Fuel Reserve", out Dictionary<string, int>? source)
                 ? source
                 : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            FlexibleFuelWeeklyBudget? flexibleFuelBudget = BuildFlexibleFuelWeeklyBudget(config, loadout, stage, generator);
 
             HashSet<string> resources = new(StringComparer.OrdinalIgnoreCase);
             foreach (string resource in snapshot.Needed.Keys)
@@ -56,7 +58,9 @@ internal static class ResourceSustainabilityReport
                 snapshot.Needed.TryGetValue(resource, out int totalNeed);
                 fuelReserve.TryGetValue(resource, out int fuelReserveNeed);
                 int setupNeed = Math.Max(0, totalNeed - fuelReserveNeed);
-                int weeklyNeed = loadout.ReserveDays <= 0
+                int weeklyNeed = flexibleFuelBudget is not null && flexibleFuelBudget.OptionResources.Contains(resource)
+                    ? 0
+                    : loadout.ReserveDays <= 0
                     ? 0
                     : (int)Math.Ceiling((double)fuelReserveNeed * 7d / loadout.ReserveDays);
                 snapshot.Stockpile.TryGetValue(resource, out int stockpile);
@@ -99,6 +103,28 @@ internal static class ResourceSustainabilityReport
                     weeklyGap,
                     budget?.Notes ?? ""));
             }
+
+            if (flexibleFuelBudget is not null)
+            {
+                string signal = ClassifySynthetic(0, flexibleFuelBudget.WeeklyNeed, flexibleFuelBudget.WeeklyAllowed);
+                rows.Add(new SustainabilityRow(
+                    loadout.Name,
+                    stage?.Name ?? "-",
+                    flexibleFuelBudget.Name,
+                    signal,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    flexibleFuelBudget.WeeklyNeed,
+                    flexibleFuelBudget.WeeklyIncomeEquivalent,
+                    flexibleFuelBudget.MaxPowerGridShareEquivalent,
+                    flexibleFuelBudget.WeeklyAllowed,
+                    flexibleFuelBudget.WeeklyRatio,
+                    flexibleFuelBudget.WeeklyGap,
+                    flexibleFuelBudget.Notes));
+            }
         }
 
         return rows
@@ -123,6 +149,123 @@ internal static class ResourceSustainabilityReport
             return "OK";
 
         return "Unused";
+    }
+
+    private static string ClassifySynthetic(int setupGap, int weeklyNeed, double weeklyAllowed)
+    {
+        if (weeklyAllowed <= 0d)
+            return weeklyNeed > 0 || setupGap > 0 ? "Unbudgeted" : "OK";
+
+        double weeklyRatio = weeklyNeed / weeklyAllowed;
+        if (weeklyRatio > 1d || setupGap > 0)
+            return "Severe";
+        if (weeklyRatio >= 0.75d)
+            return "Watch";
+        if (weeklyNeed > 0)
+            return "OK";
+
+        return "Unused";
+    }
+
+    private static FlexibleFuelWeeklyBudget? BuildFlexibleFuelWeeklyBudget(
+        BalanceConfig config,
+        LoadoutPlan loadout,
+        ResourceBudgetStage? stage,
+        GeneratorDefinition generator)
+    {
+        IReadOnlyList<string> fuelOptions = GetFuelOptions(generator);
+        if (stage is null || fuelOptions.Count <= 1)
+            return null;
+
+        List<FuelDefinition> fuels = fuelOptions
+            .Select(fuelId => Resolve(config.Fuels, fuelId, "fuel"))
+            .ToList();
+        if (fuels.Any(fuel => config.Recipes.TryGetValue(fuel.Name, out RecipeDefinition? recipe) && recipe.Ingredients.Count > 0))
+            return null;
+
+        int comfortGenerators = CalculateComfortGeneratorCount(config, loadout, generator);
+        if (comfortGenerators <= 0)
+            return null;
+
+        FuelDefinition primaryFuel = fuels[0];
+        int weeklyTicks = comfortGenerators * config.TicksPerDay * 7;
+        int weeklyNeed = (int)Math.Ceiling((double)weeklyTicks / Math.Max(1, primaryFuel.TicksPerUnit));
+
+        double combinedAllowedTicks = 0d;
+        double combinedWeeklyIncomeEquivalent = 0d;
+        double combinedShareEquivalent = 0d;
+        List<string> availableBudgets = new();
+
+        foreach (FuelDefinition fuel in fuels)
+        {
+            if (!stage.Resources.TryGetValue(fuel.Name, out ResourceBudget? budget))
+                continue;
+
+            double weeklyAllowedUnits = budget.WeeklyIncome * Math.Clamp(budget.MaxPowerGridShare, 0d, 1d);
+            if (weeklyAllowedUnits <= 0d)
+                continue;
+
+            combinedAllowedTicks += weeklyAllowedUnits * Math.Max(1, fuel.TicksPerUnit);
+            combinedWeeklyIncomeEquivalent += (double)budget.WeeklyIncome * Math.Max(1, fuel.TicksPerUnit) / Math.Max(1, primaryFuel.TicksPerUnit);
+            combinedShareEquivalent += (double)weeklyAllowedUnits * Math.Max(1, fuel.TicksPerUnit) / Math.Max(1, primaryFuel.TicksPerUnit);
+            availableBudgets.Add(fuel.Name);
+        }
+
+        if (combinedAllowedTicks <= 0d)
+            return null;
+
+        double weeklyAllowed = combinedAllowedTicks / Math.Max(1, primaryFuel.TicksPerUnit);
+        double weeklyRatio = weeklyNeed / weeklyAllowed;
+        int weeklyGap = Math.Max(0, (int)Math.Ceiling(weeklyNeed - weeklyAllowed));
+        string name = $"{generator.Name} fuel mix ({primaryFuel.Name}-equivalent)";
+        string notes = $"Flexible fuel budget combines {string.Join(", ", availableBudgets)} using their own burn values.";
+
+        return new FlexibleFuelWeeklyBudget(
+            name,
+            new HashSet<string>(fuels.Select(fuel => fuel.Name), StringComparer.OrdinalIgnoreCase),
+            weeklyNeed,
+            (int)Math.Round(combinedWeeklyIncomeEquivalent, MidpointRounding.AwayFromZero),
+            weeklyAllowed <= 0d || combinedWeeklyIncomeEquivalent <= 0d
+                ? 0d
+                : combinedShareEquivalent / combinedWeeklyIncomeEquivalent,
+            weeklyAllowed,
+            weeklyRatio,
+            weeklyGap,
+            notes);
+    }
+
+    private static int CalculateComfortGeneratorCount(BalanceConfig config, LoadoutPlan loadout, GeneratorDefinition generator)
+    {
+        int demand = 0;
+        foreach ((string machineId, int count) in loadout.PoweredMachines)
+        {
+            MachineDefinition machine = Resolve(config.Machines, machineId, "machine");
+            demand += machine.DemandEuPerTick * Math.Max(0, count);
+        }
+
+        if (generator.OutputEuPerTick <= 0)
+            return 0;
+
+        int minimumGenerators = (int)Math.Ceiling((double)demand / generator.OutputEuPerTick);
+        double headroom = Math.Clamp(loadout.ComfortHeadroom, 0d, 2d);
+        return Math.Max(minimumGenerators, (int)Math.Ceiling(demand * (1d + headroom) / generator.OutputEuPerTick));
+    }
+
+    private static T Resolve<T>(Dictionary<string, T> values, string id, string label)
+    {
+        return values.TryGetValue(id, out T? value)
+            ? value
+            : throw new InvalidOperationException($"Unknown {label} '{id}'.");
+    }
+
+    private static IReadOnlyList<string> GetFuelOptions(GeneratorDefinition generator)
+    {
+        if (generator.FuelOptions.Count > 0)
+            return generator.FuelOptions.Where(fuel => !string.IsNullOrWhiteSpace(fuel)).ToList();
+
+        return string.IsNullOrWhiteSpace(generator.Fuel)
+            ? Array.Empty<string>()
+            : new[] { generator.Fuel };
     }
 
     private static int SignalRank(string signal)
@@ -262,6 +405,17 @@ internal static class ResourceSustainabilityReport
         int WeeklyNeed,
         int WeeklyIncome,
         double MaxPowerGridShare,
+        double WeeklyAllowed,
+        double WeeklyRatio,
+        int WeeklyGap,
+        string Notes);
+
+    private sealed record FlexibleFuelWeeklyBudget(
+        string Name,
+        IReadOnlySet<string> OptionResources,
+        int WeeklyNeed,
+        int WeeklyIncomeEquivalent,
+        double MaxPowerGridShareEquivalent,
         double WeeklyAllowed,
         double WeeklyRatio,
         int WeeklyGap,
