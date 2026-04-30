@@ -106,6 +106,21 @@ The resources command writes:
 
 This is the first pass for answering questions like "is Biofuel asking for too much Sap?" or "are powered machines leaning too hard on one metal tier?"
 
+## Compare Resource Candidates
+
+Use `compare-resources` when you want to test several balance candidates against the same loadout suite:
+
+```powershell
+dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- compare-resources tools/PowerGrid.Balancer/balance/powergrid-0.1.x-moderate.json tools/PowerGrid.Balancer/balance/powergrid-0.1.x-biofuel-*.json tools/PowerGrid.Balancer/loadouts --out artifacts/balance-lab/biofuel-candidates
+```
+
+The included Biofuel candidates only change Biofuel output or fuel duration. They are sandbox configs for analysis, not shipped defaults.
+
+The comparison command writes:
+
+- `resource-pressure-comparison.md`: readable bottleneck comparison across configs.
+- `resource-pressure-comparison.csv`: sortable comparison data.
+
 ## Compare Balance Configs
 
 Use `compare-progression` before applying balance changes to the mod:
@@ -125,6 +140,7 @@ The comparison command writes:
 - `balance/powergrid-0.1.0.json`: current PowerGrid defaults.
 - `balance/powergrid-0.1.x-test.json`: generous tuning sandbox, not runtime defaults.
 - `balance/powergrid-0.1.x-moderate.json`: moderate Biofuel tuning sandbox, not runtime defaults.
+- `balance/powergrid-0.1.x-biofuel-*.json`: Biofuel candidate sandboxes for resource-pressure comparison.
 - `scenarios/*.json`: benchmark setups.
 - `loadouts/*.json`: custom machine mixes for setup planning.
 - `profiles/*.json`: progression and stockpile benchmark ladders.

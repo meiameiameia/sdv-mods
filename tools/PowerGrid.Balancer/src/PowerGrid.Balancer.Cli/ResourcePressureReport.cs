@@ -18,7 +18,7 @@ internal static class ResourcePressureReport
         return RenderMarkdown(Analyze(config, loadouts));
     }
 
-    private static IReadOnlyList<ResourcePressure> Analyze(BalanceConfig config, IReadOnlyList<LoadoutPlan> loadouts)
+    public static IReadOnlyList<ResourcePressure> Analyze(BalanceConfig config, IReadOnlyList<LoadoutPlan> loadouts)
     {
         List<LoadoutPlanReport.ResourceSnapshot> snapshots = loadouts
             .Select(loadout => LoadoutPlanReport.AnalyzeResources(config, loadout))
@@ -223,7 +223,7 @@ internal static class ResourcePressureReport
         }
     }
 
-    private sealed record ResourcePressure(
+    public sealed record ResourcePressure(
         string Resource,
         string Signal,
         int TotalNeeded,

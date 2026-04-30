@@ -161,6 +161,45 @@ try
                 return 0;
             }
 
+        case "compare-resources":
+            {
+                if (args.Length < 3)
+                    throw new InvalidOperationException("Missing baseline config and candidate config folder or glob.");
+
+                string baselinePath = args[1];
+                string candidateInput = args[2];
+                string loadoutInput = args.Length >= 4 && !args[3].StartsWith("--", StringComparison.Ordinal)
+                    ? args[3]
+                    : FindDefaultLoadoutFolder();
+                string outputPath = ReadOption(args, "--out") ?? Path.Combine("artifacts", "balance-lab", "resource-comparison");
+
+                IReadOnlyList<string> candidateFiles = ExpandJsonFiles(candidateInput);
+                if (candidateFiles.Count == 0)
+                    throw new InvalidOperationException($"No candidate config files matched '{candidateInput}'.");
+
+                IReadOnlyList<string> loadoutFiles = ExpandJsonFiles(loadoutInput);
+                if (loadoutFiles.Count == 0)
+                    throw new InvalidOperationException($"No loadout files matched '{loadoutInput}'.");
+
+                Dictionary<string, BalanceConfig> configs = new(StringComparer.OrdinalIgnoreCase)
+                {
+                    [Path.GetFileNameWithoutExtension(baselinePath)] = LoadJson<BalanceConfig>(baselinePath, jsonOptions)
+                };
+
+                foreach (string file in candidateFiles)
+                    configs[Path.GetFileNameWithoutExtension(file)] = LoadJson<BalanceConfig>(file, jsonOptions);
+
+                List<LoadoutPlan> loadouts = loadoutFiles
+                    .Select(file => LoadJson<LoadoutPlan>(file, jsonOptions))
+                    .ToList();
+
+                ResourcePressureComparisonReport.Write(outputPath, configs, loadouts);
+                Console.WriteLine($"Wrote resource pressure comparison to {Path.GetFullPath(outputPath)}");
+                Console.WriteLine("- resource-pressure-comparison.md");
+                Console.WriteLine("- resource-pressure-comparison.csv");
+                return 0;
+            }
+
         case "compare-progression":
             {
                 if (args.Length < 3)
@@ -343,6 +382,7 @@ static void PrintHelp()
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- progression [profile.json] [--out <folder>]
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- plan [loadout.json|loadout-folder-or-glob] [--out <folder>]
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- resources [loadout-folder-or-glob] [--out <folder>]
+          dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- compare-resources <baseline-config.json> <candidate-config-folder-or-glob> [loadout-folder-or-glob] [--out <folder>]
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- compare-progression <baseline-config.json> <proposed-config.json> [profile.json] [--out <folder>]
 
         Options:
@@ -356,6 +396,7 @@ static void PrintHelp()
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- progression tools/PowerGrid.Balancer/profiles/powergrid-progression-ladder.json --out artifacts/balance-lab/progression
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- plan tools/PowerGrid.Balancer/loadouts/sample-big-shed.json --config tools/PowerGrid.Balancer/balance/powergrid-0.1.x-moderate.json --out artifacts/balance-lab/loadout-sample
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- resources tools/PowerGrid.Balancer/loadouts --config tools/PowerGrid.Balancer/balance/powergrid-0.1.x-moderate.json --out artifacts/balance-lab/resource-pressure
+          dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- compare-resources tools/PowerGrid.Balancer/balance/powergrid-0.1.x-moderate.json tools/PowerGrid.Balancer/balance/powergrid-0.1.x-biofuel-*.json tools/PowerGrid.Balancer/loadouts --out artifacts/balance-lab/biofuel-candidates
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- compare-progression tools/PowerGrid.Balancer/balance/powergrid-0.1.0.json tools/PowerGrid.Balancer/balance/powergrid-0.1.x-test.json tools/PowerGrid.Balancer/profiles/powergrid-progression-ladder.json --out artifacts/balance-lab/comparison
         """);
 }

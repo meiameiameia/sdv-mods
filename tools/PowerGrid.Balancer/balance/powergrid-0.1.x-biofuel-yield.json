@@ -1,0 +1,209 @@
+{
+  "tickMinutes": 10,
+  "ticksPerDay": 120,
+  "batteryDailyLeakPercent": 2.0,
+  "machines": {
+    "Industrial Preserves Jar": {
+      "name": "Industrial Preserves Jar",
+      "demandEuPerTick": 20,
+      "maxSpeedBonus": 0.2,
+      "notes": "Current powered preserves machine."
+    },
+    "Metal Keg": {
+      "name": "Metal Keg",
+      "demandEuPerTick": 10,
+      "maxSpeedBonus": 0.2,
+      "notes": "Current powered keg."
+    },
+    "Hard Iridium Keg": {
+      "name": "Hard Iridium Keg",
+      "demandEuPerTick": 30,
+      "maxSpeedBonus": 0.3,
+      "notes": "Late-game keg; uses Grapes of Ferngill behavior when available."
+    },
+    "Metal Cask": {
+      "name": "Metal Cask",
+      "demandEuPerTick": 40,
+      "maxSpeedBonus": 0.5,
+      "notes": "Day-based powered aging machine."
+    }
+  },
+  "generators": {
+    "Steam Generator": {
+      "name": "Steam Generator",
+      "outputEuPerTick": 75,
+      "fuel": "Coal",
+      "weatherAdjusted": false,
+      "notes": "Solid-fuel early generator. Moderate 0.1.x tuning."
+    },
+    "Combustion Generator": {
+      "name": "Combustion Generator",
+      "outputEuPerTick": 240,
+      "fuel": "Biofuel",
+      "weatherAdjusted": false,
+      "notes": "Biofuel mid-game generator. Candidate fuel tuning sandbox."
+    },
+    "Wind Generator": {
+      "name": "Wind Generator",
+      "outputEuPerTick": 25,
+      "fuel": null,
+      "weatherAdjusted": true,
+      "notes": "Passive outdoor generator. Rain/storm 1.5x, snow 0.7x."
+    }
+  },
+  "batteries": {
+    "Basic Power Battery": {
+      "name": "Basic Power Battery",
+      "capacityEu": 500
+    },
+    "Iridium Power Battery": {
+      "name": "Iridium Power Battery",
+      "capacityEu": 2000
+    }
+  },
+  "cables": {
+    "Copper Cable": {
+      "name": "Copper Cable",
+      "throughputEuPerTick": 50
+    },
+    "Iron Cable": {
+      "name": "Iron Cable",
+      "throughputEuPerTick": 250
+    },
+    "Iridium Cable": {
+      "name": "Iridium Cable",
+      "throughputEuPerTick": 1000
+    }
+  },
+  "fuels": {
+    "Coal": {
+      "name": "Coal",
+      "ticksPerUnit": 24
+    },
+    "Wood": {
+      "name": "Wood",
+      "ticksPerUnit": 8
+    },
+    "Hardwood": {
+      "name": "Hardwood",
+      "ticksPerUnit": 16
+    },
+    "Biofuel": {
+      "name": "Biofuel",
+      "ticksPerUnit": 30
+    }
+  },
+  "recipes": {
+    "Copper Cable": {
+      "outputCount": 10,
+      "ingredients": {
+        "Copper Bar": 3
+      }
+    },
+    "Iron Cable": {
+      "outputCount": 10,
+      "ingredients": {
+        "Iron Bar": 3
+      }
+    },
+    "Iridium Cable": {
+      "outputCount": 10,
+      "ingredients": {
+        "Iridium Bar": 2,
+        "Refined Quartz": 1
+      }
+    },
+    "Biofuel": {
+      "outputCount": 4,
+      "ingredients": {
+        "Sap": 30,
+        "Coal": 2
+      }
+    },
+    "Steam Generator": {
+      "outputCount": 1,
+      "ingredients": {
+        "Iron Bar": 6,
+        "Copper Bar": 3,
+        "Coal": 8,
+        "Refined Quartz": 2
+      }
+    },
+    "Combustion Generator": {
+      "outputCount": 1,
+      "ingredients": {
+        "Steam Generator": 1,
+        "Iron Bar": 10,
+        "Gold Bar": 6,
+        "Refined Quartz": 4
+      }
+    },
+    "Wind Generator": {
+      "outputCount": 1,
+      "ingredients": {
+        "Iron Bar": 6,
+        "Refined Quartz": 4,
+        "Battery Pack": 1,
+        "Coal": 4
+      }
+    },
+    "Basic Power Battery": {
+      "outputCount": 1,
+      "ingredients": {
+        "Battery Pack": 1,
+        "Copper Bar": 5,
+        "Refined Quartz": 2
+      }
+    },
+    "Iridium Power Battery": {
+      "outputCount": 1,
+      "ingredients": {
+        "Battery Pack": 3,
+        "Iridium Bar": 2,
+        "Refined Quartz": 5
+      }
+    },
+    "Power Conduit": {
+      "outputCount": 1,
+      "ingredients": {
+        "Iridium Bar": 1,
+        "Battery Pack": 1,
+        "Refined Quartz": 2
+      }
+    },
+    "Industrial Preserves Jar": {
+      "outputCount": 1,
+      "ingredients": {
+        "Wood": 30,
+        "Coal": 6,
+        "Iron Bar": 6,
+        "Refined Quartz": 1
+      }
+    },
+    "Metal Keg": {
+      "outputCount": 1,
+      "ingredients": {
+        "Iron Bar": 8,
+        "Copper Bar": 6,
+        "Refined Quartz": 1
+      }
+    },
+    "Hard Iridium Keg": {
+      "outputCount": 1,
+      "ingredients": {
+        "Iridium Bar": 5,
+        "Iron Bar": 4,
+        "Refined Quartz": 1
+      }
+    },
+    "Metal Cask": {
+      "outputCount": 1,
+      "ingredients": {
+        "Hardwood": 10,
+        "Iron Bar": 8,
+        "Iridium Bar": 3,
+        "Refined Quartz": 1
+      }
+    }
+  }
+}
