@@ -148,6 +148,8 @@ dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- comp
 
 The included Biofuel candidates only change Biofuel output or fuel duration. They are sandbox configs for analysis, not shipped defaults.
 
+The alternate Biofuel recipe candidates test whether Fiber, Wood, Moss, and smaller Sap inputs produce a healthier fuel economy than Sap-heavy Biofuel.
+
 The comparison command writes:
 
 - `resource-pressure-comparison.md`: readable bottleneck comparison across configs.

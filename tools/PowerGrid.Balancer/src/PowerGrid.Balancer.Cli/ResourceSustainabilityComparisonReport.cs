@@ -71,28 +71,12 @@ internal static class ResourceSustainabilityComparisonReport
         lines.Add("");
         lines.Add("## Fuel Sustainability Snapshot");
         lines.Add("");
-        lines.Add("| Config | Sap weekly gap | Coal weekly gap | Worst fuel loadout |");
-        lines.Add("| --- | ---: | ---: | --- |");
+        lines.Add("| Config | Resource | Weekly need | Weekly budget | Weekly gap | Worst fuel loadout |");
+        lines.Add("| --- | --- | ---: | ---: | ---: | --- |");
 
-        foreach (string config in rows.Select(row => row.Config).Distinct(StringComparer.OrdinalIgnoreCase))
+        foreach (SustainabilityFuelSummaryRow row in BuildFuelSummaryRows(rows))
         {
-            IReadOnlyList<SustainabilityComparisonRow> fuelRows = rows
-                .Where(row => row.Config.Equals(config, StringComparison.OrdinalIgnoreCase))
-                .Where(row => row.Resource.Equals("Sap", StringComparison.OrdinalIgnoreCase) || row.Resource.Equals("Coal", StringComparison.OrdinalIgnoreCase))
-                .ToList();
-
-            int sapGap = fuelRows
-                .Where(row => row.Resource.Equals("Sap", StringComparison.OrdinalIgnoreCase))
-                .Sum(row => row.WeeklyGap);
-            int coalGap = fuelRows
-                .Where(row => row.Resource.Equals("Coal", StringComparison.OrdinalIgnoreCase))
-                .Sum(row => row.WeeklyGap);
-            string worstLoadout = fuelRows
-                .OrderByDescending(row => row.WeeklyGap)
-                .FirstOrDefault()
-                ?.Loadout ?? "-";
-
-            lines.Add($"| {EscapeMarkdown(config)} | {sapGap} | {coalGap} | {EscapeMarkdown(worstLoadout)} |");
+            lines.Add($"| {EscapeMarkdown(row.Config)} | {EscapeMarkdown(row.Resource)} | {row.WeeklyNeed} | {Decimal(row.WeeklyAllowed)} | {row.WeeklyGap} | {EscapeMarkdown(row.WorstLoadout)} |");
         }
 
         lines.Add("");
@@ -121,6 +105,36 @@ internal static class ResourceSustainabilityComparisonReport
         }
 
         return csv.ToString();
+    }
+
+    private static IReadOnlyList<SustainabilityFuelSummaryRow> BuildFuelSummaryRows(IReadOnlyList<SustainabilityComparisonRow> rows)
+    {
+        Dictionary<string, MutableFuelSummaryRow> totals = new(StringComparer.OrdinalIgnoreCase);
+        foreach (SustainabilityComparisonRow row in rows.Where(row => row.WeeklyNeed > 0))
+        {
+            string key = $"{row.Config}\u001f{row.Resource}";
+            if (!totals.TryGetValue(key, out MutableFuelSummaryRow? total))
+            {
+                total = new MutableFuelSummaryRow(row.Config, row.Resource);
+                totals[key] = total;
+            }
+
+            total.WeeklyNeed += row.WeeklyNeed;
+            total.WeeklyAllowed += row.WeeklyAllowed;
+            total.WeeklyGap += row.WeeklyGap;
+            if (row.WeeklyGap > total.WorstWeeklyGap)
+            {
+                total.WorstWeeklyGap = row.WeeklyGap;
+                total.WorstLoadout = row.Loadout;
+            }
+        }
+
+        return totals.Values
+            .Select(row => new SustainabilityFuelSummaryRow(row.Config, row.Resource, row.WeeklyNeed, row.WeeklyAllowed, row.WeeklyGap, row.WorstLoadout))
+            .OrderBy(row => row.Config, StringComparer.OrdinalIgnoreCase)
+            .ThenByDescending(row => row.WeeklyGap)
+            .ThenBy(row => row.Resource, StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     private static string CsvLine(params object?[] values)
@@ -170,4 +184,23 @@ internal static class ResourceSustainabilityComparisonReport
         double WeeklyAllowed,
         int WeeklyGap,
         double WeeklyRatio);
+
+    private sealed record SustainabilityFuelSummaryRow(
+        string Config,
+        string Resource,
+        int WeeklyNeed,
+        double WeeklyAllowed,
+        int WeeklyGap,
+        string WorstLoadout);
+
+    private sealed class MutableFuelSummaryRow(string config, string resource)
+    {
+        public string Config { get; } = config;
+        public string Resource { get; } = resource;
+        public int WeeklyNeed { get; set; }
+        public double WeeklyAllowed { get; set; }
+        public int WeeklyGap { get; set; }
+        public int WorstWeeklyGap { get; set; }
+        public string WorstLoadout { get; set; } = "-";
+    }
 }

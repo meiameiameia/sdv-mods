@@ -8,6 +8,8 @@
       "resources": {
         "Wood": { "weeklyIncome": 350, "reserveFloor": 300, "maxPowerGridShare": 0.15, "notes": "Wood is still needed for buildings, chests, tappers, and farm expansion." },
         "Hardwood": { "weeklyIncome": 20, "reserveFloor": 30, "maxPowerGridShare": 0.10, "notes": "Hardwood is protected early because stable and tool goals compete for it." },
+        "Fiber": { "weeklyIncome": 120, "reserveFloor": 100, "maxPowerGridShare": 0.20, "notes": "Fiber is renewable but still used by tea saplings, wild bait, grass starter, and utility crafting." },
+        "Moss": { "weeklyIncome": 20, "reserveFloor": 20, "maxPowerGridShare": 0.15, "notes": "Moss is available before Green Rain but should be treated as a light optional bonus early." },
         "Sap": { "weeklyIncome": 100, "reserveFloor": 100, "maxPowerGridShare": 0.15, "notes": "Sap should remain mostly free for fertilizer and normal crafting." },
         "Coal": { "weeklyIncome": 45, "reserveFloor": 40, "maxPowerGridShare": 0.15, "notes": "Coal competes with bars, preserve jars, bee houses, and normal machines." },
         "Copper Bar": { "weeklyIncome": 18, "reserveFloor": 10, "maxPowerGridShare": 0.15, "notes": "Copper still feeds tools, tappers, sprinklers, and basic farm infrastructure." },
@@ -22,6 +24,8 @@
       "resources": {
         "Wood": { "weeklyIncome": 500, "reserveFloor": 600, "maxPowerGridShare": 0.20, "notes": "Winter wood is available, but buildings and kegs still compete for it." },
         "Hardwood": { "weeklyIncome": 35, "reserveFloor": 60, "maxPowerGridShare": 0.15, "notes": "Hardwood should remain mostly protected before late-game access improves." },
+        "Fiber": { "weeklyIncome": 180, "reserveFloor": 200, "maxPowerGridShare": 0.25, "notes": "Fiber can support some fuel, but should not become mandatory cleanup grind." },
+        "Moss": { "weeklyIncome": 50, "reserveFloor": 50, "maxPowerGridShare": 0.20, "notes": "Moss is easier after Green Rain, but not every player farms it deliberately." },
         "Sap": { "weeklyIncome": 180, "reserveFloor": 250, "maxPowerGridShare": 0.20, "notes": "Sap can support some fuel, but should not erase fertilizer usage." },
         "Coal": { "weeklyIncome": 80, "reserveFloor": 120, "maxPowerGridShare": 0.20, "notes": "Coal pressure matters because bars and vanilla machines still need it." },
         "Copper Bar": { "weeklyIncome": 35, "reserveFloor": 30, "maxPowerGridShare": 0.20, "notes": "Copper is less tight, but still part of normal expansion." },
@@ -38,6 +42,8 @@
       "resources": {
         "Wood": { "weeklyIncome": 650, "reserveFloor": 1000, "maxPowerGridShare": 0.25, "notes": "Wood remains important for artisan expansion." },
         "Hardwood": { "weeklyIncome": 55, "reserveFloor": 100, "maxPowerGridShare": 0.20, "notes": "Hardwood is still a premium resource." },
+        "Fiber": { "weeklyIncome": 260, "reserveFloor": 350, "maxPowerGridShare": 0.30, "notes": "Fiber is a good Biofuel candidate because it is renewable and often underused." },
+        "Moss": { "weeklyIncome": 90, "reserveFloor": 100, "maxPowerGridShare": 0.25, "notes": "Moss can make Biofuel more efficient, but Green Rain should not be mandatory." },
         "Sap": { "weeklyIncome": 300, "reserveFloor": 700, "maxPowerGridShare": 0.25, "notes": "Biofuel may use Sap, but should leave room for fertilizer and crafting." },
         "Coal": { "weeklyIncome": 120, "reserveFloor": 250, "maxPowerGridShare": 0.25, "notes": "Coal should not become the only thing the player mines for." },
         "Copper Bar": { "weeklyIncome": 55, "reserveFloor": 100, "maxPowerGridShare": 0.25, "notes": "Copper pressure is acceptable if it is mostly a one-time setup cost." },
@@ -54,6 +60,8 @@
       "resources": {
         "Wood": { "weeklyIncome": 750, "reserveFloor": 1200, "maxPowerGridShare": 0.30, "notes": "Wood should remain available for sheds, kegs, and farm projects." },
         "Hardwood": { "weeklyIncome": 70, "reserveFloor": 120, "maxPowerGridShare": 0.25, "notes": "Hardwood can support advanced machines, but is still not disposable." },
+        "Fiber": { "weeklyIncome": 350, "reserveFloor": 500, "maxPowerGridShare": 0.35, "notes": "Fiber can be a major biomass input by late Year 2." },
+        "Moss": { "weeklyIncome": 140, "reserveFloor": 150, "maxPowerGridShare": 0.30, "notes": "Moss is useful if the player keeps mossy tree areas, but should stay optional." },
         "Sap": { "weeklyIncome": 450, "reserveFloor": 1200, "maxPowerGridShare": 0.30, "notes": "Biofuel can become a real Sap sink, but not the only use for Sap." },
         "Coal": { "weeklyIncome": 160, "reserveFloor": 350, "maxPowerGridShare": 0.30, "notes": "Coal fuel pressure should stay below normal mining comfort." },
         "Copper Bar": { "weeklyIncome": 75, "reserveFloor": 150, "maxPowerGridShare": 0.30, "notes": "Copper should mainly be a setup material by this point." },
@@ -70,6 +78,8 @@
       "resources": {
         "Wood": { "weeklyIncome": 900, "reserveFloor": 1500, "maxPowerGridShare": 0.35, "notes": "Mature saves can spend more wood, but should not empty normal project reserves." },
         "Hardwood": { "weeklyIncome": 90, "reserveFloor": 120, "maxPowerGridShare": 0.30, "notes": "Hardwood still deserves protection even late." },
+        "Fiber": { "weeklyIncome": 500, "reserveFloor": 700, "maxPowerGridShare": 0.40, "notes": "Fiber is allowed to carry a meaningful Biofuel role in mature saves." },
+        "Moss": { "weeklyIncome": 220, "reserveFloor": 250, "maxPowerGridShare": 0.35, "notes": "Moss can support efficient Biofuel, but should not demand constant Green Rain farming." },
         "Sap": { "weeklyIncome": 650, "reserveFloor": 1200, "maxPowerGridShare": 0.35, "notes": "Sap is the key Biofuel risk; PowerGrid should not require full-time Sap farming." },
         "Coal": { "weeklyIncome": 220, "reserveFloor": 400, "maxPowerGridShare": 0.35, "notes": "Coal may support power, but bars and machines still compete for it." },
         "Copper Bar": { "weeklyIncome": 100, "reserveFloor": 200, "maxPowerGridShare": 0.35, "notes": "Copper should be manageable in mature conversion." },

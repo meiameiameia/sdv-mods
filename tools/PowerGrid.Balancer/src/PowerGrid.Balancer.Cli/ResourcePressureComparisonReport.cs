@@ -69,14 +69,12 @@ internal static class ResourcePressureComparisonReport
         lines.Add("");
         lines.Add("## Fuel Pressure Snapshot");
         lines.Add("");
-        lines.Add("| Config | Sap gap | Coal gap |");
-        lines.Add("| --- | ---: | ---: |");
+        lines.Add("| Config | Resource | Gap | Worst loadout |");
+        lines.Add("| --- | --- | ---: | --- |");
 
-        foreach (string config in rows.Select(row => row.Config).Distinct(StringComparer.OrdinalIgnoreCase))
+        foreach (SustainabilityFuelPressureRow row in BuildFuelPressureRows(rows))
         {
-            int sapGap = rows.FirstOrDefault(row => row.Config == config && row.Resource.Equals("Sap", StringComparison.OrdinalIgnoreCase))?.TotalGap ?? 0;
-            int coalGap = rows.FirstOrDefault(row => row.Config == config && row.Resource.Equals("Coal", StringComparison.OrdinalIgnoreCase))?.TotalGap ?? 0;
-            lines.Add($"| {EscapeMarkdown(config)} | {sapGap} | {coalGap} |");
+            lines.Add($"| {EscapeMarkdown(row.Config)} | {EscapeMarkdown(row.Resource)} | {row.TotalGap} | {EscapeMarkdown(row.WorstLoadout)} |");
         }
 
         lines.Add("");
@@ -107,6 +105,34 @@ internal static class ResourcePressureComparisonReport
         }
 
         return csv.ToString();
+    }
+
+    private static IReadOnlyList<SustainabilityFuelPressureRow> BuildFuelPressureRows(IReadOnlyList<ResourceComparisonRow> rows)
+    {
+        Dictionary<string, MutableFuelPressureRow> totals = new(StringComparer.OrdinalIgnoreCase);
+        foreach (ResourceComparisonRow row in rows.Where(row => row.PrimarySource.Equals("Fuel Reserve", StringComparison.OrdinalIgnoreCase)))
+        {
+            string key = $"{row.Config}\u001f{row.Resource}";
+            if (!totals.TryGetValue(key, out MutableFuelPressureRow? total))
+            {
+                total = new MutableFuelPressureRow(row.Config, row.Resource);
+                totals[key] = total;
+            }
+
+            total.TotalGap += row.TotalGap;
+            if (row.TotalGap > total.WorstGap)
+            {
+                total.WorstGap = row.TotalGap;
+                total.WorstLoadout = row.WorstLoadout;
+            }
+        }
+
+        return totals.Values
+            .Select(row => new SustainabilityFuelPressureRow(row.Config, row.Resource, row.TotalGap, row.WorstLoadout))
+            .OrderBy(row => row.Config, StringComparer.OrdinalIgnoreCase)
+            .ThenByDescending(row => row.TotalGap)
+            .ThenBy(row => row.Resource, StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     private static string CsvLine(params object?[] values)
@@ -146,4 +172,19 @@ internal static class ResourcePressureComparisonReport
         int BlockedLoadoutCount,
         int TotalLoadouts,
         string WorstLoadout);
+
+    private sealed record SustainabilityFuelPressureRow(
+        string Config,
+        string Resource,
+        int TotalGap,
+        string WorstLoadout);
+
+    private sealed class MutableFuelPressureRow(string config, string resource)
+    {
+        public string Config { get; } = config;
+        public string Resource { get; } = resource;
+        public int TotalGap { get; set; }
+        public int WorstGap { get; set; }
+        public string WorstLoadout { get; set; } = "-";
+    }
 }
