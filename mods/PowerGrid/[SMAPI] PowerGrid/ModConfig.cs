@@ -17,12 +17,12 @@ internal sealed class ModConfig
 
     // --- Cable Throughput (EU per tick) ---
     public int CopperCableThroughput { get; set; } = 50;
-    public int IronCableThroughput { get; set; } = 150;
-    public int IridiumCableThroughput { get; set; } = 500;
+    public int IronCableThroughput { get; set; } = 250;
+    public int IridiumCableThroughput { get; set; } = 1000;
 
     // --- Generators (EU per 10-minute tick) ---
-    public int SteamGeneratorEUPerTick { get; set; } = 50;
-    public int CombustionGeneratorEUPerTick { get; set; } = 120;
+    public int SteamGeneratorEUPerTick { get; set; } = 75;
+    public int CombustionGeneratorEUPerTick { get; set; } = 240;
     public int WindGeneratorEUPerTick { get; set; } = 25;
 
     // --- Batteries ---
@@ -31,10 +31,10 @@ internal sealed class ModConfig
     public float BatteryDailyLeakPercent { get; set; } = 2f;
 
     // --- Fuel (ticks per unit; 1 tick = 10 in-game minutes) ---
-    public int CoalFuelTicks { get; set; } = 12;
-    public int WoodFuelTicks { get; set; } = 4;
-    public int HardwoodFuelTicks { get; set; } = 8;
-    public int BiofuelFuelTicks { get; set; } = 18;
+    public int CoalFuelTicks { get; set; } = 24;
+    public int WoodFuelTicks { get; set; } = 8;
+    public int HardwoodFuelTicks { get; set; } = 16;
+    public int BiofuelFuelTicks { get; set; } = 30;
 
     // --- PowerGrid-owned machines ---
     public int IndustrialPreservesJarEUPerMinute { get; set; } = 2;
