@@ -107,7 +107,7 @@ internal static class LoadoutPlanReport
             ? 0d
             : (double)batteryCapacity / demand * config.TickMinutes;
 
-        FuelPlan fuel = AnalyzeFuel(config, generator, comfortGenerators, Math.Max(1, loadout.ReserveDays));
+        FuelPlan fuel = AnalyzeFuel(config, generator, comfortGenerators, Math.Max(1, loadout.ReserveDays), loadout.Stockpile);
 
         Dictionary<string, int> upfrontCost = new(StringComparer.OrdinalIgnoreCase);
         Dictionary<string, Dictionary<string, int>> costBySource = new(StringComparer.OrdinalIgnoreCase);
@@ -157,12 +157,16 @@ internal static class LoadoutPlanReport
             recommendations);
     }
 
-    private static FuelPlan AnalyzeFuel(BalanceConfig config, GeneratorDefinition generator, int generatorCount, int reserveDays)
+    private static FuelPlan AnalyzeFuel(BalanceConfig config, GeneratorDefinition generator, int generatorCount, int reserveDays, IReadOnlyDictionary<string, int> stockpile)
     {
-        if (generatorCount <= 0 || string.IsNullOrWhiteSpace(generator.Fuel))
+        IReadOnlyList<string> fuelOptions = GetFuelOptions(generator);
+        if (generatorCount <= 0 || fuelOptions.Count == 0)
             return new FuelPlan("", 0, 0, reserveDays, 0, new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase));
 
-        FuelDefinition fuel = Resolve(config.Fuels, generator.Fuel, "fuel");
+        if (fuelOptions.Count > 1)
+            return AnalyzeFlexibleFuel(config, generator, fuelOptions, generatorCount, reserveDays, stockpile);
+
+        FuelDefinition fuel = Resolve(config.Fuels, fuelOptions[0], "fuel");
         double fuelPerDay = (double)(generatorCount * config.TicksPerDay) / Math.Max(1, fuel.TicksPerUnit);
         int reserveUnits = (int)Math.Ceiling(fuelPerDay * reserveDays);
         Dictionary<string, int> reserveIngredientCost = new(StringComparer.OrdinalIgnoreCase);
@@ -179,6 +183,62 @@ internal static class LoadoutPlanReport
         }
 
         return new FuelPlan(fuel.Name, fuelPerDay, reserveUnits, reserveDays, fuel.TicksPerUnit, reserveIngredientCost);
+    }
+
+    private static FuelPlan AnalyzeFlexibleFuel(
+        BalanceConfig config,
+        GeneratorDefinition generator,
+        IReadOnlyList<string> fuelOptions,
+        int generatorCount,
+        int reserveDays,
+        IReadOnlyDictionary<string, int> stockpile)
+    {
+        FuelDefinition primaryFuel = Resolve(config.Fuels, fuelOptions[0], "fuel");
+        int ticksNeededPerDay = generatorCount * config.TicksPerDay;
+        int reserveTicks = ticksNeededPerDay * reserveDays;
+        Dictionary<string, int> reserveIngredientCost = AllocateFlexibleFuelReserve(config, fuelOptions, reserveTicks, stockpile);
+
+        double primaryEquivalentPerDay = (double)ticksNeededPerDay / Math.Max(1, primaryFuel.TicksPerUnit);
+        int primaryEquivalentReserve = (int)Math.Ceiling((double)reserveTicks / Math.Max(1, primaryFuel.TicksPerUnit));
+        string name = $"{generator.Name} fuel ({primaryFuel.Name}-equivalent)";
+
+        return new FuelPlan(name, primaryEquivalentPerDay, primaryEquivalentReserve, reserveDays, primaryFuel.TicksPerUnit, reserveIngredientCost);
+    }
+
+    private static Dictionary<string, int> AllocateFlexibleFuelReserve(
+        BalanceConfig config,
+        IReadOnlyList<string> fuelOptions,
+        int reserveTicks,
+        IReadOnlyDictionary<string, int> stockpile)
+    {
+        Dictionary<string, int> cost = new(StringComparer.OrdinalIgnoreCase);
+        int remainingTicks = Math.Max(0, reserveTicks);
+
+        foreach (string fuelId in fuelOptions)
+        {
+            if (remainingTicks <= 0)
+                break;
+
+            FuelDefinition fuel = Resolve(config.Fuels, fuelId, "fuel");
+            stockpile.TryGetValue(fuel.Name, out int availableUnits);
+            int unitsNeeded = (int)Math.Ceiling((double)remainingTicks / Math.Max(1, fuel.TicksPerUnit));
+            int unitsUsed = Math.Min(Math.Max(0, availableUnits), unitsNeeded);
+            if (unitsUsed <= 0)
+                continue;
+
+            cost[fuel.Name] = unitsUsed;
+            remainingTicks -= unitsUsed * Math.Max(1, fuel.TicksPerUnit);
+        }
+
+        if (remainingTicks > 0)
+        {
+            FuelDefinition fallback = Resolve(config.Fuels, fuelOptions[0], "fuel");
+            int missingUnits = (int)Math.Ceiling((double)remainingTicks / Math.Max(1, fallback.TicksPerUnit));
+            cost.TryGetValue(fallback.Name, out int current);
+            cost[fallback.Name] = current + missingUnits;
+        }
+
+        return cost;
     }
 
     private static Dictionary<string, int> CalculateGaps(
@@ -506,6 +566,16 @@ internal static class LoadoutPlanReport
     private static string EscapeMarkdown(string value)
     {
         return value.Replace("|", "\\|", StringComparison.Ordinal);
+    }
+
+    private static IReadOnlyList<string> GetFuelOptions(GeneratorDefinition generator)
+    {
+        if (generator.FuelOptions.Count > 0)
+            return generator.FuelOptions.Where(fuel => !string.IsNullOrWhiteSpace(fuel)).ToList();
+
+        return string.IsNullOrWhiteSpace(generator.Fuel)
+            ? Array.Empty<string>()
+            : new[] { generator.Fuel };
     }
 
     private sealed record PlanAnalysis(

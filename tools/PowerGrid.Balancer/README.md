@@ -11,6 +11,7 @@ It is not a player-facing planner yet. If the simulator proves useful, it can la
 - EU demand per tick and per scenario
 - generator output
 - fuel pressure
+- flexible fuel options, such as Steam Generator using Wood, Coal, or Hardwood
 - battery charge and drain
 - wasted EU after demand, cable limits, and battery storage
 - how much generated EU is actually used or stored

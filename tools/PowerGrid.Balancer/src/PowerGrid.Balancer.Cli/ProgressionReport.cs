@@ -85,10 +85,14 @@ internal static class ProgressionReport
         int generatorCount,
         IReadOnlyDictionary<string, int> stockAfterUpfrontCost)
     {
-        if (generatorCount <= 0 || string.IsNullOrWhiteSpace(generator.Fuel))
+        IReadOnlyList<string> fuelOptions = GetFuelOptions(generator);
+        if (generatorCount <= 0 || fuelOptions.Count == 0)
             return new FuelAnalysis("", 0, 0, 0, 0, Array.Empty<ResourceNeed>());
 
-        FuelDefinition fuel = Resolve(config.Fuels, generator.Fuel, "fuel");
+        if (fuelOptions.Count > 1)
+            return AnalyzeFlexibleFuel(config, generator, fuelOptions, generatorCount, stockAfterUpfrontCost);
+
+        FuelDefinition fuel = Resolve(config.Fuels, fuelOptions[0], "fuel");
         double unitsPerDay = (double)(generatorCount * config.TicksPerDay) / Math.Max(1, fuel.TicksPerUnit);
 
         stockAfterUpfrontCost.TryGetValue(fuel.Name, out int directFuel);
@@ -114,6 +118,36 @@ internal static class ProgressionReport
         double daysSustained = unitsPerDay <= 0 ? 0 : totalFuel / unitsPerDay;
 
         return new FuelAnalysis(fuel.Name, unitsPerDay, directFuel, craftableFuel, daysSustained, fuelRecipeNeeds);
+    }
+
+    private static FuelAnalysis AnalyzeFlexibleFuel(
+        BalanceConfig config,
+        GeneratorDefinition generator,
+        IReadOnlyList<string> fuelOptions,
+        int generatorCount,
+        IReadOnlyDictionary<string, int> stockAfterUpfrontCost)
+    {
+        FuelDefinition primaryFuel = Resolve(config.Fuels, fuelOptions[0], "fuel");
+        int ticksNeededPerDay = generatorCount * config.TicksPerDay;
+        double primaryEquivalentPerDay = (double)ticksNeededPerDay / Math.Max(1, primaryFuel.TicksPerUnit);
+        int totalTicksAvailable = 0;
+        double directPrimaryEquivalent = 0;
+        List<ResourceNeed> fuelRecipeNeeds = new();
+
+        foreach (string fuelId in fuelOptions)
+        {
+            FuelDefinition fuel = Resolve(config.Fuels, fuelId, "fuel");
+            stockAfterUpfrontCost.TryGetValue(fuel.Name, out int units);
+            int ticks = Math.Max(0, units) * Math.Max(1, fuel.TicksPerUnit);
+            totalTicksAvailable += ticks;
+            directPrimaryEquivalent += (double)ticks / Math.Max(1, primaryFuel.TicksPerUnit);
+            fuelRecipeNeeds.Add(new ResourceNeed(fuel.Name, Math.Max(0, units)));
+        }
+
+        double daysSustained = ticksNeededPerDay <= 0 ? 0 : (double)totalTicksAvailable / ticksNeededPerDay;
+        string name = $"{generator.Name} fuel ({primaryFuel.Name}-equivalent)";
+
+        return new FuelAnalysis(name, primaryEquivalentPerDay, directPrimaryEquivalent, 0, daysSustained, fuelRecipeNeeds);
     }
 
     private static List<string> BuildSignals(
@@ -338,10 +372,11 @@ internal static class ProgressionReport
 
     private static double CalculateFuelPerDay(BalanceConfig config, GeneratorDefinition generator, int generatorCount)
     {
-        if (generatorCount <= 0 || string.IsNullOrWhiteSpace(generator.Fuel))
+        IReadOnlyList<string> fuelOptions = GetFuelOptions(generator);
+        if (generatorCount <= 0 || fuelOptions.Count == 0)
             return 0;
 
-        FuelDefinition fuel = Resolve(config.Fuels, generator.Fuel, "fuel");
+        FuelDefinition fuel = Resolve(config.Fuels, fuelOptions[0], "fuel");
         return (double)(generatorCount * config.TicksPerDay) / Math.Max(1, fuel.TicksPerUnit);
     }
 
@@ -441,6 +476,16 @@ internal static class ProgressionReport
     private static string EscapeMarkdown(string value)
     {
         return value.Replace("|", "\\|", StringComparison.Ordinal);
+    }
+
+    private static IReadOnlyList<string> GetFuelOptions(GeneratorDefinition generator)
+    {
+        if (generator.FuelOptions.Count > 0)
+            return generator.FuelOptions.Where(fuel => !string.IsNullOrWhiteSpace(fuel)).ToList();
+
+        return string.IsNullOrWhiteSpace(generator.Fuel)
+            ? Array.Empty<string>()
+            : new[] { generator.Fuel };
     }
 
     public sealed record StageAnalysis(

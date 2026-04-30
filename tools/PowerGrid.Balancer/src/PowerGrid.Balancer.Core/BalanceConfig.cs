@@ -26,6 +26,7 @@ public sealed class GeneratorDefinition
     public required string Name { get; init; }
     public int OutputEuPerTick { get; init; }
     public string? Fuel { get; init; }
+    public List<string> FuelOptions { get; init; } = new();
     public bool WeatherAdjusted { get; init; }
     public string Notes { get; init; } = "";
 }

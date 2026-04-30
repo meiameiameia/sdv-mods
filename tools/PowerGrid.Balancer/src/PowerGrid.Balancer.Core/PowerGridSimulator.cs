@@ -186,12 +186,15 @@ public sealed class PowerGridSimulator
         foreach (GeneratorLoad load in scenario.Generators)
         {
             GeneratorDefinition generator = ResolveGenerator(config, load.Id);
-            if (string.IsNullOrWhiteSpace(generator.Fuel))
+            IReadOnlyList<string> fuelOptions = GetFuelOptions(generator);
+            if (fuelOptions.Count == 0)
                 continue;
 
-            int ticksNeeded = Math.Max(0, load.Count) * Math.Max(1, scenario.Days) * Math.Max(1, config.TicksPerDay);
-            generatorFuelTicksNeeded.TryGetValue(generator.Fuel, out int current);
-            generatorFuelTicksNeeded[generator.Fuel] = current + ticksNeeded;
+            foreach (string fuelId in fuelOptions)
+            {
+                generatorFuelTicksNeeded.TryGetValue(fuelId, out int current);
+                generatorFuelTicksNeeded[fuelId] = current;
+            }
         }
 
         Dictionary<string, FuelRuntime> result = new(StringComparer.OrdinalIgnoreCase);
@@ -201,7 +204,7 @@ public sealed class PowerGridSimulator
             scenario.FuelInventory.TryGetValue(pair.Key, out int unitsAvailable);
             int availableTicks = Math.Max(0, unitsAvailable) * fuel.TicksPerUnit;
 
-            result[pair.Key] = new FuelRuntime(pair.Key, Math.Max(0, unitsAvailable), pair.Value, availableTicks, fuel.TicksPerUnit);
+            result[pair.Key] = new FuelRuntime(pair.Key, Math.Max(0, unitsAvailable), availableTicks, fuel.TicksPerUnit);
         }
 
         return result;
@@ -217,12 +220,10 @@ public sealed class PowerGridSimulator
             if (count == 0)
                 continue;
 
-            if (!string.IsNullOrWhiteSpace(generator.Fuel))
+            IReadOnlyList<string> fuelOptions = GetFuelOptions(generator);
+            if (fuelOptions.Count > 0)
             {
-                if (!fuels.TryGetValue(generator.Fuel, out FuelRuntime? fuel))
-                    continue;
-
-                int fueledGenerators = fuel.ConsumeTicks(count);
+                int fueledGenerators = ConsumeFuelTicks(config, fuels, generator, fuelOptions, count);
                 if (fueledGenerators <= 0)
                     continue;
 
@@ -234,6 +235,44 @@ public sealed class PowerGridSimulator
         }
 
         return (int)Math.Round(output);
+    }
+
+    private static int ConsumeFuelTicks(BalanceConfig config, Dictionary<string, FuelRuntime> fuels, GeneratorDefinition generator, IReadOnlyList<string> fuelOptions, int requested)
+    {
+        int remaining = requested;
+        int fueled = 0;
+
+        foreach (string fuelId in fuelOptions)
+        {
+            if (!fuels.TryGetValue(fuelId, out FuelRuntime? fuel))
+            {
+                FuelDefinition definition = ResolveFuel(config, fuelId);
+                fuel = new FuelRuntime(fuelId, 0, 0, definition.TicksPerUnit);
+                fuels[fuelId] = fuel;
+            }
+
+            int consumed = fuel.ConsumeTicks(remaining);
+            fueled += consumed;
+            remaining -= consumed;
+            if (remaining <= 0)
+                break;
+        }
+
+        if (remaining > 0)
+        {
+            string shortageId = fuelOptions.Count == 1
+                ? fuelOptions[0]
+                : $"{generator.Name} fuel";
+            if (!fuels.TryGetValue(shortageId, out FuelRuntime? shortage))
+            {
+                shortage = new FuelRuntime(shortageId, 0, 0, 1);
+                fuels[shortageId] = shortage;
+            }
+
+            shortage.AddShort(remaining);
+        }
+
+        return fueled;
     }
 
     private static double WeatherMultiplier(GeneratorDefinition generator, WeatherProfile weather)
@@ -347,6 +386,16 @@ public sealed class PowerGridSimulator
             : throw new InvalidOperationException($"Unknown fuel '{id}'.");
     }
 
+    private static IReadOnlyList<string> GetFuelOptions(GeneratorDefinition generator)
+    {
+        if (generator.FuelOptions.Count > 0)
+            return generator.FuelOptions.Where(fuel => !string.IsNullOrWhiteSpace(fuel)).ToList();
+
+        return string.IsNullOrWhiteSpace(generator.Fuel)
+            ? Array.Empty<string>()
+            : new[] { generator.Fuel };
+    }
+
     private static int Clamp(int value, int min, int max)
     {
         return Math.Min(Math.Max(value, min), max);
@@ -357,11 +406,10 @@ public sealed class PowerGridSimulator
         private int ticksAvailable;
         private readonly int ticksPerUnit;
 
-        public FuelRuntime(string id, int unitsAvailable, int ticksNeeded, int ticksAvailable, int ticksPerUnit)
+        public FuelRuntime(string id, int unitsAvailable, int ticksAvailable, int ticksPerUnit)
         {
             Id = id;
             UnitsAvailable = unitsAvailable;
-            TicksShort = Math.Max(0, ticksNeeded - ticksAvailable);
             this.ticksAvailable = ticksAvailable;
             this.ticksPerUnit = Math.Max(1, ticksPerUnit);
         }
@@ -369,7 +417,7 @@ public sealed class PowerGridSimulator
         public string Id { get; }
         public int UnitsAvailable { get; }
         public int TicksConsumed { get; private set; }
-        public int TicksShort { get; }
+        public int TicksShort { get; private set; }
         public int UnitsConsumed => (int)Math.Ceiling((double)TicksConsumed / ticksPerUnit);
 
         public int ConsumeTicks(int requested)
@@ -378,6 +426,11 @@ public sealed class PowerGridSimulator
             ticksAvailable -= consumed;
             TicksConsumed += consumed;
             return consumed;
+        }
+
+        public void AddShort(int ticks)
+        {
+            TicksShort += Math.Max(0, ticks);
         }
     }
 }

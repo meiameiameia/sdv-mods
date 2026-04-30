@@ -33,6 +33,7 @@
       "name": "Steam Generator",
       "outputEuPerTick": 75,
       "fuel": "Coal",
+      "fuelOptions": [ "Wood", "Coal", "Hardwood" ],
       "weatherAdjusted": false,
       "notes": "Solid-fuel early generator. Moderate 0.1.x tuning."
     },
