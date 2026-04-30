@@ -90,6 +90,8 @@ internal static class LoadoutPlanReport
         int comfortGeneration = comfortGenerators * generator.OutputEuPerTick;
         int comfortSpare = Math.Max(0, comfortGeneration - demand);
         int cableZones = cable.ThroughputEuPerTick <= 0 ? 0 : (int)Math.Ceiling((double)demand / cable.ThroughputEuPerTick);
+        int plannedThroughput = cableZones * cable.ThroughputEuPerTick;
+        int cableHeadroom = Math.Max(0, plannedThroughput - demand);
 
         int batteryCapacity = 0;
         if (!string.IsNullOrWhiteSpace(loadout.Battery) && loadout.BatteryCount > 0)
@@ -97,6 +99,13 @@ internal static class LoadoutPlanReport
             BatteryDefinition battery = Resolve(config.Batteries, loadout.Battery, "battery");
             batteryCapacity = battery.CapacityEu * loadout.BatteryCount;
         }
+
+        double batteryFillMinutes = comfortSpare <= 0 || batteryCapacity <= 0
+            ? 0d
+            : (double)batteryCapacity / comfortSpare * config.TickMinutes;
+        double batteryRuntimeMinutes = demand <= 0 || batteryCapacity <= 0
+            ? 0d
+            : (double)batteryCapacity / demand * config.TickMinutes;
 
         FuelPlan fuel = AnalyzeFuel(config, generator, comfortGenerators, Math.Max(1, loadout.ReserveDays));
 
@@ -120,7 +129,7 @@ internal static class LoadoutPlanReport
             AddResourceCostBySource(upfrontCost, costBySource, "Fuel Reserve", resource, count);
 
         Dictionary<string, int> gaps = CalculateGaps(loadout.Stockpile, upfrontCost);
-        List<string> recommendations = BuildRecommendations(loadout, demand, minimumGenerators, comfortGenerators, cableZones, fuel, gaps);
+        List<string> recommendations = BuildRecommendations(config.TickMinutes, demand, generator.OutputEuPerTick, minimumGenerators, comfortGenerators, comfortSpare, cableZones, batteryCapacity, batteryFillMinutes, batteryRuntimeMinutes, fuel, gaps, loadout.Stockpile.Count > 0);
 
         return new PlanAnalysis(
             loadout,
@@ -136,7 +145,11 @@ internal static class LoadoutPlanReport
             cable.Name,
             cable.ThroughputEuPerTick,
             cableZones,
+            plannedThroughput,
+            cableHeadroom,
             batteryCapacity,
+            batteryFillMinutes,
+            batteryRuntimeMinutes,
             fuel,
             upfrontCost,
             costBySource,
@@ -185,24 +198,38 @@ internal static class LoadoutPlanReport
     }
 
     private static List<string> BuildRecommendations(
-        LoadoutPlan loadout,
+        int tickMinutes,
         int demand,
+        int generatorOutput,
         int minimumGenerators,
         int comfortGenerators,
+        int comfortSpare,
         int cableZones,
+        int batteryCapacity,
+        double batteryFillMinutes,
+        double batteryRuntimeMinutes,
         FuelPlan fuel,
-        IReadOnlyDictionary<string, int> gaps)
+        IReadOnlyDictionary<string, int> gaps,
+        bool hasStockpile)
     {
         List<string> recommendations = new();
         if (demand <= 0)
             recommendations.Add("Add powered machines to this loadout before evaluating power.");
         if (comfortGenerators > minimumGenerators)
             recommendations.Add($"Build {comfortGenerators} generator(s) for comfort, or {minimumGenerators} if resources are tight.");
+        if (comfortSpare > 0 && batteryCapacity <= 0)
+            recommendations.Add("Add battery storage if you want to capture surplus instead of wasting spare generation.");
+        if (comfortSpare > 0 && batteryCapacity > 0 && batteryFillMinutes < tickMinutes * 120)
+            recommendations.Add($"Battery storage fills after about {FormatDuration(batteryFillMinutes)} at comfort output; after that, extra generation is mostly waste unless demand rises.");
+        if (comfortSpare >= generatorOutput && minimumGenerators > 0)
+            recommendations.Add("Comfort generation has at least one full generator of spare output; consider fewer generators unless this setup is meant to grow soon.");
+        if (batteryRuntimeMinutes > 0 && batteryRuntimeMinutes < 60)
+            recommendations.Add($"Battery buffer only covers about {FormatDuration(batteryRuntimeMinutes)} at full demand, so it is a small smoothing buffer rather than a long reserve.");
         if (cableZones > 1)
             recommendations.Add($"Split this setup into {cableZones} network zone(s), or use a stronger cable tier when available.");
         if (!string.IsNullOrWhiteSpace(fuel.Name))
             recommendations.Add($"Keep about {fuel.ReserveUnits} {fuel.Name} for a {fuel.ReserveDays}-day reserve.");
-        if (gaps.Count > 0 && loadout.Stockpile.Count > 0)
+        if (gaps.Count > 0 && hasStockpile)
             recommendations.Add("Current stockpile is short on: " + string.Join(", ", gaps.OrderByDescending(pair => pair.Value).Take(5).Select(pair => $"{pair.Key} x{pair.Value}")));
         if (recommendations.Count == 0)
             recommendations.Add("This loadout looks comfortable under the configured assumptions.");
@@ -223,8 +250,10 @@ internal static class LoadoutPlanReport
             $"| Demand | {analysis.DemandEuPerTick} EU/tick |",
             $"| Minimum generation | {analysis.MinimumGeneratorCount}x {analysis.Generator} ({analysis.MinimumGenerationEuPerTick} EU/tick) |",
             $"| Comfort generation | {analysis.ComfortGeneratorCount}x {analysis.Generator} ({analysis.ComfortGenerationEuPerTick} EU/tick, +{analysis.ComfortSpareEuPerTick} spare) |",
-            $"| Cable plan | {analysis.CableZonesNeeded} zone(s) using {analysis.Cable} ({analysis.CableThroughputEuPerTick} EU/tick) |",
+            $"| Cable plan | {analysis.CableZonesNeeded} zone(s) using {analysis.Cable} ({analysis.CableThroughputEuPerTick} EU/tick each, {analysis.PlannedThroughputEuPerTick} EU/tick planned throughput, +{analysis.CableHeadroomEuPerTick} headroom) |",
             $"| Battery buffer | {analysis.BatteryCapacityEu} EU |",
+            $"| Battery fill estimate | {FormatDurationOrNone(analysis.BatteryFillMinutes)} at comfort surplus |",
+            $"| Battery runtime estimate | {FormatDurationOrNone(analysis.BatteryRuntimeMinutes)} at full demand |",
             $"| Fuel reserve | {FormatFuelReserve(analysis.Fuel)} |",
             "",
             "## Machines",
@@ -261,7 +290,7 @@ internal static class LoadoutPlanReport
     private static string RenderCsv(PlanAnalysis analysis)
     {
         StringBuilder csv = new();
-        csv.AppendLine(CsvLine("Name", "DemandEuPerTick", "Generator", "MinimumGenerators", "ComfortGenerators", "ComfortSpareEuPerTick", "Cable", "CableZones", "BatteryCapacityEu", "Fuel", "FuelPerDay", "ReserveDays", "ReserveUnits", "Recommendations"));
+        csv.AppendLine(CsvLine("Name", "DemandEuPerTick", "Generator", "MinimumGenerators", "ComfortGenerators", "ComfortSpareEuPerTick", "Cable", "CableZones", "PlannedThroughputEuPerTick", "CableHeadroomEuPerTick", "BatteryCapacityEu", "BatteryFillMinutes", "BatteryRuntimeMinutes", "Fuel", "FuelPerDay", "ReserveDays", "ReserveUnits", "Recommendations"));
         csv.AppendLine(CsvLine(
             analysis.Loadout.Name,
             analysis.DemandEuPerTick,
@@ -271,7 +300,11 @@ internal static class LoadoutPlanReport
             analysis.ComfortSpareEuPerTick,
             analysis.Cable,
             analysis.CableZonesNeeded,
+            analysis.PlannedThroughputEuPerTick,
+            analysis.CableHeadroomEuPerTick,
             analysis.BatteryCapacityEu,
+            Decimal(analysis.BatteryFillMinutes),
+            Decimal(analysis.BatteryRuntimeMinutes),
             analysis.Fuel.Name,
             Decimal(analysis.Fuel.UnitsPerDay),
             analysis.Fuel.ReserveDays,
@@ -352,6 +385,23 @@ internal static class LoadoutPlanReport
             ? ""
             : " (" + string.Join(", ", fuel.ReserveIngredientCost.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase).Select(pair => $"{pair.Key} x{pair.Value}")) + ")";
         return $"{Decimal(fuel.UnitsPerDay)} {fuel.Name}/day; {fuel.ReserveUnits} {fuel.Name} for {fuel.ReserveDays} days{ingredients}";
+    }
+
+    private static string FormatDurationOrNone(double minutes)
+    {
+        return minutes <= 0 ? "none" : FormatDuration(minutes);
+    }
+
+    private static string FormatDuration(double minutes)
+    {
+        if (minutes < 60)
+            return $"{Decimal(minutes)}m";
+
+        double hours = minutes / 60d;
+        if (hours < 24)
+            return $"{Decimal(hours)}h";
+
+        return $"{Decimal(hours / 24d)}d";
     }
 
     private static int MachineDemand(PlanAnalysis analysis, string machine)
@@ -472,7 +522,11 @@ internal static class LoadoutPlanReport
         string Cable,
         int CableThroughputEuPerTick,
         int CableZonesNeeded,
+        int PlannedThroughputEuPerTick,
+        int CableHeadroomEuPerTick,
         int BatteryCapacityEu,
+        double BatteryFillMinutes,
+        double BatteryRuntimeMinutes,
         FuelPlan Fuel,
         IReadOnlyDictionary<string, int> UpfrontAndReserveCost,
         IReadOnlyDictionary<string, Dictionary<string, int>> CostBySource,

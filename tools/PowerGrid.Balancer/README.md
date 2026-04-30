@@ -93,8 +93,10 @@ The plan command writes:
 - `loadout-index.md`: summary of all loadouts when planning a folder or glob.
 - `loadout-index.csv`: sortable summary of all loadouts.
 - `<loadout>/loadout-plan.md`: readable power plan, machine mix, resource check, and recommendations.
-- `<loadout>/loadout-plan.csv`: one-row summary for comparisons.
+- `<loadout>/loadout-plan.csv`: one-row summary for comparisons, including cable headroom and battery fill/runtime estimates.
 - `<loadout>/loadout-resource-gaps.csv`: resource need versus stockpile.
+
+Loadout plans estimate how quickly spare generation fills the configured batteries and how long those batteries can cover full demand. Use that to spot setups where batteries are doing useful smoothing versus setups that are just overproducing EU all day.
 
 ## Check Resource Pressure
 
