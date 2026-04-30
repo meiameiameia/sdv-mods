@@ -91,6 +91,21 @@ The plan command writes:
 - `<loadout>/loadout-plan.csv`: one-row summary for comparisons.
 - `<loadout>/loadout-resource-gaps.csv`: resource need versus stockpile.
 
+## Check Resource Pressure
+
+Use `resources` when you want to know which ingredients are blocking planned setups:
+
+```powershell
+dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- resources tools/PowerGrid.Balancer/loadouts --config tools/PowerGrid.Balancer/balance/powergrid-0.1.x-moderate.json --out artifacts/balance-lab/resource-pressure
+```
+
+The resources command writes:
+
+- `resource-pressure.md`: ranked ingredient pressure with short balance notes.
+- `resource-pressure.csv`: sortable data for comparing recipe and fuel changes.
+
+This is the first pass for answering questions like "is Biofuel asking for too much Sap?" or "are powered machines leaning too hard on one metal tier?"
+
 ## Compare Balance Configs
 
 Use `compare-progression` before applying balance changes to the mod:

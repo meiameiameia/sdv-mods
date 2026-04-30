@@ -134,6 +134,33 @@ try
                 return 0;
             }
 
+        case "resources":
+            {
+                string loadoutInput = args.Length >= 2 && !args[1].StartsWith("--", StringComparison.Ordinal)
+                    ? args[1]
+                    : FindDefaultLoadoutFolder();
+                string? outputPath = ReadOption(args, "--out");
+                IReadOnlyList<string> loadoutFiles = ExpandJsonFiles(loadoutInput);
+                if (loadoutFiles.Count == 0)
+                    throw new InvalidOperationException($"No loadout files matched '{loadoutInput}'.");
+
+                List<LoadoutPlan> loadouts = loadoutFiles
+                    .Select(file => LoadJson<LoadoutPlan>(file, jsonOptions))
+                    .ToList();
+
+                if (string.IsNullOrWhiteSpace(outputPath))
+                {
+                    Console.WriteLine(ResourcePressureReport.RenderConsole(config, loadouts));
+                    return 0;
+                }
+
+                ResourcePressureReport.Write(outputPath, config, loadouts);
+                Console.WriteLine($"Wrote resource pressure report to {Path.GetFullPath(outputPath)}");
+                Console.WriteLine("- resource-pressure.md");
+                Console.WriteLine("- resource-pressure.csv");
+                return 0;
+            }
+
         case "compare-progression":
             {
                 if (args.Length < 3)
@@ -252,6 +279,20 @@ static string FindDefaultLoadoutPath()
         ?? throw new FileNotFoundException("Could not find default loadout. Pass plan <loadout.json>.");
 }
 
+static string FindDefaultLoadoutFolder()
+{
+    string cwd = Directory.GetCurrentDirectory();
+    string[] candidates =
+    {
+        Path.Combine(cwd, "loadouts"),
+        Path.Combine(cwd, "tools", "PowerGrid.Balancer", "loadouts"),
+        Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "loadouts"))
+    };
+
+    return candidates.FirstOrDefault(Directory.Exists)
+        ?? throw new DirectoryNotFoundException("Could not find default loadouts folder. Pass resources <loadout-folder-or-glob>.");
+}
+
 static IReadOnlyList<string> ExpandScenarioFiles(string pattern)
 {
     return ExpandJsonFiles(pattern);
@@ -301,6 +342,7 @@ static void PrintHelp()
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- audit [scenario-folder-or-glob] [--out <folder>]
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- progression [profile.json] [--out <folder>]
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- plan [loadout.json|loadout-folder-or-glob] [--out <folder>]
+          dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- resources [loadout-folder-or-glob] [--out <folder>]
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- compare-progression <baseline-config.json> <proposed-config.json> [profile.json] [--out <folder>]
 
         Options:
@@ -313,6 +355,7 @@ static void PrintHelp()
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- audit tools/PowerGrid.Balancer/scenarios --out artifacts/balance-lab/current
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- progression tools/PowerGrid.Balancer/profiles/powergrid-progression-ladder.json --out artifacts/balance-lab/progression
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- plan tools/PowerGrid.Balancer/loadouts/sample-big-shed.json --config tools/PowerGrid.Balancer/balance/powergrid-0.1.x-moderate.json --out artifacts/balance-lab/loadout-sample
+          dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- resources tools/PowerGrid.Balancer/loadouts --config tools/PowerGrid.Balancer/balance/powergrid-0.1.x-moderate.json --out artifacts/balance-lab/resource-pressure
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- compare-progression tools/PowerGrid.Balancer/balance/powergrid-0.1.0.json tools/PowerGrid.Balancer/balance/powergrid-0.1.x-test.json tools/PowerGrid.Balancer/profiles/powergrid-progression-ladder.json --out artifacts/balance-lab/comparison
         """);
 }

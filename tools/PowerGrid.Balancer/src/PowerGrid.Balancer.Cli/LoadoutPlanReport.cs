@@ -55,6 +55,17 @@ internal static class LoadoutPlanReport
             analysis.Recommendations.FirstOrDefault() ?? "");
     }
 
+    public static ResourceSnapshot AnalyzeResources(BalanceConfig config, LoadoutPlan loadout)
+    {
+        PlanAnalysis analysis = Analyze(config, loadout);
+        return new ResourceSnapshot(
+            analysis.Loadout.Name,
+            analysis.DemandEuPerTick,
+            analysis.UpfrontAndReserveCost,
+            analysis.Loadout.Stockpile,
+            analysis.ResourceGaps);
+    }
+
     private static PlanAnalysis Analyze(BalanceConfig config, LoadoutPlan loadout)
     {
         int demand = 0;
@@ -457,4 +468,11 @@ internal static class LoadoutPlanReport
         int ResourceGapTypes,
         string TopResourceGaps,
         string MainRecommendation);
+
+    public sealed record ResourceSnapshot(
+        string LoadoutName,
+        int DemandEuPerTick,
+        IReadOnlyDictionary<string, int> Needed,
+        IReadOnlyDictionary<string, int> Stockpile,
+        IReadOnlyDictionary<string, int> Gaps);
 }
