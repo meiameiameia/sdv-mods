@@ -101,7 +101,7 @@ dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- reso
 
 The resources command writes:
 
-- `resource-pressure.md`: ranked ingredient pressure with short balance notes.
+- `resource-pressure.md`: ranked ingredient pressure, main pressure source, and short balance notes.
 - `resource-pressure.csv`: sortable data for comparing recipe and fuel changes.
 
 This is the first pass for answering questions like "is Biofuel asking for too much Sap?" or "are powered machines leaning too hard on one metal tier?"

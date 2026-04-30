@@ -37,6 +37,15 @@ internal static class ResourcePressureReport
                 pressure.LoadoutsUsing.Add(snapshot.LoadoutName);
             }
 
+            foreach ((string source, IReadOnlyDictionary<string, int> sourceCosts) in snapshot.CostBySource)
+            {
+                foreach ((string resource, int amount) in sourceCosts)
+                {
+                    MutableResourcePressure pressure = GetOrCreate(resources, resource);
+                    pressure.AddSource(source, amount);
+                }
+            }
+
             foreach ((string resource, int gap) in snapshot.Gaps)
             {
                 MutableResourcePressure pressure = GetOrCreate(resources, resource);
@@ -77,13 +86,13 @@ internal static class ResourcePressureReport
             "",
             "Ranks ingredients by how often they block planned loadouts. Use this to decide whether a recipe or fuel loop is too grindy before changing runtime balance.",
             "",
-            "| Resource | Signal | Needed | Stockpile | Gap | Loadouts blocked | Worst loadout |",
-            "| --- | --- | ---: | ---: | ---: | ---: | --- |"
+            "| Resource | Signal | Needed | Stockpile | Gap | Main source | Loadouts blocked | Worst loadout |",
+            "| --- | --- | ---: | ---: | ---: | --- | ---: | --- |"
         };
 
         foreach (ResourcePressure resource in pressure)
         {
-            lines.Add($"| {EscapeMarkdown(resource.Resource)} | {resource.Signal} | {resource.TotalNeeded} | {resource.TotalStockpile} | {resource.TotalGap} | {resource.BlockedLoadoutCount}/{resource.TotalLoadouts} | {EscapeMarkdown(resource.WorstLoadout)} |");
+            lines.Add($"| {EscapeMarkdown(resource.Resource)} | {resource.Signal} | {resource.TotalNeeded} | {resource.TotalStockpile} | {resource.TotalGap} | {EscapeMarkdown(resource.PrimarySource)} | {resource.BlockedLoadoutCount}/{resource.TotalLoadouts} | {EscapeMarkdown(resource.WorstLoadout)} |");
         }
 
         lines.Add("");
@@ -91,7 +100,7 @@ internal static class ResourcePressureReport
         lines.Add("");
 
         foreach (ResourcePressure resource in pressure.Where(resource => resource.TotalGap > 0).Take(8))
-            lines.Add($"- {resource.Resource}: {resource.Signal.ToLowerInvariant()} pressure, short by {resource.TotalGap}; worst case is {resource.WorstLoadout}.");
+            lines.Add($"- {resource.Resource}: {resource.Signal.ToLowerInvariant()} pressure, short by {resource.TotalGap}; mostly from {resource.PrimarySource}; worst case is {resource.WorstLoadout}.");
 
         if (pressure.All(resource => resource.TotalGap <= 0))
             lines.Add("- No resource gaps under the current loadout assumptions.");
@@ -102,6 +111,7 @@ internal static class ResourcePressureReport
         lines.Add("- `Needed` is the total recipe and reserve-fuel cost across the loadout suite.");
         lines.Add("- `Stockpile` is the total benchmark stockpile across those loadouts.");
         lines.Add("- `Gap` is the total shortage after each loadout spends its own stockpile.");
+        lines.Add("- `Main source` shows whether the pressure comes mostly from machines, generators, cables, batteries, conduits, or fuel reserve.");
         lines.Add("- High pressure means the resource deserves balance review, not an automatic recipe change.");
 
         return string.Join(Environment.NewLine, lines);
@@ -110,7 +120,7 @@ internal static class ResourcePressureReport
     private static string RenderCsv(IReadOnlyList<ResourcePressure> pressure)
     {
         StringBuilder csv = new();
-        csv.AppendLine(CsvLine("Resource", "Signal", "TotalNeeded", "TotalStockpile", "TotalGap", "LoadoutsUsing", "BlockedLoadouts", "TotalLoadouts", "WorstLoadout", "WorstGap"));
+        csv.AppendLine(CsvLine("Resource", "Signal", "TotalNeeded", "TotalStockpile", "TotalGap", "PrimarySource", "PrimarySourceAmount", "LoadoutsUsing", "BlockedLoadouts", "TotalLoadouts", "WorstLoadout", "WorstGap"));
 
         foreach (ResourcePressure resource in pressure)
         {
@@ -120,6 +130,8 @@ internal static class ResourcePressureReport
                 resource.TotalNeeded,
                 resource.TotalStockpile,
                 resource.TotalGap,
+                resource.PrimarySource,
+                resource.PrimarySourceAmount,
                 resource.LoadoutsUsing,
                 resource.BlockedLoadoutCount,
                 resource.TotalLoadouts,
@@ -180,15 +192,29 @@ internal static class ResourcePressureReport
         public string WorstLoadout { get; set; } = "";
         public HashSet<string> LoadoutsUsing { get; } = new(StringComparer.OrdinalIgnoreCase);
         public HashSet<string> BlockedLoadouts { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, int> SourceTotals { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        public void AddSource(string source, int amount)
+        {
+            SourceTotals.TryGetValue(source, out int current);
+            SourceTotals[source] = current + amount;
+        }
 
         public ResourcePressure ToResourcePressure(int totalLoadouts)
         {
+            KeyValuePair<string, int> primarySource = SourceTotals
+                .OrderByDescending(pair => pair.Value)
+                .ThenBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault();
+
             return new ResourcePressure(
                 Resource,
                 Classify(this, totalLoadouts),
                 TotalNeeded,
                 TotalStockpile,
                 TotalGap,
+                string.IsNullOrWhiteSpace(primarySource.Key) ? "-" : primarySource.Key,
+                primarySource.Value,
                 LoadoutsUsing.Count,
                 BlockedLoadouts.Count,
                 totalLoadouts,
@@ -203,6 +229,8 @@ internal static class ResourcePressureReport
         int TotalNeeded,
         int TotalStockpile,
         int TotalGap,
+        string PrimarySource,
+        int PrimarySourceAmount,
         int LoadoutsUsing,
         int BlockedLoadoutCount,
         int TotalLoadouts,

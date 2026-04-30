@@ -62,6 +62,7 @@ internal static class LoadoutPlanReport
             analysis.Loadout.Name,
             analysis.DemandEuPerTick,
             analysis.UpfrontAndReserveCost,
+            analysis.CostBySource,
             analysis.Loadout.Stockpile,
             analysis.ResourceGaps);
     }
@@ -100,22 +101,23 @@ internal static class LoadoutPlanReport
         FuelPlan fuel = AnalyzeFuel(config, generator, comfortGenerators, Math.Max(1, loadout.ReserveDays));
 
         Dictionary<string, int> upfrontCost = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, Dictionary<string, int>> costBySource = new(StringComparer.OrdinalIgnoreCase);
         foreach ((string machine, int count) in loadout.PoweredMachines)
-            AddExpandedRecipeCost(config, upfrontCost, machine, count);
+            AddExpandedRecipeCostBySource(config, upfrontCost, costBySource, "Machines", machine, count);
 
-        AddExpandedRecipeCost(config, upfrontCost, generator.Name, comfortGenerators);
+        AddExpandedRecipeCostBySource(config, upfrontCost, costBySource, "Generators", generator.Name, comfortGenerators);
 
         if (!string.IsNullOrWhiteSpace(loadout.Battery) && loadout.BatteryCount > 0)
-            AddExpandedRecipeCost(config, upfrontCost, loadout.Battery, loadout.BatteryCount);
+            AddExpandedRecipeCostBySource(config, upfrontCost, costBySource, "Batteries", loadout.Battery, loadout.BatteryCount);
 
         if (loadout.CableCount > 0)
-            AddExpandedRecipeCost(config, upfrontCost, cable.Name, loadout.CableCount);
+            AddExpandedRecipeCostBySource(config, upfrontCost, costBySource, "Cables", cable.Name, loadout.CableCount);
 
         if (loadout.ConduitCount > 0)
-            AddExpandedRecipeCost(config, upfrontCost, "Power Conduit", loadout.ConduitCount);
+            AddExpandedRecipeCostBySource(config, upfrontCost, costBySource, "Conduits", "Power Conduit", loadout.ConduitCount);
 
         foreach ((string resource, int count) in fuel.ReserveIngredientCost)
-            Add(upfrontCost, resource, count);
+            AddResourceCostBySource(upfrontCost, costBySource, "Fuel Reserve", resource, count);
 
         Dictionary<string, int> gaps = CalculateGaps(loadout.Stockpile, upfrontCost);
         List<string> recommendations = BuildRecommendations(loadout, demand, minimumGenerators, comfortGenerators, cableZones, fuel, gaps);
@@ -137,6 +139,7 @@ internal static class LoadoutPlanReport
             batteryCapacity,
             fuel,
             upfrontCost,
+            costBySource,
             gaps,
             recommendations);
     }
@@ -366,6 +369,37 @@ internal static class LoadoutPlanReport
         AddExpandedRecipeCost(config, cost, item, count, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
     }
 
+    private static void AddExpandedRecipeCostBySource(
+        BalanceConfig config,
+        Dictionary<string, int> totalCost,
+        Dictionary<string, Dictionary<string, int>> costBySource,
+        string source,
+        string item,
+        int count)
+    {
+        Dictionary<string, int> sourceCost = new(StringComparer.OrdinalIgnoreCase);
+        AddExpandedRecipeCost(config, sourceCost, item, count);
+        foreach ((string resource, int amount) in sourceCost)
+            AddResourceCostBySource(totalCost, costBySource, source, resource, amount);
+    }
+
+    private static void AddResourceCostBySource(
+        Dictionary<string, int> totalCost,
+        Dictionary<string, Dictionary<string, int>> costBySource,
+        string source,
+        string resource,
+        int amount)
+    {
+        Add(totalCost, resource, amount);
+        if (!costBySource.TryGetValue(source, out Dictionary<string, int>? sourceCost))
+        {
+            sourceCost = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            costBySource[source] = sourceCost;
+        }
+
+        Add(sourceCost, resource, amount);
+    }
+
     private static void AddExpandedRecipeCost(BalanceConfig config, Dictionary<string, int> cost, string item, int count, HashSet<string> seen)
     {
         if (!config.Recipes.TryGetValue(item, out RecipeDefinition? recipe) || seen.Contains(item))
@@ -441,6 +475,7 @@ internal static class LoadoutPlanReport
         int BatteryCapacityEu,
         FuelPlan Fuel,
         IReadOnlyDictionary<string, int> UpfrontAndReserveCost,
+        IReadOnlyDictionary<string, Dictionary<string, int>> CostBySource,
         IReadOnlyDictionary<string, int> ResourceGaps,
         IReadOnlyList<string> Recommendations);
 
@@ -473,6 +508,7 @@ internal static class LoadoutPlanReport
         string LoadoutName,
         int DemandEuPerTick,
         IReadOnlyDictionary<string, int> Needed,
+        IReadOnlyDictionary<string, Dictionary<string, int>> CostBySource,
         IReadOnlyDictionary<string, int> Stockpile,
         IReadOnlyDictionary<string, int> Gaps);
 }
