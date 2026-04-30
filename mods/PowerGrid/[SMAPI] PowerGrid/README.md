@@ -57,6 +57,11 @@ Stardew Valley/Mods/[SMAPI] PowerGrid/manifest.json
 
 ## Basic Use
 
+The zip also includes a short player guide in English and Brazilian Portuguese:
+
+- `PLAYER_GUIDE.md`
+- `GUIA_DO_JOGADOR.pt-BR.md`
+
 1. Place a generator.
 2. Add fuel if the generator needs fuel.
 3. Place cables next to the generator and the machines you want to power.
