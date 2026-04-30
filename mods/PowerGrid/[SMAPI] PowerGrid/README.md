@@ -256,6 +256,10 @@ From the repository root:
 
 The local zip is written to `artifacts/mod-zips/`.
 
+## Credits
+
+- Hayato2236: Spanish translation.
+
 ## License
 
 All rights reserved until a specific license is chosen for distribution.
