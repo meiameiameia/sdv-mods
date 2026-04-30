@@ -106,6 +106,23 @@ The resources command writes:
 
 This is the first pass for answering questions like "is Biofuel asking for too much Sap?" or "are powered machines leaning too hard on one metal tier?"
 
+## Check Resource Sustainability
+
+Use `sustainability` when you want to know whether PowerGrid is using a fair share of the player's wider resource economy:
+
+```powershell
+dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- sustainability tools/PowerGrid.Balancer/loadouts --config tools/PowerGrid.Balancer/balance/powergrid-0.1.x-moderate.json --out artifacts/balance-lab/sustainability
+```
+
+This command compares each loadout against a resource budget profile. Setup costs are checked against stockpiles after a protected reserve floor. Ongoing fuel costs are checked against a safe share of expected weekly income.
+
+The sustainability command writes:
+
+- `resource-sustainability.md`: readable setup and weekly fuel pressure notes.
+- `resource-sustainability.csv`: sortable sustainability data.
+
+Use this before changing fuel or recipe defaults. A resource can be technically available and still be bad balance if PowerGrid consumes too much of what players need for the rest of Stardew.
+
 ## Compare Resource Candidates
 
 Use `compare-resources` when you want to test several balance candidates against the same loadout suite:
@@ -141,6 +158,7 @@ The comparison command writes:
 - `balance/powergrid-0.1.x-test.json`: generous tuning sandbox, not runtime defaults.
 - `balance/powergrid-0.1.x-moderate.json`: moderate Biofuel tuning sandbox, not runtime defaults.
 - `balance/powergrid-0.1.x-biofuel-*.json`: Biofuel candidate sandboxes for resource-pressure comparison.
+- `resource-budgets/powergrid-sustainability.json`: safe resource share assumptions for sustainability checks.
 - `scenarios/*.json`: benchmark setups.
 - `loadouts/*.json`: custom machine mixes for setup planning.
 - `profiles/*.json`: progression and stockpile benchmark ladders.

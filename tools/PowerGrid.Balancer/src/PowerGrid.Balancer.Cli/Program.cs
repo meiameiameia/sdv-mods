@@ -200,6 +200,36 @@ try
                 return 0;
             }
 
+        case "sustainability":
+            {
+                string loadoutInput = args.Length >= 2 && !args[1].StartsWith("--", StringComparison.Ordinal)
+                    ? args[1]
+                    : FindDefaultLoadoutFolder();
+                string budgetPath = ReadOption(args, "--budget") ?? FindDefaultBudgetPath();
+                string? outputPath = ReadOption(args, "--out");
+
+                IReadOnlyList<string> loadoutFiles = ExpandJsonFiles(loadoutInput);
+                if (loadoutFiles.Count == 0)
+                    throw new InvalidOperationException($"No loadout files matched '{loadoutInput}'.");
+
+                List<LoadoutPlan> loadouts = loadoutFiles
+                    .Select(file => LoadJson<LoadoutPlan>(file, jsonOptions))
+                    .ToList();
+                ResourceBudgetProfile budget = LoadJson<ResourceBudgetProfile>(budgetPath, jsonOptions);
+
+                if (string.IsNullOrWhiteSpace(outputPath))
+                {
+                    Console.WriteLine(ResourceSustainabilityReport.RenderConsole(config, loadouts, budget));
+                    return 0;
+                }
+
+                ResourceSustainabilityReport.Write(outputPath, config, loadouts, budget);
+                Console.WriteLine($"Wrote resource sustainability report to {Path.GetFullPath(outputPath)}");
+                Console.WriteLine("- resource-sustainability.md");
+                Console.WriteLine("- resource-sustainability.csv");
+                return 0;
+            }
+
         case "compare-progression":
             {
                 if (args.Length < 3)
@@ -332,6 +362,20 @@ static string FindDefaultLoadoutFolder()
         ?? throw new DirectoryNotFoundException("Could not find default loadouts folder. Pass resources <loadout-folder-or-glob>.");
 }
 
+static string FindDefaultBudgetPath()
+{
+    string cwd = Directory.GetCurrentDirectory();
+    string[] candidates =
+    {
+        Path.Combine(cwd, "resource-budgets", "powergrid-sustainability.json"),
+        Path.Combine(cwd, "tools", "PowerGrid.Balancer", "resource-budgets", "powergrid-sustainability.json"),
+        Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "resource-budgets", "powergrid-sustainability.json"))
+    };
+
+    return candidates.FirstOrDefault(File.Exists)
+        ?? throw new FileNotFoundException("Could not find default resource budget profile. Pass --budget <path>.");
+}
+
 static IReadOnlyList<string> ExpandScenarioFiles(string pattern)
 {
     return ExpandJsonFiles(pattern);
@@ -383,10 +427,12 @@ static void PrintHelp()
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- plan [loadout.json|loadout-folder-or-glob] [--out <folder>]
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- resources [loadout-folder-or-glob] [--out <folder>]
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- compare-resources <baseline-config.json> <candidate-config-folder-or-glob> [loadout-folder-or-glob] [--out <folder>]
+          dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- sustainability [loadout-folder-or-glob] [--budget <budget.json>] [--out <folder>]
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- compare-progression <baseline-config.json> <proposed-config.json> [profile.json] [--out <folder>]
 
         Options:
           --config <path>   Balance config JSON. Defaults to balance/powergrid-0.1.0.json.
+          --budget <path>   Resource budget JSON. Defaults to resource-budgets/powergrid-sustainability.json.
           --out <folder>    Audit output folder. Defaults to artifacts/balance-lab/current.
 
         Examples:
@@ -397,6 +443,7 @@ static void PrintHelp()
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- plan tools/PowerGrid.Balancer/loadouts/sample-big-shed.json --config tools/PowerGrid.Balancer/balance/powergrid-0.1.x-moderate.json --out artifacts/balance-lab/loadout-sample
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- resources tools/PowerGrid.Balancer/loadouts --config tools/PowerGrid.Balancer/balance/powergrid-0.1.x-moderate.json --out artifacts/balance-lab/resource-pressure
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- compare-resources tools/PowerGrid.Balancer/balance/powergrid-0.1.x-moderate.json tools/PowerGrid.Balancer/balance/powergrid-0.1.x-biofuel-*.json tools/PowerGrid.Balancer/loadouts --out artifacts/balance-lab/biofuel-candidates
+          dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- sustainability tools/PowerGrid.Balancer/loadouts --config tools/PowerGrid.Balancer/balance/powergrid-0.1.x-moderate.json --out artifacts/balance-lab/sustainability
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- compare-progression tools/PowerGrid.Balancer/balance/powergrid-0.1.0.json tools/PowerGrid.Balancer/balance/powergrid-0.1.x-test.json tools/PowerGrid.Balancer/profiles/powergrid-progression-ladder.json --out artifacts/balance-lab/comparison
         """);
 }
