@@ -2,7 +2,6 @@
   "command.powergrid_status": "Print PowerGrid network status.",
   "command.powergrid_debug": "Toggle PowerGrid debug overlay.",
   "command.powergrid_conduit_reset": "Remove all saved PowerGrid conduit links.",
-  "command.powergrid_extract_sprites": "Extract placeholder PowerGrid sprites for editing.",
   "command.powergrid_unlock": "Grant PowerGrid crafting recipes now.",
   "command.powergrid_tab": "Open the PowerGrid tab.",
   "command.powergrid_query_dump": "Dump PowerGrid query snapshots to the SMAPI console.",

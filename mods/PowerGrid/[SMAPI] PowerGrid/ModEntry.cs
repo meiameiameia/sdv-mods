@@ -210,7 +210,6 @@ internal sealed class ModEntry : Mod
         helper.ConsoleCommands.Add("powergrid_status", I18n.Get("command.powergrid_status"), CmdStatus);
         helper.ConsoleCommands.Add("powergrid_debug", I18n.Get("command.powergrid_debug"), CmdDebug);
         helper.ConsoleCommands.Add("powergrid_conduit_reset", I18n.Get("command.powergrid_conduit_reset"), CmdConduitReset);
-        helper.ConsoleCommands.Add("powergrid_extract_sprites", I18n.Get("command.powergrid_extract_sprites"), CmdExtractSprites);
         helper.ConsoleCommands.Add("powergrid_unlock", I18n.Get("command.powergrid_unlock"), CmdUnlock);
         helper.ConsoleCommands.Add("powergrid_tab", I18n.Get("command.powergrid_tab"), CmdPowerTab);
         helper.ConsoleCommands.Add("powergrid_query_dump", I18n.Get("command.powergrid_query_dump"), CmdQueryDump);
@@ -1844,18 +1843,6 @@ internal sealed class ModEntry : Mod
     {
         ConduitMgr.CancelPairing();
         Monitor.Log("[PowerGrid] Conduit pairing cancelled.", LogLevel.Info);
-    }
-
-    private void CmdExtractSprites(string command, string[] args)
-    {
-        if (!Context.IsWorldReady)
-        {
-            Monitor.Log("[PowerGrid] Must be in-game to extract sprites.", LogLevel.Error);
-            return;
-        }
-
-        PlaceholderExtractor.ExtractAll(Helper, Monitor);
-        Monitor.Log("[PowerGrid] Placeholder sprites extracted to Assets/ folder. You can now edit them!", LogLevel.Info);
     }
 
     private void CmdPowerTab(string command, string[] args)

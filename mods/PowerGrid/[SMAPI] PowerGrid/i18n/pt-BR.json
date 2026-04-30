@@ -2,7 +2,6 @@
   "command.powergrid_status": "Mostra o estado das redes do PowerGrid.",
   "command.powergrid_debug": "Ativa ou desativa a sobreposição de depuração do PowerGrid.",
   "command.powergrid_conduit_reset": "Remove todos os links salvos dos conduítes do PowerGrid.",
-  "command.powergrid_extract_sprites": "Extrai sprites de base do PowerGrid para edição.",
   "command.powergrid_unlock": "Concede as receitas de criação do PowerGrid agora.",
   "command.powergrid_tab": "Abre a aba do PowerGrid.",
   "command.powergrid_query_dump": "Mostra os snapshots de consulta do PowerGrid no console do SMAPI.",
