@@ -64,6 +64,8 @@ The progression command writes:
 - `progression-stages.csv`: EU demand, generator count, fuel pressure, cable zones, and headline signals.
 - `progression-resource-gaps.csv`: upfront recipe costs versus the stage stockpile.
 - `progression-fuel.csv`: sustained fuel window after upfront costs.
+- `progression-plan.md`: setup recommendations with minimum/comfort generators, cable zones, and fuel reserves.
+- `progression-plan.csv`: sortable planning data for audits and future UI work.
 
 The included profile uses approximate early/mid-game checkpoints and an anonymized mature Year 3 organized production benchmark.
 

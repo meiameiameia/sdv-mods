@@ -89,6 +89,8 @@ try
                 Console.WriteLine("- progression-stages.csv");
                 Console.WriteLine("- progression-resource-gaps.csv");
                 Console.WriteLine("- progression-fuel.csv");
+                Console.WriteLine("- progression-plan.md");
+                Console.WriteLine("- progression-plan.csv");
                 return 0;
             }
 

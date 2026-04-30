@@ -16,6 +16,8 @@ internal static class ProgressionReport
         File.WriteAllText(Path.Combine(outputPath, "progression-stages.csv"), RenderStagesCsv(rows));
         File.WriteAllText(Path.Combine(outputPath, "progression-resource-gaps.csv"), RenderResourceGapsCsv(rows));
         File.WriteAllText(Path.Combine(outputPath, "progression-fuel.csv"), RenderFuelCsv(rows));
+        File.WriteAllText(Path.Combine(outputPath, "progression-plan.md"), RenderPlan(config, rows));
+        File.WriteAllText(Path.Combine(outputPath, "progression-plan.csv"), RenderPlanCsv(config, rows));
     }
 
     public static StageAnalysis Analyze(BalanceConfig config, ProgressionStage stage)
@@ -238,6 +240,143 @@ internal static class ProgressionReport
         return csv.ToString();
     }
 
+    private static string RenderPlan(BalanceConfig config, IReadOnlyList<StageAnalysis> rows)
+    {
+        List<string> lines = new()
+        {
+            "# PowerGrid Setup Plan",
+            "",
+            "A planning view for each progression checkpoint. Minimum generators cover the exact demand; comfort generators add about 15% headroom so a setup has room for a few extra machines or weather/fuel mistakes.",
+            "",
+            "| Stage | Demand | Minimum setup | Comfort setup | Cable plan | Fuel reserve target | Pressure | Recommendation |",
+            "| --- | ---: | --- | --- | --- | --- | --- | --- |"
+        };
+
+        foreach (StageAnalysis row in rows)
+        {
+            PlanRow plan = BuildPlanRow(config, row);
+            lines.Add($"| {EscapeMarkdown(row.Stage.Name)} | {row.DemandEuPerTick} EU/tick | {EscapeMarkdown(plan.MinimumSetup)} | {EscapeMarkdown(plan.ComfortSetup)} | {EscapeMarkdown(plan.CablePlan)} | {EscapeMarkdown(plan.FuelReserveTarget)} | {EscapeMarkdown(plan.Pressure)} | {EscapeMarkdown(plan.Recommendation)} |");
+        }
+
+        lines.Add("");
+        lines.Add("## How To Use This");
+        lines.Add("");
+        lines.Add("- Minimum setup is useful for checking if a balance target is technically possible.");
+        lines.Add("- Comfort setup is the better default for player-facing recommendations.");
+        lines.Add("- Fuel reserve targets show how much fuel a player should keep around for a stable week or two.");
+        lines.Add("- Pressure calls out whether the stage is blocked by resources, clutter, cable splitting, or fuel grind.");
+
+        return string.Join(Environment.NewLine, lines);
+    }
+
+    private static string RenderPlanCsv(BalanceConfig config, IReadOnlyList<StageAnalysis> rows)
+    {
+        StringBuilder csv = new();
+        csv.AppendLine(CsvLine("Stage", "DemandEuPerTick", "Generator", "MinimumGenerators", "ComfortGenerators", "ComfortSpareEuPerTick", "Cable", "CableZones", "Fuel", "MinimumFuelPerDay", "SevenDayFuelReserve", "FourteenDayFuelReserve", "Pressure", "Recommendation"));
+
+        foreach (StageAnalysis row in rows)
+        {
+            PlanRow plan = BuildPlanRow(config, row);
+            csv.AppendLine(CsvLine(
+                row.Stage.Name,
+                row.DemandEuPerTick,
+                row.Generator,
+                row.GeneratorCount,
+                plan.ComfortGeneratorCount,
+                plan.ComfortSpareEuPerTick,
+                row.Cable,
+                row.CableZonesNeeded,
+                row.Fuel.Name,
+                Decimal(plan.MinimumFuelPerDay),
+                Decimal(plan.SevenDayFuelReserve),
+                Decimal(plan.FourteenDayFuelReserve),
+                plan.Pressure,
+                plan.Recommendation));
+        }
+
+        return csv.ToString();
+    }
+
+    private static PlanRow BuildPlanRow(BalanceConfig config, StageAnalysis row)
+    {
+        GeneratorDefinition generator = Resolve(config.Generators, row.Generator, "generator");
+        int comfortGeneratorCount = row.GeneratorCount;
+        if (row.DemandEuPerTick > 0 && generator.OutputEuPerTick > 0)
+        {
+            comfortGeneratorCount = Math.Max(
+                row.GeneratorCount,
+                (int)Math.Ceiling(row.DemandEuPerTick * 1.15d / generator.OutputEuPerTick));
+        }
+
+        int comfortGeneration = comfortGeneratorCount * generator.OutputEuPerTick;
+        int comfortSpare = Math.Max(0, comfortGeneration - row.DemandEuPerTick);
+        double minimumFuelPerDay = row.Fuel.FuelUnitsPerDay;
+        double comfortFuelPerDay = CalculateFuelPerDay(config, generator, comfortGeneratorCount);
+        double sevenDayFuel = comfortFuelPerDay * 7;
+        double fourteenDayFuel = comfortFuelPerDay * 14;
+
+        string fuelReserve = string.IsNullOrWhiteSpace(row.Fuel.Name)
+            ? "passive"
+            : $"{Decimal(sevenDayFuel)} {row.Fuel.Name} for 7 days, {Decimal(fourteenDayFuel)} for 14 days";
+
+        string pressure = SummarizePressure(row);
+        string recommendation = Recommend(row, comfortGeneratorCount, comfortSpare);
+
+        return new PlanRow(
+            ComfortGeneratorCount: comfortGeneratorCount,
+            ComfortSpareEuPerTick: comfortSpare,
+            MinimumFuelPerDay: minimumFuelPerDay,
+            SevenDayFuelReserve: sevenDayFuel,
+            FourteenDayFuelReserve: fourteenDayFuel,
+            MinimumSetup: $"{row.GeneratorCount}x {row.Generator} ({row.GenerationEuPerTick} EU/tick)",
+            ComfortSetup: $"{comfortGeneratorCount}x {row.Generator} ({comfortGeneration} EU/tick, +{comfortSpare} spare)",
+            CablePlan: $"{row.CableZonesNeeded} zone(s) using {row.Cable} ({row.CableThroughputEuPerTick} EU/tick)",
+            FuelReserveTarget: fuelReserve,
+            Pressure: pressure,
+            Recommendation: recommendation);
+    }
+
+    private static double CalculateFuelPerDay(BalanceConfig config, GeneratorDefinition generator, int generatorCount)
+    {
+        if (generatorCount <= 0 || string.IsNullOrWhiteSpace(generator.Fuel))
+            return 0;
+
+        FuelDefinition fuel = Resolve(config.Fuels, generator.Fuel, "fuel");
+        return (double)(generatorCount * config.TicksPerDay) / Math.Max(1, fuel.TicksPerUnit);
+    }
+
+    private static string SummarizePressure(StageAnalysis row)
+    {
+        List<string> pressure = new();
+        if (row.ResourceGaps.Count > 0)
+            pressure.Add("resources: " + string.Join("; ", row.ResourceGaps
+                .OrderByDescending(pair => pair.Value)
+                .ThenBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
+                .Take(3)
+                .Select(pair => $"{pair.Key} {pair.Value} short")));
+        if (row.GeneratorCount > 12)
+            pressure.Add("generator clutter");
+        if (row.CableZonesNeeded > 1)
+            pressure.Add($"{row.CableZonesNeeded} cable zones");
+        if (row.Fuel.FuelUnitsPerDay > 50)
+            pressure.Add($"{Decimal(row.Fuel.FuelUnitsPerDay)} {row.Fuel.Name}/day");
+
+        return pressure.Count == 0 ? "low" : string.Join("; ", pressure);
+    }
+
+    private static string Recommend(StageAnalysis row, int comfortGeneratorCount, int comfortSpare)
+    {
+        if (row.GeneratorCount > 20 || row.Fuel.FuelUnitsPerDay > 80)
+            return "Needs a future tier before this feels good.";
+        if (row.ResourceGaps.Count > 0)
+            return "Check recipes or expected stockpile before shipping this stage.";
+        if (row.CableZonesNeeded > 2)
+            return "Distribution pressure is high; consider stronger cables or conduits.";
+        if (comfortGeneratorCount > row.GeneratorCount)
+            return $"Plan for one buffer generator if players want comfort (+{comfortSpare} EU/tick).";
+        return "Good default target.";
+    }
+
     private static void AddExpandedRecipeCost(BalanceConfig config, Dictionary<string, int> cost, string item, int count)
     {
         if (count <= 0)
@@ -327,4 +466,17 @@ internal static class ProgressionReport
         IReadOnlyList<ResourceNeed> RecipeNeeds);
 
     public sealed record ResourceNeed(string Resource, int Count);
+
+    private sealed record PlanRow(
+        int ComfortGeneratorCount,
+        int ComfortSpareEuPerTick,
+        double MinimumFuelPerDay,
+        double SevenDayFuelReserve,
+        double FourteenDayFuelReserve,
+        string MinimumSetup,
+        string ComfortSetup,
+        string CablePlan,
+        string FuelReserveTarget,
+        string Pressure,
+        string Recommendation);
 }
