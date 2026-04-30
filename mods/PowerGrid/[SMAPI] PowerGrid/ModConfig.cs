@@ -19,6 +19,7 @@ internal sealed class ModConfig
     public int CopperCableThroughput { get; set; } = 50;
     public int IronCableThroughput { get; set; } = 250;
     public int IridiumCableThroughput { get; set; } = 1000;
+    public int EnergizedIridiumCableThroughput { get; set; } = 3000;
 
     // --- Generators (EU per 10-minute tick) ---
     public int SteamGeneratorEUPerTick { get; set; } = 75;

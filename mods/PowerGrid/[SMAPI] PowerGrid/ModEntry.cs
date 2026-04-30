@@ -89,6 +89,7 @@ internal sealed class ModEntry : Mod
         "CopperCable",
         "IronCable",
         "IridiumCable",
+        "EnergizedIridiumCable",
         "Biofuel",
         "SteamGenerator",
         "SteamGenerator__off",
@@ -141,6 +142,7 @@ internal sealed class ModEntry : Mod
     private string CopperCableTexture => GetTextureAsset("CopperCable");
     private string IronCableTexture => GetTextureAsset("IronCable");
     private string IridiumCableTexture => GetTextureAsset("IridiumCable");
+    private string EnergizedIridiumCableTexture => GetTextureAsset("EnergizedIridiumCable");
     private string BiofuelTexture => GetTextureAsset("Biofuel");
     private string SteamGeneratorTexture => GetTextureAsset("SteamGenerator");
     private string CombustionGeneratorTexture => GetTextureAsset("CombustionGenerator");
@@ -838,6 +840,7 @@ internal sealed class ModEntry : Mod
                     CableTier.Copper => CopperCableTexture,
                     CableTier.Iron => IronCableTexture,
                     CableTier.Iridium => IridiumCableTexture,
+                    CableTier.EnergizedIridium => EnergizedIridiumCableTexture,
                     _ => CopperCableTexture
                 };
 
@@ -913,6 +916,7 @@ internal sealed class ModEntry : Mod
         TryLoadTexture(e, CopperCableTexture, "CopperCable", new Color(200, 120, 60));
         TryLoadTexture(e, IronCableTexture, "IronCable", new Color(180, 180, 180));
         TryLoadTexture(e, IridiumCableTexture, "IridiumCable", new Color(120, 70, 200));
+        TryLoadTexture(e, EnergizedIridiumCableTexture, "EnergizedIridiumCable", new Color(100, 220, 180));
         TryLoadObjectTexture(e, BiofuelTexture, "Biofuel", new Color(84, 196, 118));
         TryLoadTexture(e, SteamGeneratorTexture, "SteamGenerator", new Color(140, 140, 160));
         TryLoadTexture(e, CombustionGeneratorTexture, "CombustionGenerator", new Color(120, 128, 144));
@@ -1190,6 +1194,8 @@ internal sealed class ModEntry : Mod
             I18n.Get("item.iron-cable.description"), IronCableTexture, passable: true);
         RegisterBigCraftable(dict, template, PowerConstants.IridiumCableId, "Iridium Cable", I18n.Get("item.iridium-cable.name"),
             I18n.Get("item.iridium-cable.description"), IridiumCableTexture, passable: true);
+        RegisterBigCraftable(dict, template, PowerConstants.EnergizedIridiumCableId, "Energized Iridium Cable", I18n.Get("item.energized-iridium-cable.name"),
+            I18n.Get("item.energized-iridium-cable.description"), EnergizedIridiumCableTexture, passable: true);
 
         // Generators
         RegisterBigCraftable(dict, template, PowerConstants.SteamGeneratorId, "Steam Generator", I18n.Get("item.steam-generator.name"),
@@ -1377,6 +1383,8 @@ internal sealed class ModEntry : Mod
         dict["Iron Cable"] = $"335 3/Field/{PowerConstants.IronCableId} 10/true/null/";
         // Iridium Cable: 337 (Iridium Bar) x2, 338 (Refined Quartz) x1 => 10 cables
         dict["Iridium Cable"] = $"337 2 338 1/Field/{PowerConstants.IridiumCableId} 10/true/null/";
+        // Energized Iridium Cable: 337 (Iridium Bar) x4, 910 (Radioactive Bar) x1, 787 (Battery Pack) x2, 338 (Refined Quartz) x3 => 10 cables
+        dict["Energized Iridium Cable"] = $"337 4 910 1 787 2 338 3/Field/{PowerConstants.EnergizedIridiumCableId} 10/true/null/";
 
         // Biofuel: 771 (Fiber) x10, 388 (Wood) x5, 382 (Coal) x1 => 8 Biofuel
         dict[BiofuelRecipeKey] = $"771 10 388 5 382 1/Field/{PowerConstants.BiofuelId} 8/false/null/";
@@ -1929,6 +1937,11 @@ internal sealed class ModEntry : Mod
         HardIridiumKegRecipeKey
     };
 
+    private static readonly string[] HighDensityGridRecipeKeys =
+    {
+        "Energized Iridium Cable"
+    };
+
     private void CmdUnlock(string command, string[] args)
     {
         if (!Context.IsWorldReady)
@@ -1971,12 +1984,14 @@ internal sealed class ModEntry : Mod
             return GrantRecipeSet(player, GridStarterRecipeKeys)
                 | GrantRecipeSet(player, PoweredArtisanRecipeKeys)
                 | GrantRecipeSet(player, FuelTechRecipeKeys)
-                | GrantRecipeSet(player, AdvancedGridRecipeKeys);
+                | GrantRecipeSet(player, AdvancedGridRecipeKeys)
+                | GrantRecipeSet(player, HighDensityGridRecipeKeys);
 
         bool any = false;
         bool knowsLightningRod = player.craftingRecipes.ContainsKey("Lightning Rod");
         bool knowsKeg = player.craftingRecipes.ContainsKey("Keg");
         bool knowsPreservesJar = player.craftingRecipes.ContainsKey("Preserves Jar");
+        bool knowsSolarPanel = player.craftingRecipes.ContainsKey("Solar Panel");
 
         if (player.MiningLevel >= 5 || knowsLightningRod)
             any |= GrantRecipeSet(player, GridStarterRecipeKeys);
@@ -1989,6 +2004,9 @@ internal sealed class ModEntry : Mod
 
         if (player.MiningLevel >= 9 && knowsLightningRod)
             any |= GrantRecipeSet(player, AdvancedGridRecipeKeys);
+
+        if (player.MiningLevel >= 10 && knowsLightningRod && knowsSolarPanel)
+            any |= GrantRecipeSet(player, HighDensityGridRecipeKeys);
 
         return any;
     }
@@ -2267,7 +2285,8 @@ internal sealed class ModEntry : Mod
         string itemId = __instance?.ItemId ?? "";
         if (itemId == PowerConstants.CopperCableId
             || itemId == PowerConstants.IronCableId
-            || itemId == PowerConstants.IridiumCableId)
+            || itemId == PowerConstants.IridiumCableId
+            || itemId == PowerConstants.EnergizedIridiumCableId)
         {
             __result = true;
         }
@@ -2710,7 +2729,8 @@ internal sealed class ModEntry : Mod
     {
         return itemId == PowerConstants.CopperCableId
             || itemId == PowerConstants.IronCableId
-            || itemId == PowerConstants.IridiumCableId;
+            || itemId == PowerConstants.IridiumCableId
+            || itemId == PowerConstants.EnergizedIridiumCableId;
     }
 
     private bool TryGetStatefulSpriteName(StardewValley.Object obj, Vector2 tile, out string? stateSpriteName)

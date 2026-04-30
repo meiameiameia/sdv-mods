@@ -86,6 +86,8 @@ internal sealed class GraphBuilder
             return MakeCable(locName, tile, itemId, CableTier.Iron, config.IronCableThroughput);
         if (itemId == PowerConstants.IridiumCableId)
             return MakeCable(locName, tile, itemId, CableTier.Iridium, config.IridiumCableThroughput);
+        if (itemId == PowerConstants.EnergizedIridiumCableId)
+            return MakeCable(locName, tile, itemId, CableTier.EnergizedIridium, config.EnergizedIridiumCableThroughput);
 
         // Generators
         if (itemId == PowerConstants.SteamGeneratorId)

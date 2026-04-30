@@ -4,5 +4,6 @@ internal enum CableTier
 {
     Copper,
     Iron,
-    Iridium
+    Iridium,
+    EnergizedIridium
 }

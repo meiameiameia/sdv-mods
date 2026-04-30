@@ -11,6 +11,7 @@ internal static class PowerConstants
     public const string CopperCableId = ModPrefix + "CopperCable";
     public const string IronCableId = ModPrefix + "IronCable";
     public const string IridiumCableId = ModPrefix + "IridiumCable";
+    public const string EnergizedIridiumCableId = ModPrefix + "EnergizedIridiumCable";
 
     public const string BiofuelId = ModPrefix + "Biofuel";
 

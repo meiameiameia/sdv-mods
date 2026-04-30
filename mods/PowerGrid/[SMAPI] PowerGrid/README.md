@@ -39,7 +39,7 @@ Stardew Valley/Mods/[SMAPI] PowerGrid/manifest.json
 
 ### Power Infrastructure
 
-- `Copper Cable`, `Iron Cable`, and `Iridium Cable`
+- `Copper Cable`, `Iron Cable`, `Iridium Cable`, and `Energized Iridium Cable`
 - `Steam Generator`
 - `Combustion Generator`
 - `Wind Generator`
@@ -105,6 +105,7 @@ Biofuel is a crafted midgame fuel for the Combustion Generator.
 | Copper Cable | Copper Bar x3, crafts 10 | 50 EU/tick |
 | Iron Cable | Iron Bar x3, crafts 10 | 250 EU/tick |
 | Iridium Cable | Iridium Bar x2, Refined Quartz x1, crafts 10 | 1,000 EU/tick |
+| Energized Iridium Cable | Iridium Bar x4, Radioactive Bar x1, Battery Pack x2, Refined Quartz x3, crafts 10 | 3,000 EU/tick |
 
 Throughput is how much power a network can move each tick. If a network contains multiple cable tiers, the weakest cable limits the network.
 
@@ -163,6 +164,7 @@ By default, PowerGrid grants recipes as you progress:
 | Powered Artisan | know Preserves Jar or Keg |
 | Fuel Tech | Mining 7 and know Lightning Rod |
 | Advanced Grid | Mining 9 and know Lightning Rod |
+| High Density Grid | Mining 10, know Lightning Rod, and know Solar Panel |
 
 This can be changed in the config.
 

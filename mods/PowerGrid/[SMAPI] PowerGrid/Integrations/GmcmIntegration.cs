@@ -88,6 +88,13 @@ internal static class GmcmIntegration
             () => I18n.Get("gmcm.iridium-cable-throughput.tooltip"),
             min: 50, max: 5000, interval: 50);
 
+        gmcmApi.AddNumberOption(manifest,
+            () => config.EnergizedIridiumCableThroughput,
+            (int val) => config.EnergizedIridiumCableThroughput = val,
+            () => I18n.Get("item.energized-iridium-cable.name"),
+            () => I18n.Get("gmcm.energized-iridium-cable-throughput.tooltip"),
+            min: 250, max: 10000, interval: 50);
+
         // --- Generators ---
         gmcmApi.AddSectionTitle(manifest, () => I18n.Get("gmcm.section.generators"));
 

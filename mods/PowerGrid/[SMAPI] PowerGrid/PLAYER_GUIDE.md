@@ -37,6 +37,7 @@ Powered machines can pass power to other powered machines touching them, so you 
 | Powered Artisan | Know Preserves Jar or Keg | Industrial Preserves Jar, Metal Keg |
 | Fuel Tech | Mining 7 and know Lightning Rod | Biofuel, Iron Cable, Combustion Generator |
 | Advanced Grid | Mining 9 and know Lightning Rod | Iridium Cable, Wind Generator, Iridium Power Battery, Power Conduit, Metal Cask, Hard Iridium Keg |
+| High Density Grid | Mining 10, know Lightning Rod, and know Solar Panel | Energized Iridium Cable |
 
 If you use Generic Mod Config Menu, recipe unlock behavior can be changed in-game.
 
@@ -76,6 +77,7 @@ Biofuel recipe:
 | Copper Cable | Copper Bar x3 | 10 cables, 50 EU/tick |
 | Iron Cable | Iron Bar x3 | 10 cables, 250 EU/tick |
 | Iridium Cable | Iridium Bar x2, Refined Quartz x1 | 10 cables, 1,000 EU/tick |
+| Energized Iridium Cable | Iridium Bar x4, Radioactive Bar x1, Battery Pack x2, Refined Quartz x3 | 10 cables, 3,000 EU/tick |
 
 Throughput is the amount of EU a network can move each tick. If a network mixes cable tiers, the weakest cable limits the network.
 
@@ -130,6 +132,7 @@ Midgame:
 Later:
 
 - Iridium Cable
+- Energized Iridium Cable
 - Iridium Power Battery
 - Power Conduits
 - Wind Generators outdoors
@@ -164,4 +167,3 @@ PowerGrid can be played by itself, but it feels better with:
 - Grapes of Ferngill
 - Automate or Event Driven Automation
 - Generic Mod Config Menu
-

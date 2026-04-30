@@ -808,6 +808,7 @@ internal sealed class PowerManager
         return itemId == PowerConstants.CopperCableId ||
                itemId == PowerConstants.IronCableId ||
                itemId == PowerConstants.IridiumCableId ||
+               itemId == PowerConstants.EnergizedIridiumCableId ||
                itemId == PowerConstants.SteamGeneratorId ||
                itemId == PowerConstants.CombustionGeneratorId ||
                itemId == PowerConstants.WindGeneratorId ||
