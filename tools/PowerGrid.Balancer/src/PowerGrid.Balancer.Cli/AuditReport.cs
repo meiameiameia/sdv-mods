@@ -22,6 +22,8 @@ internal static class AuditReport
         int unstable = results.Count - stable;
         double averageCoverage = results.Count == 0 ? 1 : results.Average(result => result.AveragePowerCoverage);
         double averageSpeed = results.Count == 0 ? 0 : results.Average(result => result.AverageSpeedBonus);
+        double averageGenerationUse = results.Count == 0 ? 1 : results.Average(result => result.GenerationUseRate);
+        int totalWasted = results.Sum(result => result.TotalWastedEu);
 
         List<string> lines = new()
         {
@@ -38,6 +40,8 @@ internal static class AuditReport
             $"| Unstable | {unstable} |",
             $"| Average power coverage | {Percent(averageCoverage)} |",
             $"| Average speed bonus delivered | {Percent(averageSpeed)} |",
+            $"| Average generated EU used or stored | {Percent(averageGenerationUse)} |",
+            $"| Total wasted EU | {totalWasted} |",
             $"| Tick length | {config.TickMinutes} minutes |",
             $"| Ticks per day | {config.TicksPerDay} |",
             "",
@@ -51,13 +55,13 @@ internal static class AuditReport
         lines.Add("");
         lines.Add("## Scenario Results");
         lines.Add("");
-        lines.Add("| Scenario | Verdict | Demand | Generation | Cable | Unmet EU | Coverage | Speed Bonus | Main warning |");
-        lines.Add("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |");
+        lines.Add("| Scenario | Verdict | Demand | Generation | Cable | Unmet EU | Wasted EU | Stored/used | Coverage | Speed Bonus | Main warning |");
+        lines.Add("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |");
 
         foreach (SimulationResult result in results.OrderBy(result => result.ScenarioName, StringComparer.OrdinalIgnoreCase))
         {
             string warning = result.Warnings.FirstOrDefault() ?? "";
-            lines.Add($"| {EscapeMarkdown(result.ScenarioName)} | {(result.IsStable ? "Stable" : "Unstable")} | {result.DemandEuPerTick} | {result.GenerationEuPerTick} | {result.CableThroughputEuPerTick} | {result.TotalUnmetEu} | {Percent(result.AveragePowerCoverage)} | {Percent(result.AverageSpeedBonus)} | {EscapeMarkdown(warning)} |");
+            lines.Add($"| {EscapeMarkdown(result.ScenarioName)} | {(result.IsStable ? "Stable" : "Unstable")} | {result.DemandEuPerTick} | {result.GenerationEuPerTick} | {result.CableThroughputEuPerTick} | {result.TotalUnmetEu} | {result.TotalWastedEu} | {Percent(result.GenerationUseRate)} | {Percent(result.AveragePowerCoverage)} | {Percent(result.AverageSpeedBonus)} | {EscapeMarkdown(warning)} |");
         }
 
         lines.Add("");
@@ -88,9 +92,16 @@ internal static class AuditReport
             "TotalGeneratedEu",
             "TotalConsumedEu",
             "TotalUnmetEu",
+            "TotalWastedEu",
+            "TotalThroughputLimitedEu",
+            "TotalBatteryOverflowEu",
+            "TotalBatteryChargedEu",
+            "TotalBatteryDrainedEu",
             "AveragePowerCoverage",
             "AverageSpeedBonus",
             "SurplusRatio",
+            "GenerationUseRate",
+            "SurplusCaptureRate",
             "BatteryUtilization",
             "HasThroughputBottleneck",
             "Warnings",
@@ -111,9 +122,16 @@ internal static class AuditReport
                 result.TotalGeneratedEu,
                 result.TotalConsumedEu,
                 result.TotalUnmetEu,
+                result.TotalWastedEu,
+                result.TotalThroughputLimitedEu,
+                result.TotalBatteryOverflowEu,
+                result.TotalBatteryChargedEu,
+                result.TotalBatteryDrainedEu,
                 Decimal(result.AveragePowerCoverage),
                 Decimal(result.AverageSpeedBonus),
                 Decimal(result.SurplusRatio),
+                Decimal(result.GenerationUseRate),
+                Decimal(result.SurplusCaptureRate),
                 Decimal(result.BatteryUtilization),
                 result.HasThroughputBottleneck,
                 string.Join(" | ", result.Warnings),
@@ -241,6 +259,9 @@ internal static class AuditReport
 
         foreach (SimulationResult result in results.Where(result => result.FuelUse.Any(fuel => fuel.TicksShort > 0)))
             signals.Add($"{result.ScenarioName} runs out of fuel, so it can catch recipes or fuel values that make early power too annoying.");
+
+        foreach (SimulationResult result in results.Where(result => result.TotalWastedEu > 0).OrderByDescending(result => result.TotalWastedEu).Take(3))
+            signals.Add($"{result.ScenarioName} wastes {result.TotalWastedEu} EU; check battery capacity, cable tier, or generator count.");
 
         if (signals.Count == 0)
             signals.Add("No obvious balance stress signals were found in the current benchmark set.");

@@ -14,11 +14,16 @@ public sealed class SimulationResult
     public int TotalGeneratedEu { get; init; }
     public int TotalConsumedEu { get; init; }
     public int TotalUnmetEu { get; init; }
+    public int TotalWastedEu { get; init; }
+    public int TotalThroughputLimitedEu { get; init; }
+    public int TotalBatteryOverflowEu { get; init; }
     public int TotalBatteryChargedEu { get; init; }
     public int TotalBatteryDrainedEu { get; init; }
     public float AveragePowerCoverage { get; init; }
     public float AverageSpeedBonus { get; init; }
     public float SurplusRatio { get; init; }
+    public float GenerationUseRate { get; init; }
+    public float SurplusCaptureRate { get; init; }
     public float BatteryUtilization { get; init; }
     public bool HasThroughputBottleneck { get; init; }
     public bool IsStable => TotalUnmetEu == 0;

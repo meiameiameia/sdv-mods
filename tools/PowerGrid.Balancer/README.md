@@ -12,10 +12,15 @@ It is not a player-facing planner yet. If the simulator proves useful, it can la
 - generator output
 - fuel pressure
 - battery charge and drain
+- wasted EU after demand, cable limits, and battery storage
+- how much generated EU is actually used or stored
+- how much storable surplus is captured by batteries
 - cable throughput bottlenecks
 - unmet power demand
 - average power coverage
 - approximate speed bonus delivered
+
+The waste and capture metrics are meant to show whether a setup is overbuilt, missing batteries, or blocked by cable tier. They are balance signals, not exact in-game electrical telemetry.
 
 ## Run One Scenario
 
@@ -42,7 +47,7 @@ dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- audi
 The audit command writes:
 
 - `summary.md`: readable balance signals and scenario summary.
-- `scenario-results.csv`: one row per benchmark scenario.
+- `scenario-results.csv`: one row per benchmark scenario, including unmet EU, wasted EU, battery overflow, and generated EU use rate.
 - `fuel-use.csv`: fuel consumed and shortfall by scenario.
 - `generator-capacity.md`: readable generator-to-machine capacity table.
 - `generator-capacity.csv`: sortable generator capacity data.

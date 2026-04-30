@@ -26,9 +26,16 @@ internal static class MarkdownReport
             $"| Total generated | {result.TotalGeneratedEu} EU |",
             $"| Total consumed | {result.TotalConsumedEu} EU |",
             $"| Unmet demand | {result.TotalUnmetEu} EU |",
+            $"| Wasted EU | {result.TotalWastedEu} EU |",
+            $"| Throughput-limited EU | {result.TotalThroughputLimitedEu} EU |",
+            $"| Battery overflow EU | {result.TotalBatteryOverflowEu} EU |",
+            $"| Battery charged | {result.TotalBatteryChargedEu} EU |",
+            $"| Battery drained | {result.TotalBatteryDrainedEu} EU |",
             $"| Average power coverage | {Percent(result.AveragePowerCoverage)} |",
             $"| Average speed bonus delivered | {Percent(result.AverageSpeedBonus)} |",
             $"| Surplus ratio | {SignedPercent(result.SurplusRatio)} |",
+            $"| Generated EU used or stored | {Percent(result.GenerationUseRate)} |",
+            $"| Storable surplus captured | {Percent(result.SurplusCaptureRate)} |",
             $"| Battery utilization | {result.BatteryUtilization.ToString("0.00", CultureInfo.InvariantCulture)}x capacity |",
             ""
         };
@@ -56,14 +63,14 @@ internal static class MarkdownReport
         {
             "# PowerGrid Balance Batch",
             "",
-            "| Scenario | Verdict | Demand | Generation | Unmet EU | Coverage | Speed Bonus | Warnings |",
-            "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |"
+            "| Scenario | Verdict | Demand | Generation | Unmet EU | Wasted EU | Coverage | Stored/used | Speed Bonus | Warnings |",
+            "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"
         };
 
         foreach (SimulationResult result in results)
         {
             lines.Add(
-                $"| {result.ScenarioName} | {(result.IsStable ? "Stable" : "Unstable")} | {result.DemandEuPerTick} | {result.GenerationEuPerTick} | {result.TotalUnmetEu} | {Percent(result.AveragePowerCoverage)} | {Percent(result.AverageSpeedBonus)} | {result.Warnings.Count} |");
+                $"| {result.ScenarioName} | {(result.IsStable ? "Stable" : "Unstable")} | {result.DemandEuPerTick} | {result.GenerationEuPerTick} | {result.TotalUnmetEu} | {result.TotalWastedEu} | {Percent(result.AveragePowerCoverage)} | {Percent(result.GenerationUseRate)} | {Percent(result.AverageSpeedBonus)} | {result.Warnings.Count} |");
         }
 
         lines.Add("");

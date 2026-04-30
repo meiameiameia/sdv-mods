@@ -20,6 +20,9 @@ public sealed class PowerGridSimulator
         int totalGenerated = 0;
         int totalConsumed = 0;
         int totalUnmet = 0;
+        int totalWasted = 0;
+        int totalThroughputLimited = 0;
+        int totalBatteryOverflow = 0;
         int totalBatteryCharged = 0;
         int totalBatteryDrained = 0;
         float coverageSum = 0f;
@@ -31,21 +34,26 @@ public sealed class PowerGridSimulator
 
             int generated = GenerateForTick(config, scenario, fuels);
             int generationAfterThroughput = Math.Min(generated, cableThroughput);
+            int throughputLimited = Math.Max(0, generated - generationAfterThroughput);
             int demand = Math.Min(demandPerTick, cableThroughput);
 
             totalDemand += demandPerTick;
             totalGenerated += generated;
+            totalThroughputLimited += throughputLimited;
 
             if (generationAfterThroughput >= demand)
             {
                 int consumed = demand;
                 int excess = generationAfterThroughput - demand;
                 int charged = Math.Min(excess, batteryCapacity - batteryCharge);
+                int batteryOverflow = Math.Max(0, excess - charged);
                 int unmetFromThroughput = Math.Max(0, demandPerTick - consumed);
                 batteryCharge += charged;
 
                 totalConsumed += consumed;
                 totalUnmet += unmetFromThroughput;
+                totalWasted += throughputLimited + batteryOverflow;
+                totalBatteryOverflow += batteryOverflow;
                 totalBatteryCharged += charged;
                 coverageSum += demandPerTick <= 0 ? 1f : (float)consumed / demandPerTick;
                 continue;
@@ -60,6 +68,7 @@ public sealed class PowerGridSimulator
 
             totalConsumed += supplied;
             totalBatteryDrained += drained;
+            totalWasted += throughputLimited;
             totalUnmet += unmet;
             coverageSum += demandPerTick <= 0 ? 1f : Math.Clamp((float)supplied / demandPerTick, 0f, 1f);
         }
@@ -80,8 +89,11 @@ public sealed class PowerGridSimulator
             .OrderBy(result => result.Fuel, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        List<string> warnings = BuildWarnings(demandPerTick, rawGenerationPerTick, cableThroughput, batteryCapacity, totalUnmet, throughputBottleneck, fuelUse);
-        List<string> recommendations = BuildRecommendations(demandPerTick, rawGenerationPerTick, cableThroughput, batteryCapacity, totalUnmet, throughputBottleneck, fuelUse);
+        int usefulGenerated = Math.Clamp(totalConsumed - totalBatteryDrained + totalBatteryCharged, 0, totalGenerated);
+        int storableSurplus = totalBatteryCharged + totalBatteryOverflow;
+
+        List<string> warnings = BuildWarnings(demandPerTick, rawGenerationPerTick, cableThroughput, batteryCapacity, totalUnmet, totalWasted, throughputBottleneck, fuelUse);
+        List<string> recommendations = BuildRecommendations(demandPerTick, rawGenerationPerTick, cableThroughput, batteryCapacity, totalUnmet, totalWasted, throughputBottleneck, fuelUse);
 
         return new SimulationResult
         {
@@ -97,11 +109,16 @@ public sealed class PowerGridSimulator
             TotalGeneratedEu = totalGenerated,
             TotalConsumedEu = totalConsumed,
             TotalUnmetEu = totalUnmet,
+            TotalWastedEu = totalWasted,
+            TotalThroughputLimitedEu = totalThroughputLimited,
+            TotalBatteryOverflowEu = totalBatteryOverflow,
             TotalBatteryChargedEu = totalBatteryCharged,
             TotalBatteryDrainedEu = totalBatteryDrained,
             AveragePowerCoverage = averageCoverage,
             AverageSpeedBonus = weightedMaxBonus * averageCoverage,
             SurplusRatio = totalDemand <= 0 ? 0f : (float)(totalGenerated - totalDemand) / totalDemand,
+            GenerationUseRate = totalGenerated <= 0 ? 1f : (float)usefulGenerated / totalGenerated,
+            SurplusCaptureRate = storableSurplus <= 0 ? 0f : (float)totalBatteryCharged / storableSurplus,
             BatteryUtilization = batteryCapacity <= 0 ? 0f : (float)totalBatteryDrained / batteryCapacity,
             HasThroughputBottleneck = throughputBottleneck,
             FuelUse = fuelUse,
@@ -236,6 +253,7 @@ public sealed class PowerGridSimulator
         int cableThroughput,
         int batteryCapacity,
         int totalUnmet,
+        int totalWasted,
         bool throughputBottleneck,
         IReadOnlyList<FuelUseResult> fuelUse)
     {
@@ -249,8 +267,12 @@ public sealed class PowerGridSimulator
             warnings.Add("Cable throughput is lower than either generation or demand.");
         if (batteryCapacity == 0 && generationPerTick < demandPerTick)
             warnings.Add("No battery storage is available to cover generator shortfalls.");
+        if (batteryCapacity == 0 && generationPerTick > demandPerTick)
+            warnings.Add("No battery storage is available to capture surplus generation.");
         if (totalUnmet > 0)
             warnings.Add("The simulation had unmet EU demand.");
+        if (totalWasted > 0 && generationPerTick > demandPerTick)
+            warnings.Add("Some generated EU is wasted after machine demand and battery storage.");
         foreach (FuelUseResult fuel in fuelUse.Where(fuel => fuel.TicksShort > 0))
             warnings.Add($"{fuel.Fuel} runs short by {fuel.TicksShort} generator-ticks.");
 
@@ -263,6 +285,7 @@ public sealed class PowerGridSimulator
         int cableThroughput,
         int batteryCapacity,
         int totalUnmet,
+        int totalWasted,
         bool throughputBottleneck,
         IReadOnlyList<FuelUseResult> fuelUse)
     {
@@ -274,6 +297,10 @@ public sealed class PowerGridSimulator
             recommendations.Add($"Add about {demandPerTick - generationPerTick} EU/tick of generation for full coverage.");
         if (batteryCapacity == 0)
             recommendations.Add("Add at least one battery if the setup relies on wind or limited fuel.");
+        if (totalWasted > 0 && batteryCapacity == 0)
+            recommendations.Add("Add battery storage to capture surplus EU instead of wasting generator output.");
+        if (totalWasted > 0 && batteryCapacity > 0)
+            recommendations.Add("Add more battery capacity or reduce generator count if surplus waste is higher than intended.");
         if (totalUnmet == 0 && demandPerTick > 0)
             recommendations.Add("This setup is stable under the configured assumptions.");
         foreach (FuelUseResult fuel in fuelUse.Where(fuel => fuel.TicksShort > 0))
