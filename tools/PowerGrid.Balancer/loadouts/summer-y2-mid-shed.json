@@ -1,0 +1,29 @@
+{
+  "name": "Summer Y2 Mid Shed",
+  "description": "A partial shed after combustion power unlocks, useful for checking whether Biofuel feels scalable.",
+  "generator": "Combustion Generator",
+  "cable": "Iridium Cable",
+  "battery": "Iridium Power Battery",
+  "batteryCount": 2,
+  "cableCount": 50,
+  "conduitCount": 2,
+  "reserveDays": 14,
+  "comfortHeadroom": 0.15,
+  "poweredMachines": {
+    "Metal Keg": 35,
+    "Industrial Preserves Jar": 10,
+    "Hard Iridium Keg": 4
+  },
+  "stockpile": {
+    "Wood": 2500,
+    "Hardwood": 160,
+    "Sap": 2500,
+    "Coal": 500,
+    "Copper Bar": 220,
+    "Iron Bar": 320,
+    "Gold Bar": 180,
+    "Iridium Bar": 60,
+    "Refined Quartz": 120,
+    "Battery Pack": 10
+  }
+}

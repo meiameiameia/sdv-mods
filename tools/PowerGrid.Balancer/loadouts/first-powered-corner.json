@@ -1,0 +1,28 @@
+{
+  "name": "First Powered Corner",
+  "description": "A tiny starter grid: one Metal Keg and one Industrial Preserves Jar near the first Steam Generator.",
+  "generator": "Steam Generator",
+  "cable": "Copper Cable",
+  "battery": "Basic Power Battery",
+  "batteryCount": 1,
+  "cableCount": 20,
+  "conduitCount": 0,
+  "reserveDays": 7,
+  "comfortHeadroom": 0.15,
+  "poweredMachines": {
+    "Metal Keg": 1,
+    "Industrial Preserves Jar": 1
+  },
+  "stockpile": {
+    "Wood": 500,
+    "Hardwood": 40,
+    "Sap": 150,
+    "Coal": 80,
+    "Copper Bar": 30,
+    "Iron Bar": 35,
+    "Gold Bar": 0,
+    "Iridium Bar": 0,
+    "Refined Quartz": 10,
+    "Battery Pack": 1
+  }
+}

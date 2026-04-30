@@ -96,23 +96,41 @@ try
 
         case "plan":
             {
-                string loadoutPath = args.Length >= 2 && !args[1].StartsWith("--", StringComparison.Ordinal)
+                string loadoutInput = args.Length >= 2 && !args[1].StartsWith("--", StringComparison.Ordinal)
                     ? args[1]
                     : FindDefaultLoadoutPath();
                 string? outputPath = ReadOption(args, "--out");
+                IReadOnlyList<string> loadoutFiles = ExpandJsonFiles(loadoutInput);
+                if (loadoutFiles.Count == 0)
+                    throw new InvalidOperationException($"No loadout files matched '{loadoutInput}'.");
 
-                LoadoutPlan loadout = LoadJson<LoadoutPlan>(loadoutPath, jsonOptions);
                 if (string.IsNullOrWhiteSpace(outputPath))
                 {
-                    Console.WriteLine(LoadoutPlanReport.RenderConsole(config, loadout));
+                    foreach (string file in loadoutFiles)
+                    {
+                        LoadoutPlan loadout = LoadJson<LoadoutPlan>(file, jsonOptions);
+                        Console.WriteLine(LoadoutPlanReport.RenderConsole(config, loadout));
+                        Console.WriteLine();
+                    }
                     return 0;
                 }
 
-                LoadoutPlanReport.Write(outputPath, config, loadout);
+                List<LoadoutPlanReport.PlanSummary> summaries = new();
+                foreach (string file in loadoutFiles)
+                {
+                    LoadoutPlan loadout = LoadJson<LoadoutPlan>(file, jsonOptions);
+                    string reportFolderName = MakeSafeFolderName(Path.GetFileNameWithoutExtension(file));
+                    string reportPath = Path.Combine(outputPath, reportFolderName);
+                    LoadoutPlanReport.Write(reportPath, config, loadout);
+                    summaries.Add(LoadoutPlanReport.Summarize(config, loadout, reportFolderName));
+                }
+
+                LoadoutPlanReport.WriteIndex(outputPath, summaries);
                 Console.WriteLine($"Wrote loadout plan to {Path.GetFullPath(outputPath)}");
-                Console.WriteLine("- loadout-plan.md");
-                Console.WriteLine("- loadout-plan.csv");
-                Console.WriteLine("- loadout-resource-gaps.csv");
+                Console.WriteLine("- loadout-index.md");
+                Console.WriteLine("- loadout-index.csv");
+                foreach (LoadoutPlanReport.PlanSummary summary in summaries)
+                    Console.WriteLine($"- {summary.ReportPath}/loadout-plan.md");
                 return 0;
             }
 
@@ -236,6 +254,11 @@ static string FindDefaultLoadoutPath()
 
 static IReadOnlyList<string> ExpandScenarioFiles(string pattern)
 {
+    return ExpandJsonFiles(pattern);
+}
+
+static IReadOnlyList<string> ExpandJsonFiles(string pattern)
+{
     if (File.Exists(pattern))
         return new[] { pattern };
 
@@ -259,6 +282,13 @@ static IReadOnlyList<string> ExpandScenarioFiles(string pattern)
         .ToList();
 }
 
+static string MakeSafeFolderName(string value)
+{
+    char[] invalidChars = Path.GetInvalidFileNameChars();
+    string cleaned = new(value.Select(ch => invalidChars.Contains(ch) ? '-' : ch).ToArray());
+    return string.IsNullOrWhiteSpace(cleaned) ? "loadout" : cleaned;
+}
+
 static void PrintHelp()
 {
     Console.WriteLine(
@@ -270,7 +300,7 @@ static void PrintHelp()
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- batch <scenario-folder-or-glob>
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- audit [scenario-folder-or-glob] [--out <folder>]
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- progression [profile.json] [--out <folder>]
-          dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- plan [loadout.json] [--out <folder>]
+          dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- plan [loadout.json|loadout-folder-or-glob] [--out <folder>]
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- compare-progression <baseline-config.json> <proposed-config.json> [profile.json] [--out <folder>]
 
         Options:

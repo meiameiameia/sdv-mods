@@ -1,0 +1,28 @@
+{
+  "name": "Winter Y1 Artisan Room",
+  "description": "A first serious powered room before full shed-scale production.",
+  "generator": "Steam Generator",
+  "cable": "Iron Cable",
+  "battery": "Basic Power Battery",
+  "batteryCount": 1,
+  "cableCount": 30,
+  "conduitCount": 2,
+  "reserveDays": 10,
+  "comfortHeadroom": 0.15,
+  "poweredMachines": {
+    "Metal Keg": 8,
+    "Industrial Preserves Jar": 6
+  },
+  "stockpile": {
+    "Wood": 1200,
+    "Hardwood": 80,
+    "Sap": 500,
+    "Coal": 220,
+    "Copper Bar": 90,
+    "Iron Bar": 150,
+    "Gold Bar": 30,
+    "Iridium Bar": 4,
+    "Refined Quartz": 35,
+    "Battery Pack": 3
+  }
+}

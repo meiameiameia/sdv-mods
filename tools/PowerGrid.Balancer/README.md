@@ -77,11 +77,19 @@ Use `plan` when you want to ask, "If I build this room, what power setup do I ne
 dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- plan tools/PowerGrid.Balancer/loadouts/sample-big-shed.json --config tools/PowerGrid.Balancer/balance/powergrid-0.1.x-moderate.json --out artifacts/balance-lab/loadout-sample
 ```
 
+You can also point it at the whole loadout folder to generate an index and one report per preset:
+
+```powershell
+dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- plan tools/PowerGrid.Balancer/loadouts --config tools/PowerGrid.Balancer/balance/powergrid-0.1.x-moderate.json --out artifacts/balance-lab/loadout-suite
+```
+
 The plan command writes:
 
-- `loadout-plan.md`: readable power plan, machine mix, resource check, and recommendations.
-- `loadout-plan.csv`: one-row summary for comparisons.
-- `loadout-resource-gaps.csv`: resource need versus stockpile.
+- `loadout-index.md`: summary of all loadouts when planning a folder or glob.
+- `loadout-index.csv`: sortable summary of all loadouts.
+- `<loadout>/loadout-plan.md`: readable power plan, machine mix, resource check, and recommendations.
+- `<loadout>/loadout-plan.csv`: one-row summary for comparisons.
+- `<loadout>/loadout-resource-gaps.csv`: resource need versus stockpile.
 
 ## Compare Balance Configs
 

@@ -14,9 +14,45 @@ internal static class LoadoutPlanReport
         File.WriteAllText(Path.Combine(outputPath, "loadout-resource-gaps.csv"), RenderResourceGapsCsv(analysis));
     }
 
+    public static void WriteIndex(string outputPath, IReadOnlyList<PlanSummary> summaries)
+    {
+        Directory.CreateDirectory(outputPath);
+        File.WriteAllText(Path.Combine(outputPath, "loadout-index.md"), RenderIndexMarkdown(summaries));
+        File.WriteAllText(Path.Combine(outputPath, "loadout-index.csv"), RenderIndexCsv(summaries));
+    }
+
     public static string RenderConsole(BalanceConfig config, LoadoutPlan loadout)
     {
         return RenderMarkdown(Analyze(config, loadout));
+    }
+
+    public static PlanSummary Summarize(BalanceConfig config, LoadoutPlan loadout, string reportPath)
+    {
+        PlanAnalysis analysis = Analyze(config, loadout);
+        string topGaps = analysis.ResourceGaps.Count == 0
+            ? ""
+            : string.Join("; ", analysis.ResourceGaps
+                .OrderByDescending(pair => pair.Value)
+                .ThenBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
+                .Take(3)
+                .Select(pair => $"{pair.Key} x{pair.Value}"));
+
+        return new PlanSummary(
+            analysis.Loadout.Name,
+            reportPath,
+            analysis.DemandEuPerTick,
+            analysis.Generator,
+            analysis.MinimumGeneratorCount,
+            analysis.ComfortGeneratorCount,
+            analysis.ComfortSpareEuPerTick,
+            analysis.Cable,
+            analysis.CableZonesNeeded,
+            analysis.Fuel.Name,
+            analysis.Fuel.UnitsPerDay,
+            analysis.Fuel.ReserveUnits,
+            analysis.ResourceGaps.Count,
+            topGaps,
+            analysis.Recommendations.FirstOrDefault() ?? "");
     }
 
     private static PlanAnalysis Analyze(BalanceConfig config, LoadoutPlan loadout)
@@ -244,6 +280,55 @@ internal static class LoadoutPlanReport
         return csv.ToString();
     }
 
+    private static string RenderIndexMarkdown(IReadOnlyList<PlanSummary> summaries)
+    {
+        List<string> lines = new()
+        {
+            "# PowerGrid Loadout Plans",
+            "",
+            "| Loadout | Demand | Generation | Cable zones | Fuel reserve | Resource gaps | Main recommendation |",
+            "| --- | ---: | --- | ---: | --- | --- | --- |"
+        };
+
+        foreach (PlanSummary summary in summaries)
+        {
+            string fuel = string.IsNullOrWhiteSpace(summary.Fuel)
+                ? "passive"
+                : $"{Decimal(summary.FuelPerDay)} {summary.Fuel}/day; {summary.ReserveUnits} reserve";
+            string gaps = summary.ResourceGapTypes <= 0 ? "none" : summary.TopResourceGaps;
+            lines.Add($"| [{EscapeMarkdown(summary.Name)}]({summary.ReportPath.Replace("\\", "/", StringComparison.Ordinal)}/loadout-plan.md) | {summary.DemandEuPerTick} | {summary.MinimumGenerators}-{summary.ComfortGenerators}x {EscapeMarkdown(summary.Generator)} (+{summary.ComfortSpareEuPerTick} spare) | {summary.CableZones} | {EscapeMarkdown(fuel)} | {EscapeMarkdown(gaps)} | {EscapeMarkdown(summary.MainRecommendation)} |");
+        }
+
+        return string.Join(Environment.NewLine, lines);
+    }
+
+    private static string RenderIndexCsv(IReadOnlyList<PlanSummary> summaries)
+    {
+        StringBuilder csv = new();
+        csv.AppendLine(CsvLine("Name", "ReportPath", "DemandEuPerTick", "Generator", "MinimumGenerators", "ComfortGenerators", "ComfortSpareEuPerTick", "Cable", "CableZones", "Fuel", "FuelPerDay", "ReserveUnits", "ResourceGapTypes", "TopResourceGaps", "MainRecommendation"));
+        foreach (PlanSummary summary in summaries)
+        {
+            csv.AppendLine(CsvLine(
+                summary.Name,
+                summary.ReportPath,
+                summary.DemandEuPerTick,
+                summary.Generator,
+                summary.MinimumGenerators,
+                summary.ComfortGenerators,
+                summary.ComfortSpareEuPerTick,
+                summary.Cable,
+                summary.CableZones,
+                summary.Fuel,
+                Decimal(summary.FuelPerDay),
+                summary.ReserveUnits,
+                summary.ResourceGapTypes,
+                summary.TopResourceGaps,
+                summary.MainRecommendation));
+        }
+
+        return csv.ToString();
+    }
+
     private static string FormatFuelReserve(FuelPlan fuel)
     {
         if (string.IsNullOrWhiteSpace(fuel.Name))
@@ -355,4 +440,21 @@ internal static class LoadoutPlanReport
         int ReserveDays,
         int TicksPerUnit,
         IReadOnlyDictionary<string, int> ReserveIngredientCost);
+
+    public sealed record PlanSummary(
+        string Name,
+        string ReportPath,
+        int DemandEuPerTick,
+        string Generator,
+        int MinimumGenerators,
+        int ComfortGenerators,
+        int ComfortSpareEuPerTick,
+        string Cable,
+        int CableZones,
+        string Fuel,
+        double FuelPerDay,
+        int ReserveUnits,
+        int ResourceGapTypes,
+        string TopResourceGaps,
+        string MainRecommendation);
 }
