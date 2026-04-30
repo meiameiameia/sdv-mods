@@ -1,0 +1,38 @@
+{
+  "name": "Wind Buffer Test",
+  "description": "A passive wind setup with batteries over mixed weather.",
+  "days": 7,
+  "cable": "Iron Cable",
+  "initialBatteryChargePercent": 1.0,
+  "weather": {
+    "clear": 4.0,
+    "rain": 1.0,
+    "storm": 1.0,
+    "snow": 1.0
+  },
+  "machines": [
+    {
+      "id": "Metal Keg",
+      "count": 6,
+      "activeFraction": 0.75
+    },
+    {
+      "id": "Industrial Preserves Jar",
+      "count": 3,
+      "activeFraction": 0.75
+    }
+  ],
+  "generators": [
+    {
+      "id": "Wind Generator",
+      "count": 4
+    }
+  ],
+  "batteries": [
+    {
+      "id": "Basic Power Battery",
+      "count": 2
+    }
+  ],
+  "fuelInventory": {}
+}

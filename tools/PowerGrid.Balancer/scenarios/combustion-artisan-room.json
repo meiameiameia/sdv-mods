@@ -1,0 +1,37 @@
+{
+  "name": "Combustion Artisan Room",
+  "description": "A mid-game mixed room powered by one Combustion Generator.",
+  "days": 1,
+  "cable": "Iron Cable",
+  "initialBatteryChargePercent": 0.25,
+  "weather": {
+    "clear": 1.0
+  },
+  "machines": [
+    {
+      "id": "Metal Keg",
+      "count": 6,
+      "activeFraction": 1.0
+    },
+    {
+      "id": "Industrial Preserves Jar",
+      "count": 3,
+      "activeFraction": 1.0
+    }
+  ],
+  "generators": [
+    {
+      "id": "Combustion Generator",
+      "count": 1
+    }
+  ],
+  "batteries": [
+    {
+      "id": "Basic Power Battery",
+      "count": 1
+    }
+  ],
+  "fuelInventory": {
+    "Biofuel": 7
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "name": "Stage - First Shed 67 Metal Kegs",
+  "description": "A first full shed scale based on the common 67-keg normal shed benchmark.",
+  "days": 1,
+  "cable": "Iridium Cable",
+  "initialBatteryChargePercent": 1.0,
+  "weather": {
+    "clear": 1.0
+  },
+  "machines": [
+    {
+      "id": "Metal Keg",
+      "count": 67,
+      "activeFraction": 1.0
+    }
+  ],
+  "generators": [
+    {
+      "id": "Combustion Generator",
+      "count": 6
+    }
+  ],
+  "batteries": [
+    {
+      "id": "Iridium Power Battery",
+      "count": 2
+    }
+  ],
+  "fuelInventory": {
+    "Biofuel": 40
+  }
+}

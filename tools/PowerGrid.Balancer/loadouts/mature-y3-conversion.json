@@ -1,0 +1,31 @@
+{
+  "name": "Mature Y3 Organized Conversion",
+  "description": "A mature save converting an organized production shed into powered machines.",
+  "generator": "Combustion Generator",
+  "cable": "Iridium Cable",
+  "battery": "Iridium Power Battery",
+  "batteryCount": 4,
+  "cableCount": 100,
+  "conduitCount": 4,
+  "reserveDays": 14,
+  "comfortHeadroom": 0.15,
+  "poweredMachines": {
+    "Metal Keg": 125,
+    "Industrial Preserves Jar": 43,
+    "Hard Iridium Keg": 40
+  },
+  "stockpile": {
+    "Wood": 1762,
+    "Hardwood": 130,
+    "Sap": 1,
+    "Coal": 313,
+    "Copper Bar": 466,
+    "Iron Bar": 108,
+    "Gold Bar": 550,
+    "Iridium Bar": 455,
+    "Refined Quartz": 96,
+    "Battery Pack": 11,
+    "Radioactive Ore": 9,
+    "Radioactive Bar": 0
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "name": "PowerGrid Sustainability Budget",
+  "description": "Approximate safe resource budgets for checking whether PowerGrid crowds out normal Stardew play. Weekly income is an expected renewable or routine acquisition amount, not a total stockpile. MaxPowerGridShare is the share PowerGrid may consume before it starts feeling intrusive.",
+  "stages": [
+    {
+      "name": "First Powered Corner",
+      "description": "Early starter grid. PowerGrid should be cheap enough to try without eating the whole mining or crafting budget.",
+      "resources": {
+        "Wood": { "weeklyIncome": 350, "reserveFloor": 300, "maxPowerGridShare": 0.15, "notes": "Wood is still needed for buildings, chests, tappers, and farm expansion." },
+        "Hardwood": { "weeklyIncome": 20, "reserveFloor": 30, "maxPowerGridShare": 0.10, "notes": "Hardwood is protected early because stable and tool goals compete for it." },
+        "Fiber": { "weeklyIncome": 120, "reserveFloor": 100, "maxPowerGridShare": 0.20, "notes": "Fiber is renewable but still used by tea saplings, wild bait, grass starter, and utility crafting." },
+        "Moss": { "weeklyIncome": 20, "reserveFloor": 20, "maxPowerGridShare": 0.15, "notes": "Moss is available before Green Rain but should be treated as a light optional bonus early." },
+        "Sap": { "weeklyIncome": 100, "reserveFloor": 100, "maxPowerGridShare": 0.15, "notes": "Sap should remain mostly free for fertilizer and normal crafting." },
+        "Coal": { "weeklyIncome": 45, "reserveFloor": 40, "maxPowerGridShare": 0.15, "notes": "Coal competes with bars, preserve jars, bee houses, and normal machines." },
+        "Copper Bar": { "weeklyIncome": 18, "reserveFloor": 10, "maxPowerGridShare": 0.15, "notes": "Copper still feeds tools, tappers, sprinklers, and basic farm infrastructure." },
+        "Iron Bar": { "weeklyIncome": 14, "reserveFloor": 12, "maxPowerGridShare": 0.15, "notes": "Iron is a major early bottleneck and should not be swallowed by power." },
+        "Refined Quartz": { "weeklyIncome": 8, "reserveFloor": 5, "maxPowerGridShare": 0.15, "notes": "Refined Quartz should stay a light tech flavor cost, not a wall." },
+        "Battery Pack": { "weeklyIncome": 1, "reserveFloor": 0, "maxPowerGridShare": 0.20, "notes": "Early battery packs are rare and should be used sparingly." }
+      }
+    },
+    {
+      "name": "Winter Y1 Artisan Room",
+      "description": "First serious powered room. Costs can matter, but fuel should not take over the weekly routine.",
+      "resources": {
+        "Wood": { "weeklyIncome": 500, "reserveFloor": 600, "maxPowerGridShare": 0.20, "notes": "Winter wood is available, but buildings and kegs still compete for it." },
+        "Hardwood": { "weeklyIncome": 35, "reserveFloor": 60, "maxPowerGridShare": 0.15, "notes": "Hardwood should remain mostly protected before late-game access improves." },
+        "Fiber": { "weeklyIncome": 180, "reserveFloor": 200, "maxPowerGridShare": 0.25, "notes": "Fiber can support some fuel, but should not become mandatory cleanup grind." },
+        "Moss": { "weeklyIncome": 50, "reserveFloor": 50, "maxPowerGridShare": 0.20, "notes": "Moss is easier after Green Rain, but not every player farms it deliberately." },
+        "Sap": { "weeklyIncome": 180, "reserveFloor": 250, "maxPowerGridShare": 0.20, "notes": "Sap can support some fuel, but should not erase fertilizer usage." },
+        "Coal": { "weeklyIncome": 80, "reserveFloor": 120, "maxPowerGridShare": 0.20, "notes": "Coal pressure matters because bars and vanilla machines still need it." },
+        "Copper Bar": { "weeklyIncome": 35, "reserveFloor": 30, "maxPowerGridShare": 0.20, "notes": "Copper is less tight, but still part of normal expansion." },
+        "Iron Bar": { "weeklyIncome": 45, "reserveFloor": 50, "maxPowerGridShare": 0.20, "notes": "Iron demand should feel industrial, not punitive." },
+        "Gold Bar": { "weeklyIncome": 25, "reserveFloor": 20, "maxPowerGridShare": 0.20, "notes": "Gold starts becoming available, but is not the core early grid material." },
+        "Iridium Bar": { "weeklyIncome": 2, "reserveFloor": 2, "maxPowerGridShare": 0.10, "notes": "Iridium is protected this early." },
+        "Refined Quartz": { "weeklyIncome": 18, "reserveFloor": 20, "maxPowerGridShare": 0.20, "notes": "Quartz pressure should stay moderate." },
+        "Battery Pack": { "weeklyIncome": 2, "reserveFloor": 1, "maxPowerGridShare": 0.20, "notes": "Battery packs remain uncommon before larger lightning rod setups." }
+      }
+    },
+    {
+      "name": "Summer Y2 Mid Shed",
+      "description": "Combustion starts scaling production. Biofuel should be useful without becoming the whole farm economy.",
+      "resources": {
+        "Wood": { "weeklyIncome": 650, "reserveFloor": 1000, "maxPowerGridShare": 0.25, "notes": "Wood remains important for artisan expansion." },
+        "Hardwood": { "weeklyIncome": 55, "reserveFloor": 100, "maxPowerGridShare": 0.20, "notes": "Hardwood is still a premium resource." },
+        "Fiber": { "weeklyIncome": 260, "reserveFloor": 350, "maxPowerGridShare": 0.30, "notes": "Fiber is a good Biofuel candidate because it is renewable and often underused." },
+        "Moss": { "weeklyIncome": 90, "reserveFloor": 100, "maxPowerGridShare": 0.25, "notes": "Moss can make Biofuel more efficient, but Green Rain should not be mandatory." },
+        "Sap": { "weeklyIncome": 300, "reserveFloor": 700, "maxPowerGridShare": 0.25, "notes": "Biofuel may use Sap, but should leave room for fertilizer and crafting." },
+        "Coal": { "weeklyIncome": 120, "reserveFloor": 250, "maxPowerGridShare": 0.25, "notes": "Coal should not become the only thing the player mines for." },
+        "Copper Bar": { "weeklyIncome": 55, "reserveFloor": 100, "maxPowerGridShare": 0.25, "notes": "Copper pressure is acceptable if it is mostly a one-time setup cost." },
+        "Iron Bar": { "weeklyIncome": 80, "reserveFloor": 140, "maxPowerGridShare": 0.25, "notes": "Iron is the industrial backbone, but large jumps should be staged." },
+        "Gold Bar": { "weeklyIncome": 55, "reserveFloor": 80, "maxPowerGridShare": 0.25, "notes": "Gold can support mid-game tech, but should not dominate." },
+        "Iridium Bar": { "weeklyIncome": 18, "reserveFloor": 25, "maxPowerGridShare": 0.20, "notes": "Iridium is available but still meaningful." },
+        "Refined Quartz": { "weeklyIncome": 35, "reserveFloor": 60, "maxPowerGridShare": 0.25, "notes": "Quartz is allowed to matter for tech, but not block whole rooms." },
+        "Battery Pack": { "weeklyIncome": 4, "reserveFloor": 4, "maxPowerGridShare": 0.25, "notes": "Battery packs can support batteries and conduits, but should not be disposable fuel yet." }
+      }
+    },
+    {
+      "name": "Sample Big Shed Conversion",
+      "description": "Late Year 2 big shed benchmark. Large setup costs can bite, but ongoing fuel should be sustainable.",
+      "resources": {
+        "Wood": { "weeklyIncome": 750, "reserveFloor": 1200, "maxPowerGridShare": 0.30, "notes": "Wood should remain available for sheds, kegs, and farm projects." },
+        "Hardwood": { "weeklyIncome": 70, "reserveFloor": 120, "maxPowerGridShare": 0.25, "notes": "Hardwood can support advanced machines, but is still not disposable." },
+        "Fiber": { "weeklyIncome": 350, "reserveFloor": 500, "maxPowerGridShare": 0.35, "notes": "Fiber can be a major biomass input by late Year 2." },
+        "Moss": { "weeklyIncome": 140, "reserveFloor": 150, "maxPowerGridShare": 0.30, "notes": "Moss is useful if the player keeps mossy tree areas, but should stay optional." },
+        "Sap": { "weeklyIncome": 450, "reserveFloor": 1200, "maxPowerGridShare": 0.30, "notes": "Biofuel can become a real Sap sink, but not the only use for Sap." },
+        "Coal": { "weeklyIncome": 160, "reserveFloor": 350, "maxPowerGridShare": 0.30, "notes": "Coal fuel pressure should stay below normal mining comfort." },
+        "Copper Bar": { "weeklyIncome": 75, "reserveFloor": 150, "maxPowerGridShare": 0.30, "notes": "Copper should mainly be a setup material by this point." },
+        "Iron Bar": { "weeklyIncome": 110, "reserveFloor": 220, "maxPowerGridShare": 0.30, "notes": "Iron pressure should encourage planning, not stall the mod." },
+        "Gold Bar": { "weeklyIncome": 85, "reserveFloor": 130, "maxPowerGridShare": 0.30, "notes": "Gold is fair for mid-to-late infrastructure." },
+        "Iridium Bar": { "weeklyIncome": 35, "reserveFloor": 50, "maxPowerGridShare": 0.25, "notes": "Iridium costs should signal late-game investment." },
+        "Refined Quartz": { "weeklyIncome": 50, "reserveFloor": 100, "maxPowerGridShare": 0.30, "notes": "Quartz should be noticeable but not exhausting." },
+        "Battery Pack": { "weeklyIncome": 6, "reserveFloor": 8, "maxPowerGridShare": 0.30, "notes": "Battery packs should remain strategic components." }
+      }
+    },
+    {
+      "name": "Mature Y3 Organized Conversion",
+      "description": "Real mature save conversion benchmark. This stage may spend large stockpiles once, but ongoing fuel should still respect the wider save.",
+      "resources": {
+        "Wood": { "weeklyIncome": 900, "reserveFloor": 1500, "maxPowerGridShare": 0.35, "notes": "Mature saves can spend more wood, but should not empty normal project reserves." },
+        "Hardwood": { "weeklyIncome": 90, "reserveFloor": 120, "maxPowerGridShare": 0.30, "notes": "Hardwood still deserves protection even late." },
+        "Fiber": { "weeklyIncome": 500, "reserveFloor": 700, "maxPowerGridShare": 0.40, "notes": "Fiber is allowed to carry a meaningful Biofuel role in mature saves." },
+        "Moss": { "weeklyIncome": 220, "reserveFloor": 250, "maxPowerGridShare": 0.35, "notes": "Moss can support efficient Biofuel, but should not demand constant Green Rain farming." },
+        "Sap": { "weeklyIncome": 650, "reserveFloor": 1200, "maxPowerGridShare": 0.35, "notes": "Sap is the key Biofuel risk; PowerGrid should not require full-time Sap farming." },
+        "Coal": { "weeklyIncome": 220, "reserveFloor": 400, "maxPowerGridShare": 0.35, "notes": "Coal may support power, but bars and machines still compete for it." },
+        "Copper Bar": { "weeklyIncome": 100, "reserveFloor": 200, "maxPowerGridShare": 0.35, "notes": "Copper should be manageable in mature conversion." },
+        "Iron Bar": { "weeklyIncome": 150, "reserveFloor": 250, "maxPowerGridShare": 0.35, "notes": "Iron can be a major conversion cost, but should not require weeks of grind." },
+        "Gold Bar": { "weeklyIncome": 120, "reserveFloor": 200, "maxPowerGridShare": 0.35, "notes": "Gold should be comfortable for mature saves." },
+        "Iridium Bar": { "weeklyIncome": 55, "reserveFloor": 100, "maxPowerGridShare": 0.30, "notes": "Iridium is allowed to gate advanced conversion." },
+        "Refined Quartz": { "weeklyIncome": 70, "reserveFloor": 120, "maxPowerGridShare": 0.35, "notes": "Quartz should not be the main pain point." },
+        "Battery Pack": { "weeklyIncome": 8, "reserveFloor": 10, "maxPowerGridShare": 0.35, "notes": "Battery packs should support infrastructure and future power-cell ideas." }
+      }
+    }
+  ]
+}

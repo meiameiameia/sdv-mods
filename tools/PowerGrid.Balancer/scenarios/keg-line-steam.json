@@ -1,0 +1,32 @@
+{
+  "name": "Steam Keg Line",
+  "description": "A compact early keg line on steam power.",
+  "days": 1,
+  "cable": "Iron Cable",
+  "initialBatteryChargePercent": 0.5,
+  "weather": {
+    "clear": 1.0
+  },
+  "machines": [
+    {
+      "id": "Metal Keg",
+      "count": 8,
+      "activeFraction": 1.0
+    }
+  ],
+  "generators": [
+    {
+      "id": "Steam Generator",
+      "count": 2
+    }
+  ],
+  "batteries": [
+    {
+      "id": "Basic Power Battery",
+      "count": 1
+    }
+  ],
+  "fuelInventory": {
+    "Coal": 20
+  }
+}
