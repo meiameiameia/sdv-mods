@@ -177,6 +177,7 @@ internal sealed class ModEntry : Mod
         bool migratedConfig = TryMigrateLegacyBalanceConfig(Config);
         migratedConfig |= TryMigrateHardIridiumKegSpeedConfig(Config);
         migratedConfig |= TryMigrateModerateBalanceConfig(Config);
+        migratedConfig |= TryMigrateDenseBiofuelConfig(Config);
         if (migratedConfig)
         {
             helper.WriteConfig(Config);
@@ -226,7 +227,7 @@ internal sealed class ModEntry : Mod
         RegisterPowerGridOwnedConsumers();
         ValidateCriticalSpritePaths();
         LogConduitStateSpriteAvailability();
-        Monitor.Log("[PowerGrid] Loaded. Waiting for save.", LogLevel.Info);
+        Monitor.Log("[PowerGrid] Loaded. Waiting for save.", LogLevel.Trace);
     }
 
     private void RegisterPowerGridOwnedConsumers()
@@ -354,6 +355,15 @@ internal sealed class ModEntry : Mod
         return true;
     }
 
+    private static bool TryMigrateDenseBiofuelConfig(ModConfig config)
+    {
+        if (config.BiofuelFuelTicks != 30)
+            return false;
+
+        config.BiofuelFuelTicks = 60;
+        return true;
+    }
+
     private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
     {
         var batteryData = Helper.Data.ReadSaveData<Dictionary<string, int>>(PowerConstants.SaveDataKey);
@@ -393,7 +403,7 @@ internal sealed class ModEntry : Mod
                 LogLevel.Warn);
         }
 
-        Monitor.Log($"[PowerGrid] Save loaded. Batteries: {BatteryState.TotalStoredEU()} EU stored. Conduit links: {ConduitMgr.GetAllLinks().Count}.", LogLevel.Info);
+        Monitor.Log($"[PowerGrid] Save loaded. Batteries: {BatteryState.TotalStoredEU()} EU stored. Conduit links: {ConduitMgr.GetAllLinks().Count}.", LogLevel.Trace);
 
         TryGrantRecipes(reason: "SaveLoaded");
     }
@@ -1369,8 +1379,8 @@ internal sealed class ModEntry : Mod
         // Iridium Cable: 337 (Iridium Bar) x2, 338 (Refined Quartz) x1 => 10 cables
         dict["Iridium Cable"] = $"337 2 338 1/Field/{PowerConstants.IridiumCableId} 10/true/null/";
 
-        // Biofuel: 92 (Sap) x30, 382 (Coal) x2 => 2 Biofuel
-        dict[BiofuelRecipeKey] = $"92 30 382 2/Field/{PowerConstants.BiofuelId} 2/false/null/";
+        // Biofuel: 771 (Fiber) x10, 388 (Wood) x5, 382 (Coal) x1 => 8 Biofuel
+        dict[BiofuelRecipeKey] = $"771 10 388 5 382 1/Field/{PowerConstants.BiofuelId} 8/false/null/";
 
         // Steam Generator: 335 (Iron Bar) x6, 334 (Copper Bar) x3, 382 (Coal) x8, 338 (Refined Quartz) x2
         dict["Steam Generator"] = $"335 6 334 3 382 8 338 2/Field/{PowerConstants.SteamGeneratorId}/true/null/";
@@ -3277,8 +3287,11 @@ internal sealed class ModEntry : Mod
 
     private void LogConduitDiagnosticOnce(string key, string message)
     {
+        if (!Config.DebugOverlayEnabled)
+            return;
+
         if (conduitRenderDiagnosticsLogged.Add(key))
-            Monitor.Log(message, LogLevel.Info);
+            Monitor.Log(message, LogLevel.Trace);
     }
 
     private static void TrySetPassableFlags(BigCraftableData data)

@@ -91,7 +91,7 @@ Biofuel is a crafted midgame fuel for the Combustion Generator.
 
 | Item | Recipe |
 | --- | --- |
-| Biofuel | Sap x30, Coal x2, crafts 2 |
+| Biofuel | Fiber x10, Wood x5, Coal x1, crafts 8 |
 
 ## Cables
 

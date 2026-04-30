@@ -43,10 +43,12 @@ internal sealed class GraphBuilder
             string itemId = obj.ItemId ?? "";
             string qualifiedId = obj.QualifiedItemId ?? "";
 
-            // Debug: log all objects to see what we're comparing
-            if (itemId.StartsWith(PowerConstants.ModPrefix, StringComparison.Ordinal)
-                || qualifiedId.StartsWith("(BC)" + PowerConstants.ModPrefix, StringComparison.Ordinal))
-                monitor.Log($"[GraphBuilder.ScanLocation] Found PowerGrid object at {tile}: itemId='{itemId}', qualifiedId='{qualifiedId}'", LogLevel.Info);
+            if (config.DebugOverlayEnabled
+                && (itemId.StartsWith(PowerConstants.ModPrefix, StringComparison.Ordinal)
+                    || qualifiedId.StartsWith("(BC)" + PowerConstants.ModPrefix, StringComparison.Ordinal)))
+            {
+                monitor.Log($"[GraphBuilder.ScanLocation] Found PowerGrid object at {tile}: itemId='{itemId}', qualifiedId='{qualifiedId}'", LogLevel.Trace);
+            }
 
             PowerNode? node = ClassifyObject(itemId, qualifiedId, locName, tile, obj);
             if (node != null)
@@ -67,7 +69,8 @@ internal sealed class GraphBuilder
                 if (nodeMap.ContainsKey(kvp.Key + new Vector2(-1, 0))) mask |= 8;  // Left
                 kvp.Value.ConnectionMask = mask;
                 
-                monitor.Log($"[GraphBuilder] Cable at {kvp.Key} has mask {mask} (binary: {Convert.ToString(mask, 2).PadLeft(4, '0')})", LogLevel.Debug);
+                if (config.DebugOverlayEnabled)
+                    monitor.Log($"[GraphBuilder] Cable at {kvp.Key} has mask {mask} (binary: {Convert.ToString(mask, 2).PadLeft(4, '0')})", LogLevel.Trace);
             }
         }
 
@@ -182,7 +185,8 @@ internal sealed class GraphBuilder
         var visited = new HashSet<Vector2>();
         int networkId = 0;
 
-        monitor.Log($"[FloodFillNetworks] Starting with {nodeMap.Count} nodes", LogLevel.Info);
+        if (config.DebugOverlayEnabled)
+            monitor.Log($"[FloodFillNetworks] Starting with {nodeMap.Count} nodes", LogLevel.Trace);
 
         foreach (var kvp in nodeMap)
         {
@@ -216,12 +220,14 @@ internal sealed class GraphBuilder
             // Add network if it has any nodes (including cable-only networks for rendering)
             if (network.Cables.Count > 0 || network.Generators.Count > 0 || network.Batteries.Count > 0 || network.Consumers.Count > 0)
             {
-                monitor.Log($"[FloodFillNetworks] Network {network.NetworkId}: {network.Cables.Count} cables, {network.Generators.Count} generators, {network.Batteries.Count} batteries, {network.Consumers.Count} consumers", LogLevel.Info);
+                if (config.DebugOverlayEnabled)
+                    monitor.Log($"[FloodFillNetworks] Network {network.NetworkId}: {network.Cables.Count} cables, {network.Generators.Count} generators, {network.Batteries.Count} batteries, {network.Consumers.Count} consumers", LogLevel.Trace);
                 networks.Add(network);
             }
         }
 
-        monitor.Log($"[FloodFillNetworks] Returning {networks.Count} networks", LogLevel.Info);
+        if (config.DebugOverlayEnabled)
+            monitor.Log($"[FloodFillNetworks] Returning {networks.Count} networks", LogLevel.Trace);
         return networks;
     }
 }
