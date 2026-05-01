@@ -1,0 +1,9 @@
+{
+  "Name": "Fish Helper UI",
+  "Author": "Script Kitty",
+  "Version": "1.2.1",
+  "Description": "Unofficial maintenance release of an in game menu with fishing information and a helpful HUD.",
+  "UniqueID": "Borealis.MatrixFishingUI",
+  "EntryDll": "MatrixFishingUI.dll",
+  "MinimumApiVersion": "4.1.2"
+}

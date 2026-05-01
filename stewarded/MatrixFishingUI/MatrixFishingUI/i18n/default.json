@@ -1,0 +1,80 @@
+{
+  "mod-name": "ArgonMatrix Fishing UI",
+  "controls.pressnewkey": "On Button Pressed",
+  "ui.fishipedia.title": "Fishipedia",
+  
+  "ui.hud.title": "Fish Helper",
+  
+  "watertype.freshwater": "Freshwater",
+  "watertype.ocean": "Ocean",
+  
+  "ui.fishipedia.weather.rainy": "Rainy",
+  "ui.fishipedia.weather.sunny": "Sunny",
+  "ui.fishipedia.weather.any": "Any Weather",
+  "ui.fishipedia.weather.none": "No Weather",
+
+  "ui.fishipedia.season.spring": "Spring",
+  "ui.fishipedia.season.summer": "Summer",
+  "ui.fishipedia.season.fall": "Fall",
+  "ui.fishipedia.season.winter": "Winter",
+
+  "ui.fishipedia.time.time_available": "Time(s) Available",
+  "ui.fishipedia.time.between": "Between ",
+  "ui.fishipedia.time.and": "and ",
+
+  "ui.fishipedia.titles.general": "General Information",
+  "ui.fishipedia.titles.trap": "Trap Information",
+  "ui.fishipedia.titles.catch": "Catch Information",
+  "ui.fishipedia.titles.locations": "Locations",
+  "ui.fishipedia.titles.pond": "Pond Information",
+  "ui.fishipedia.titles.items_produced": "Items Produced",
+
+  "ui.fishipedia.tooltips.legendary": "Legendary Fish",
+  
+  "ui.fishipedia.ponds.pop_required": "Population Required:",
+  "ui.fishipedia.ponds.sale_price": "Sale Price:",
+
+  "ui.fishipedia.spawntime.one": "Spawn Time: ",
+  "ui.fishipedia.spawntime.two": "days",
+  
+  "ui.fishipedia.labels.description": "Description: ",
+  "ui.fishipedia.labels.caught_status": "Fish Catch Status: ",
+  "ui.fishipedia.labels.min_size": "Minimum Size: ",
+  "ui.fishipedia.labels.max_size": "Maximum Size: ",
+  "ui.fishipedia.labels.inches": "in.",
+  "ui.fishipedia.labels.water_type": "Water Type: ",
+  "ui.fishipedia.labels.fish_caught": "Number Caught: ",
+  "ui.fishipedia.labels.fishing_level": "Fishing Level Required: ",
+  "ui.fishipedia.labels.biggest": "Biggest Caught: ",
+  "ui.fishipedia.labels.every_season": "Every Season",
+  "ui.fishipedia.labels.weather_required": "Weather Required: ",
+  "ui.fishipedia.labels.seasons": "Season(s) Available: ",
+  "ui.fishipedia.labels.difficulty": "Catch Difficulty: ",
+  
+  "ui.special.title": "Special Condition(s)",
+  "ui.special.segment": "Condition: ",
+
+  "ui.area.title": "Location Area(s)",
+  "ui.area.segment": "Area: ",
+  
+  "ui.hud.labels.no_fish": "No catchable fish in current location!",
+  
+  "specialinfo.ghostfish": "Also located on Floor 20 & Floor 60 of the Mines with no level requirement, as well as drops from Ghosts.",
+  "specialinfo.stonefish": "Also located on Floor 20 of the Mines with no level requirement.",
+  "specialinfo.icepip": "Also located on Floor 60 of the Mines with no level requirement.",
+  "specialinfo.tiger": "Ignores catching conditions during the Annual Trout Derby.",
+  "specialinfo.none": "No special information.",
+  "specialinfo.extended_family": "Only catchable during Mr. Qi's Extended Family Special Order.",
+
+  "gmcm.title": "Main Configuration",
+  "gmcm.tooltip": "A work in progress section containing all currently available configuration changes.",
+  "gmcm.keybind": "Set the Keybind for Fishipedia: ",
+  "gmcm.hud_size": "HUD Size (Percentage): ",
+  "gmcm.columns": "HUD Fish Columns: ",
+  "gmcm.hide_collected_name": "Hide Collected Fish in HUD: ",
+  "gmcm.hide_collected_tooltip": "A toggle to hide any fish you've already caught from showing in the Fish HUD.",
+  "gmcm.hide_daily_name": "Only Today's Fish: ",
+  "gmcm.hide_daily_tooltip": "A toggle to hide any fish that cannot be caught in the current given day. Useful if you have an ENORMOUS amount of fish. (overrides Only Seasonal)",
+  "gmcm.hide_season_name": "Only Seasonal Fish: ",
+  "gmcm.hide_season_tooltip": "A toggle to hide any fish that cannot be caught in the current season. Useful if you have a lot of fish."
+}

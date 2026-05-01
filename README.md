@@ -11,6 +11,7 @@ Source repository for small Stardew Valley mods by meiameiameia.
 
 - `mods/PowerGrid/[SMAPI] PowerGrid`
 - `mods/FishSmokerRecipe/[CP] FishSmoker Recipe`
+- `stewarded/MatrixFishingUI`
 - `scripts/build-mod.ps1`
 
 ## Downloads
