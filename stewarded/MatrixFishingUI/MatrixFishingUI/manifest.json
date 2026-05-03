@@ -1,10 +1,9 @@
 {
   "Name": "Fish Helper UI Unofficial",
   "Author": "Script Kitty",
-  "Version": "1.2.1",
+  "Version": "1.2.2-unofficial.1-meiameiameia",
   "Description": "Unofficial maintenance release of an in game menu with fishing information and a helpful HUD.",
   "UniqueID": "Borealis.MatrixFishingUI",
   "EntryDll": "MatrixFishingUI.dll",
-  "MinimumApiVersion": "4.1.2",
-  "UpdateKeys": [ "Nexus:45677" ]
+  "MinimumApiVersion": "4.1.2"
 }
