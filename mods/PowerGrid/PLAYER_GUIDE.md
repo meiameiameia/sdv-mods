@@ -37,7 +37,7 @@ Powered machines can pass power to other powered machines touching them, so you 
 | Powered Artisan | Know Preserves Jar or Keg | Industrial Preserves Jar, Metal Keg |
 | Fuel Tech | Mining 7 and know Lightning Rod | Biofuel, Iron Cable, Combustion Generator |
 | Advanced Grid | Mining 9 and know Lightning Rod | Iridium Cable, Wind Generator, Iridium Power Battery, Power Conduit, Metal Cask, Hard Iridium Keg |
-| High Density Grid | Mining 10, know Lightning Rod, and know Solar Panel | Energized Iridium Cable |
+| High Density Grid | Mining 10, know Lightning Rod, know Solar Panel, and know Iridium Power Battery | Energized Iridium Cable, Radioisotope Generator |
 
 If you use Generic Mod Config Menu, recipe unlock behavior can be changed in-game.
 
@@ -47,6 +47,7 @@ If you use Generic Mod Config Menu, recipe unlock behavior can be changed in-gam
 | --- | ---: | --- | --- |
 | Steam Generator | 75 EU/tick | Coal, Wood, Hardwood | Early generator. Good for small rooms. |
 | Combustion Generator | 240 EU/tick | Biofuel | Midgame generator. Good for larger machine groups. |
+| Radioisotope Generator | 900 EU/tick | Radioactive Bar | Late-game density generator for heavy machine rooms. |
 | Wind Generator | 25 EU/tick base | none | Passive power, outdoors only, weather adjusted. |
 
 Wind output changes with weather:
@@ -63,6 +64,7 @@ Wind output changes with weather:
 | Wood | Steam Generator | Easy backup fuel. |
 | Hardwood | Steam Generator | Better than Wood. |
 | Biofuel | Combustion Generator | Crafted midgame fuel. |
+| Radioactive Bar | Radioisotope Generator | Dense late-game fuel for very high EU output. |
 
 Biofuel recipe:
 
@@ -77,7 +79,7 @@ Biofuel recipe:
 | Copper Cable | Copper Bar x3 | 10 cables, 50 EU/tick |
 | Iron Cable | Iron Bar x3 | 10 cables, 250 EU/tick |
 | Iridium Cable | Iridium Bar x2, Refined Quartz x1 | 10 cables, 1,000 EU/tick |
-| Energized Iridium Cable | Iridium Bar x4, Radioactive Bar x1, Battery Pack x2, Refined Quartz x3 | 10 cables, 3,000 EU/tick |
+| Energized Iridium Cable | Iridium Bar x4, Radioactive Bar x1, Battery Pack x1, Refined Quartz x2 | 10 cables, 3,000 EU/tick |
 
 Throughput is the amount of EU a network can move each tick. If a network mixes cable tiers, the weakest cable limits the network.
 
@@ -85,8 +87,8 @@ Throughput is the amount of EU a network can move each tick. If a network mixes 
 
 | Battery | Recipe | Capacity |
 | --- | --- | ---: |
-| Basic Power Battery | Battery Pack x1, Copper Bar x5, Refined Quartz x2 | 500 EU |
-| Iridium Power Battery | Battery Pack x3, Iridium Bar x2, Refined Quartz x5 | 2,000 EU |
+| Basic Power Battery | Battery Pack x1, Copper Bar x4, Refined Quartz x1 | 500 EU |
+| Iridium Power Battery | Battery Pack x2, Iridium Bar x2, Refined Quartz x3 | 2,000 EU |
 
 Batteries are worth building early. They store surplus EU, cover demand spikes, and keep machines powered when generators run out of fuel or wind output drops.
 
@@ -106,10 +108,10 @@ You can also right-click one conduit and then right-click the other. Shift + rig
 
 | Machine | Recipe | Power Use | Max Bonus |
 | --- | --- | ---: | ---: |
-| Industrial Preserves Jar | Wood x30, Coal x6, Iron Bar x6, Refined Quartz x1 | 20 EU/tick | 20% faster |
-| Metal Keg | Iron Bar x8, Copper Bar x6, Refined Quartz x1 | 10 EU/tick | 20% faster |
-| Hard Iridium Keg | Iridium Bar x5, Iron Bar x4, Refined Quartz x1 | 30 EU/tick | 30% faster |
-| Metal Cask | Hardwood x10, Iron Bar x8, Iridium Bar x3, Refined Quartz x1 | 40 EU/tick | 50% faster aging |
+| Industrial Preserves Jar | Wood x30, Coal x4, Iron Bar x4, Refined Quartz x1 | 20 EU/tick | 20% faster |
+| Metal Keg | Iron Bar x6, Copper Bar x4, Refined Quartz x1 | 10 EU/tick | 20% faster |
+| Hard Iridium Keg | Iridium Bar x4, Iron Bar x2, Refined Quartz x1 | 30 EU/tick | 30% faster |
+| Metal Cask | Hardwood x8, Iron Bar x6, Iridium Bar x2, Refined Quartz x1 | 40 EU/tick | 50% faster aging |
 
 Hard Iridium Keg is designed around Grapes of Ferngill's Hardwood Keg behavior. Without Grapes of Ferngill, it falls back to vanilla Keg behavior.
 
@@ -133,6 +135,7 @@ Later:
 
 - Iridium Cable
 - Energized Iridium Cable
+- Radioisotope Generator
 - Iridium Power Battery
 - Power Conduits
 - Wind Generators outdoors

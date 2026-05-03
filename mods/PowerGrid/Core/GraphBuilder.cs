@@ -110,6 +110,16 @@ internal sealed class GraphBuilder
                 GenerationPerTick = config.CombustionGeneratorEUPerTick,
                 RequiresFuel = true
             };
+        if (itemId == PowerConstants.RadioisotopeGeneratorId)
+            return new PowerNode
+            {
+                NodeType = PowerNodeType.Generator,
+                LocationName = locName,
+                Tile = tile,
+                ItemId = itemId,
+                GenerationPerTick = config.RadioisotopeGeneratorEUPerTick,
+                RequiresFuel = true
+            };
         if (itemId == PowerConstants.WindGeneratorId)
             return new PowerNode
             {

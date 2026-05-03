@@ -3,8 +3,8 @@
   "description": "A late Year 2 style shed plan used to estimate infrastructure before converting a large machine room.",
   "generator": "Combustion Generator",
   "cable": "Iridium Cable",
-  "battery": "Basic Power Battery",
-  "batteryCount": 2,
+  "battery": "Iridium Power Battery",
+  "batteryCount": 3,
   "cableCount": 80,
   "conduitCount": 2,
   "reserveDays": 14,
@@ -16,6 +16,7 @@
   },
   "stockpile": {
     "Sap": 1200,
+    "Fiber": 1500,
     "Coal": 220,
     "Wood": 900,
     "Hardwood": 160,

@@ -21,6 +21,7 @@
       "stockpile": {
         "Wood": 500,
         "Hardwood": 40,
+        "Fiber": 120,
         "Stone": 1000,
         "Sap": 150,
         "Coal": 80,
@@ -51,6 +52,7 @@
       "stockpile": {
         "Wood": 1200,
         "Hardwood": 80,
+        "Fiber": 220,
         "Stone": 3000,
         "Sap": 500,
         "Coal": 220,
@@ -82,6 +84,7 @@
       "stockpile": {
         "Wood": 2500,
         "Hardwood": 160,
+        "Fiber": 900,
         "Stone": 7000,
         "Sap": 2500,
         "Coal": 500,
@@ -113,6 +116,7 @@
       "stockpile": {
         "Wood": 3500,
         "Hardwood": 240,
+        "Fiber": 1500,
         "Stone": 10000,
         "Sap": 5000,
         "Coal": 900,
@@ -144,6 +148,7 @@
       "stockpile": {
         "Wood": 1762,
         "Hardwood": 130,
+        "Fiber": 2200,
         "Stone": 7469,
         "Sap": 1,
         "Coal": 313,
@@ -178,6 +183,7 @@
       "stockpile": {
         "Wood": 1762,
         "Hardwood": 130,
+        "Fiber": 2200,
         "Stone": 7469,
         "Sap": 1,
         "Coal": 313,
@@ -189,6 +195,41 @@
         "Battery Pack": 11,
         "Radioactive Ore": 9,
         "Radioactive Bar": 0
+      }
+    },
+    {
+      "name": "Late Y3 Density Wing",
+      "year": 3,
+      "season": "Winter",
+      "day": 28,
+      "goal": "A premium late-game density room that trades radioactive tech for fewer generators and cleaner cable routing.",
+      "generator": "Radioisotope Generator",
+      "cable": "Energized Iridium Cable",
+      "battery": "Iridium Power Battery",
+      "batteryCount": 3,
+      "cableCount": 80,
+      "conduitCount": 2,
+      "poweredMachines": {
+        "Metal Keg": 60,
+        "Industrial Preserves Jar": 16,
+        "Hard Iridium Keg": 12,
+        "Metal Cask": 24
+      },
+      "stockpile": {
+        "Wood": 2200,
+        "Hardwood": 150,
+        "Fiber": 2600,
+        "Stone": 9000,
+        "Sap": 80,
+        "Coal": 450,
+        "Copper Bar": 500,
+        "Iron Bar": 300,
+        "Gold Bar": 600,
+        "Iridium Bar": 650,
+        "Refined Quartz": 180,
+        "Battery Pack": 20,
+        "Radioactive Ore": 40,
+        "Radioactive Bar": 18
       }
     }
   ]

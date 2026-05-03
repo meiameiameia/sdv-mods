@@ -113,6 +113,13 @@ internal static class GmcmIntegration
             min: 10, max: 1000, interval: 10);
 
         gmcmApi.AddNumberOption(manifest,
+            () => config.RadioisotopeGeneratorEUPerTick,
+            (int val) => config.RadioisotopeGeneratorEUPerTick = val,
+            () => I18n.Get("item.radioisotope-generator.name"),
+            () => I18n.Get("gmcm.radioisotope-generator.tooltip"),
+            min: 100, max: 5000, interval: 25);
+
+        gmcmApi.AddNumberOption(manifest,
             () => config.WindGeneratorEUPerTick,
             (int val) => config.WindGeneratorEUPerTick = val,
             () => I18n.Get("item.wind-generator.name"),
@@ -173,6 +180,13 @@ internal static class GmcmIntegration
             () => I18n.Get("item.biofuel.name"),
             () => I18n.Get("gmcm.biofuel.tooltip"),
             min: 1, max: 60, interval: 1);
+
+        gmcmApi.AddNumberOption(manifest,
+            () => config.RadioactiveBarFuelTicks,
+            (int val) => config.RadioactiveBarFuelTicks = val,
+            () => I18n.Get("gmcm.radioactive-bar.name"),
+            () => I18n.Get("gmcm.radioactive-bar.tooltip"),
+            min: 30, max: 1440, interval: 10);
 
         // --- PowerGrid-owned machines ---
         gmcmApi.AddSectionTitle(manifest, () => I18n.Get("item.industrial-preserves-jar.name"));

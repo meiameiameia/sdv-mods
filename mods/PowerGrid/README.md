@@ -32,7 +32,7 @@ Download packaged releases from [PowerGrid on Nexus Mods](https://www.nexusmods.
 The installed folder should look like this:
 
 ```text
-Stardew Valley/Mods/[SMAPI] PowerGrid/manifest.json
+Stardew Valley/Mods/PowerGrid/manifest.json
 ```
 
 ## What PowerGrid Adds
@@ -42,6 +42,7 @@ Stardew Valley/Mods/[SMAPI] PowerGrid/manifest.json
 - `Copper Cable`, `Iron Cable`, `Iridium Cable`, and `Energized Iridium Cable`
 - `Steam Generator`
 - `Combustion Generator`
+- `Radioisotope Generator`
 - `Wind Generator`
 - `Basic Power Battery`
 - `Iridium Power Battery`
@@ -57,10 +58,13 @@ Stardew Valley/Mods/[SMAPI] PowerGrid/manifest.json
 
 ## Basic Use
 
-The zip also includes a short player guide in English and Brazilian Portuguese:
+The zip also includes short player guides in English, Brazilian Portuguese, and Spanish:
 
 - `PLAYER_GUIDE.md`
 - `GUIA_DO_JOGADOR.pt-BR.md`
+- `GUIA_DEL_JUGADOR.es.md`
+
+Use those guides for the current recipes, unlock milestones, generator outputs, cable throughputs, battery capacities, machine power values, and balance defaults. This README is intentionally limited to overview, installation, compatibility, troubleshooting, and source-build notes.
 
 1. Place a generator.
 2. Add fuel if the generator needs fuel.
@@ -74,51 +78,15 @@ Powered machines can pass power to other powered machines next to them. You do n
 
 Cables currently occupy their own tile. I know that farm space and tidy layouts matter, so a future wiring polish pass may explore cable-underlay or buried-cable behavior. For now, plan cables as visible infrastructure.
 
-## Generators And Fuel
+## Generators, Fuel, And Cables
 
-| Generator | Output | Fuel |
-| --- | ---: | --- |
-| Steam Generator | 75 EU/tick | Coal, Wood, Hardwood |
-| Combustion Generator | 240 EU/tick | Biofuel |
-| Wind Generator | 25 EU/tick base | Passive, outdoors only |
-
-Wind Generators only produce EU outdoors. Indoor wind generators stay offline. Outdoor Wind Generator output changes with weather:
-
-- Clear weather: normal output
-- Rain or storm: higher output
-- Snow: lower output
-
-Right-click a Steam Generator with Coal, Wood, or Hardwood to fuel it. Right-click a Combustion Generator with Biofuel to fuel it.
-
-## Biofuel
-
-Biofuel is a crafted midgame fuel for the Combustion Generator.
-
-| Item | Recipe |
-| --- | --- |
-| Biofuel | Fiber x10, Wood x5, Coal x1, crafts 8 |
-
-## Cables
-
-| Cable | Recipe | Throughput |
-| --- | --- | ---: |
-| Copper Cable | Copper Bar x3, crafts 10 | 50 EU/tick |
-| Iron Cable | Iron Bar x3, crafts 10 | 250 EU/tick |
-| Iridium Cable | Iridium Bar x2, Refined Quartz x1, crafts 10 | 1,000 EU/tick |
-| Energized Iridium Cable | Iridium Bar x4, Radioactive Bar x1, Battery Pack x2, Refined Quartz x3, crafts 10 | 3,000 EU/tick |
+PowerGrid includes fuel generators, a passive outdoor wind generator, and late-game high-density generation. Some generators need fuel before they can produce EU. Wind Generators only produce EU outdoors, and outdoor output changes with weather.
 
 Throughput is how much power a network can move each tick. If a network contains multiple cable tiers, the weakest cable limits the network.
 
 ## Batteries
 
-| Battery | Recipe | Capacity |
-| --- | --- | ---: |
-| Basic Power Battery | Battery Pack x1, Copper Bar x5, Refined Quartz x2 | 500 EU |
-| Iridium Power Battery | Battery Pack x3, Iridium Bar x2, Refined Quartz x5 | 2,000 EU |
-
 Batteries store extra power and help cover demand when generators cannot keep up. They are especially useful when your wind output drops, fuel runs out, or a group of machines starts working at once. By default, batteries leak a small amount of stored energy each morning.
-
-Battery Packs are currently used in the recipes for Wind Generators, Basic Power Batteries, Iridium Power Batteries, and Power Conduits. Future PowerGrid updates may give Battery Packs more electrical uses, but they are not direct generator fuel in the current release.
 
 ## Power Conduits
 
@@ -134,39 +102,15 @@ You can also right-click one conduit, then right-click the other conduit. To unl
 
 ## Powered Machines
 
-| Machine | Recipe | Power Use | Max Power Bonus |
-| --- | --- | ---: | ---: |
-| Industrial Preserves Jar | Wood x30, Coal x6, Iron Bar x6, Refined Quartz x1 | 20 EU/tick | 20% faster |
-| Metal Keg | Iron Bar x8, Copper Bar x6, Refined Quartz x1 | 10 EU/tick | 20% faster |
-| Hard Iridium Keg | Iridium Bar x5, Iron Bar x4, Refined Quartz x1 | 30 EU/tick | 30% faster |
-| Metal Cask | Hardwood x10, Iron Bar x8, Iridium Bar x3, Refined Quartz x1 | 40 EU/tick | 50% faster aging |
-
 Powered machines still work normally without power. PowerGrid is a bonus layer, not a punishment layer. When a powered machine has enough EU, it gets a speed bonus. Metal Casks use power for faster aging progress.
 
 Hard Iridium Keg is designed to use Grapes of Ferngill's Hardwood Keg behavior. If Grapes of Ferngill is not installed, PowerGrid falls back to vanilla Keg behavior so the machine can still work.
-
-By default, the bonuses are:
-
-- Industrial Preserves Jar: up to 20% faster
-- Metal Keg: up to 20% faster
-- Hard Iridium Keg: up to 30% faster
-- Metal Cask: up to 50% faster aging bonus
 
 If Generic Mod Config Menu is installed, you can tune each powered machine's EU demand, maximum speed bonus, and priority in-game.
 
 ## Recipe Unlocks
 
-By default, PowerGrid grants recipes as you progress:
-
-| Bundle | Unlock |
-| --- | --- |
-| Grid Starter | Mining 5 or know Lightning Rod |
-| Powered Artisan | know Preserves Jar or Keg |
-| Fuel Tech | Mining 7 and know Lightning Rod |
-| Advanced Grid | Mining 9 and know Lightning Rod |
-| High Density Grid | Mining 10, know Lightning Rod, and know Solar Panel |
-
-This can be changed in the config.
+By default, PowerGrid grants recipe bundles as you progress through vanilla-aligned milestones. See the bundled player guide for the current unlock list. This can be changed in the config.
 
 ## Power Tab
 
@@ -191,8 +135,7 @@ PowerGrid is designed to work alongside automation mods:
 
 - Automate-style mods move items.
 - PowerGrid provides speed boosts.
-- Steam Generators can draw supported fuel from connected chests.
-- Combustion Generators can draw Biofuel from connected chests.
+- Fuel generators can draw supported fuel from connected chests.
 
 Cables, batteries, and conduits are not automation connectors.
 
@@ -225,9 +168,9 @@ PowerGrid can be added to existing saves, but very packed Automate buildings may
 
 ### My generator is offline
 
-- Steam Generator needs Coal, Wood, or Hardwood.
-- Combustion Generator needs Biofuel.
+- Fuel generators need a supported fuel.
 - Wind Generator is passive and should not need fuel.
+- Indoor Wind Generators do not produce EU.
 
 ### My conduit link is wrong
 
@@ -260,8 +203,6 @@ From the repository root:
 ```powershell
 .\scripts\build-mod.ps1 -Mods PowerGrid -Bump none
 ```
-
-The local zip is written to `artifacts/mod-zips/`.
 
 ## Credits
 

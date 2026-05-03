@@ -24,6 +24,7 @@ internal sealed class ModConfig
     // --- Generators (EU per 10-minute tick) ---
     public int SteamGeneratorEUPerTick { get; set; } = 75;
     public int CombustionGeneratorEUPerTick { get; set; } = 240;
+    public int RadioisotopeGeneratorEUPerTick { get; set; } = 900;
     public int WindGeneratorEUPerTick { get; set; } = 25;
 
     // --- Batteries ---
@@ -32,10 +33,11 @@ internal sealed class ModConfig
     public float BatteryDailyLeakPercent { get; set; } = 2f;
 
     // --- Fuel (ticks per unit; 1 tick = 10 in-game minutes) ---
-    public int CoalFuelTicks { get; set; } = 24;
-    public int WoodFuelTicks { get; set; } = 8;
-    public int HardwoodFuelTicks { get; set; } = 16;
+    public int CoalFuelTicks { get; set; } = 30;
+    public int WoodFuelTicks { get; set; } = 10;
+    public int HardwoodFuelTicks { get; set; } = 20;
     public int BiofuelFuelTicks { get; set; } = 60;
+    public int RadioactiveBarFuelTicks { get; set; } = 360;
 
     // --- PowerGrid-owned machines ---
     public int IndustrialPreservesJarEUPerMinute { get; set; } = 2;

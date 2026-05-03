@@ -11,6 +11,11 @@ param(
     [ValidateSet("Debug", "Release")]
     [string]$Configuration = "Release",
 
+    [ValidateSet("release", "test")]
+    [string]$PackageKind = "release",
+
+    [string]$Label = "",
+
     [string]$OutputDir = ""
 )
 
@@ -50,17 +55,17 @@ function Resolve-ModDefinition([string]$repoRoot, [string]$modName) {
             return @{
                 Name = "PowerGrid"
                 FolderName = "[SMAPI] PowerGrid"
-                ModDir = Join-Path $repoRoot "mods\PowerGrid\[SMAPI] PowerGrid"
-                ManifestPath = Join-Path $repoRoot "mods\PowerGrid\[SMAPI] PowerGrid\manifest.json"
-                CsprojPath = Join-Path $repoRoot "mods\PowerGrid\[SMAPI] PowerGrid\PowerGrid.csproj"
+                ModDir = Join-Path $repoRoot "mods\PowerGrid"
+                ManifestPath = Join-Path $repoRoot "mods\PowerGrid\manifest.json"
+                CsprojPath = Join-Path $repoRoot "mods\PowerGrid\PowerGrid.csproj"
             }
         }
         "FishSmoker" {
             return @{
                 Name = "FishSmoker"
                 FolderName = "[CP] FishSmoker Recipe"
-                ModDir = Join-Path $repoRoot "mods\FishSmokerRecipe\[CP] FishSmoker Recipe"
-                ManifestPath = Join-Path $repoRoot "mods\FishSmokerRecipe\[CP] FishSmoker Recipe\manifest.json"
+                ModDir = Join-Path $repoRoot "mods\FishSmokerRecipe"
+                ManifestPath = Join-Path $repoRoot "mods\FishSmokerRecipe\manifest.json"
                 CsprojPath = $null
             }
         }
@@ -171,7 +176,8 @@ function Package-Mod([hashtable]$modDef, [string]$version, [string]$outputDir) {
         New-Item -ItemType Directory -Path $outputDir | Out-Null
     }
 
-    $zipName = "$($modDef.FolderName)-$version.zip"
+    $labelSuffix = if ([string]::IsNullOrWhiteSpace($script:PackageLabel)) { "" } else { "-$script:PackageLabel" }
+    $zipName = "$($modDef.FolderName)-$version$labelSuffix.zip"
     $zipPath = Join-Path $outputDir $zipName
     if (Test-Path -LiteralPath $zipPath) {
         Remove-Item -LiteralPath $zipPath -Force
@@ -260,9 +266,28 @@ function Sync-ZipArchive([string]$outputDir) {
     }
 }
 
+function Get-SafeLabel([string]$label) {
+    if ([string]::IsNullOrWhiteSpace($label)) {
+        return ""
+    }
+
+    $safe = [System.Text.RegularExpressions.Regex]::Replace($label.Trim(), '[^A-Za-z0-9._-]+', '-')
+    $safe = $safe.Trim("-._")
+    if ([string]::IsNullOrWhiteSpace($safe)) {
+        throw "Package label '$label' does not contain any filename-safe characters."
+    }
+
+    return $safe
+}
+
 $repoRoot = Get-RepoRoot
 if ([string]::IsNullOrWhiteSpace($OutputDir)) {
-    $OutputDir = Join-Path $repoRoot "artifacts\mod-zips"
+    $OutputDir = Join-Path $repoRoot "artifacts\$PackageKind-zips"
+}
+
+$script:PackageLabel = Get-SafeLabel $Label
+if ($PackageKind -eq "test" -and [string]::IsNullOrWhiteSpace($script:PackageLabel)) {
+    $script:PackageLabel = "test-" + (Get-Date -Format "yyyyMMdd-HHmmss")
 }
 
 if (-not [string]::IsNullOrWhiteSpace($SetVersion)) {
@@ -304,7 +329,9 @@ foreach ($modName in $Mods) {
     }) | Out-Null
 }
 
-Sync-ZipArchive -outputDir $OutputDir
+if ($PackageKind -eq "release" -and [string]::IsNullOrWhiteSpace($script:PackageLabel)) {
+    Sync-ZipArchive -outputDir $OutputDir
+}
 
 Write-Host ""
 Write-Host "Build summary:"

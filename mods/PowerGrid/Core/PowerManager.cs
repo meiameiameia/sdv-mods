@@ -811,6 +811,7 @@ internal sealed class PowerManager
                itemId == PowerConstants.EnergizedIridiumCableId ||
                itemId == PowerConstants.SteamGeneratorId ||
                itemId == PowerConstants.CombustionGeneratorId ||
+               itemId == PowerConstants.RadioisotopeGeneratorId ||
                itemId == PowerConstants.WindGeneratorId ||
                itemId == PowerConstants.BasicBatteryId ||
                itemId == PowerConstants.IridiumBatteryId ||

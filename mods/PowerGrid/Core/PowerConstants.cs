@@ -17,6 +17,7 @@ internal static class PowerConstants
 
     public const string SteamGeneratorId = ModPrefix + "SteamGenerator";
     public const string CombustionGeneratorId = ModPrefix + "CombustionGenerator";
+    public const string RadioisotopeGeneratorId = ModPrefix + "RadioisotopeGenerator";
     public const string WindGeneratorId = ModPrefix + "WindGenerator";
 
     public const string BasicBatteryId = ModPrefix + "BasicBattery";

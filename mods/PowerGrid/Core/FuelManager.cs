@@ -118,6 +118,13 @@ internal sealed class FuelManager
                 : 0;
         }
 
+        if (generatorItemId == PowerConstants.RadioisotopeGeneratorId)
+        {
+            return qualifiedId == "(O)910"
+                ? config.RadioactiveBarFuelTicks
+                : 0;
+        }
+
         return 0;
     }
 

@@ -47,6 +47,7 @@ internal sealed class ModEntry : Mod
     private const string RuntimeGeneratedThisTickKey = PersistedModDataPrefix + "generatedThisTick";
     private const string BiofuelRecipeKey = "Biofuel";
     private const string CombustionGeneratorRecipeKey = "Combustion Generator";
+    private const string RadioisotopeGeneratorRecipeKey = "Radioisotope Generator";
     private const string IndustrialPreservesJarRecipeKey = "Industrial Preserves Jar";
     private const string MetalCaskRecipeKey = "Metal Cask";
     private const string MetalKegRecipeKey = "Metal Keg";
@@ -97,6 +98,9 @@ internal sealed class ModEntry : Mod
         "CombustionGenerator",
         "CombustionGenerator__off",
         "CombustionGenerator__on",
+        "RadioisotopeGenerator",
+        "RadioisotopeGenerator__off",
+        "RadioisotopeGenerator__on",
         "WindGenerator",
         "WindGenerator__idle",
         "WindGenerator__generating",
@@ -146,6 +150,7 @@ internal sealed class ModEntry : Mod
     private string BiofuelTexture => GetTextureAsset("Biofuel");
     private string SteamGeneratorTexture => GetTextureAsset("SteamGenerator");
     private string CombustionGeneratorTexture => GetTextureAsset("CombustionGenerator");
+    private string RadioisotopeGeneratorTexture => GetTextureAsset("RadioisotopeGenerator");
     private string WindGeneratorTexture => GetTextureAsset("WindGenerator");
     private string WindGeneratorWheelTexture => GetTextureAsset(WindGeneratorWheelSpriteName);
     private string BasicBatteryTexture => GetTextureAsset("BasicBattery");
@@ -180,6 +185,7 @@ internal sealed class ModEntry : Mod
         migratedConfig |= TryMigrateHardIridiumKegSpeedConfig(Config);
         migratedConfig |= TryMigrateModerateBalanceConfig(Config);
         migratedConfig |= TryMigrateDenseBiofuelConfig(Config);
+        migratedConfig |= TryMigrateSmoothSteamFuelConfig(Config);
         if (migratedConfig)
         {
             helper.WriteConfig(Config);
@@ -365,6 +371,32 @@ internal sealed class ModEntry : Mod
         return true;
     }
 
+    private static bool TryMigrateSmoothSteamFuelConfig(ModConfig config)
+    {
+        bool matchesCurrentDefaults =
+            config.CopperCableThroughput == 50
+            && config.IronCableThroughput == 250
+            && config.IridiumCableThroughput == 1000
+            && config.EnergizedIridiumCableThroughput == 3000
+            && config.SteamGeneratorEUPerTick == 75
+            && config.CombustionGeneratorEUPerTick == 240
+            && config.RadioisotopeGeneratorEUPerTick == 900
+            && config.WindGeneratorEUPerTick == 25
+            && config.CoalFuelTicks == 24
+            && config.WoodFuelTicks == 8
+            && config.HardwoodFuelTicks == 16
+            && config.BiofuelFuelTicks == 60
+            && config.RadioactiveBarFuelTicks == 360;
+
+        if (!matchesCurrentDefaults)
+            return false;
+
+        config.CoalFuelTicks = 30;
+        config.WoodFuelTicks = 10;
+        config.HardwoodFuelTicks = 20;
+        return true;
+    }
+
     private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
     {
         var batteryData = Helper.Data.ReadSaveData<Dictionary<string, int>>(PowerConstants.SaveDataKey);
@@ -542,6 +574,7 @@ internal sealed class ModEntry : Mod
     {
         return itemId == PowerConstants.SteamGeneratorId
             || itemId == PowerConstants.CombustionGeneratorId
+            || itemId == PowerConstants.RadioisotopeGeneratorId
             || itemId == PowerConstants.WindGeneratorId;
     }
 
@@ -810,7 +843,8 @@ internal sealed class ModEntry : Mod
     private static bool IsFuelGeneratorItem(string itemId)
     {
         return itemId == PowerConstants.SteamGeneratorId
-            || itemId == PowerConstants.CombustionGeneratorId;
+            || itemId == PowerConstants.CombustionGeneratorId
+            || itemId == PowerConstants.RadioisotopeGeneratorId;
     }
 
     private void OnRenderedWorld(object? sender, RenderedWorldEventArgs e)
@@ -920,6 +954,7 @@ internal sealed class ModEntry : Mod
         TryLoadObjectTexture(e, BiofuelTexture, "Biofuel", new Color(84, 196, 118));
         TryLoadTexture(e, SteamGeneratorTexture, "SteamGenerator", new Color(140, 140, 160));
         TryLoadTexture(e, CombustionGeneratorTexture, "CombustionGenerator", new Color(120, 128, 144));
+        TryLoadTexture(e, RadioisotopeGeneratorTexture, "RadioisotopeGenerator", new Color(110, 184, 132));
         TryLoadTexture(e, WindGeneratorTexture, "WindGenerator", new Color(100, 180, 220));
         TryLoadOptionalTexture(e, WindGeneratorWheelTexture, WindGeneratorWheelSpriteName);
         TryLoadTexture(e, BasicBatteryTexture, "BasicBattery", new Color(60, 180, 60));
@@ -934,6 +969,8 @@ internal sealed class ModEntry : Mod
         TryLoadStateTexture(e, "SteamGenerator", "on", new Color(140, 140, 160));
         TryLoadStateTexture(e, "CombustionGenerator", "off", new Color(120, 128, 144));
         TryLoadStateTexture(e, "CombustionGenerator", "on", new Color(120, 128, 144));
+        TryLoadStateTexture(e, "RadioisotopeGenerator", "off", new Color(110, 184, 132));
+        TryLoadStateTexture(e, "RadioisotopeGenerator", "on", new Color(110, 184, 132));
         TryLoadStateTexture(e, "WindGenerator", "idle", new Color(100, 180, 220));
         TryLoadStateTexture(e, "WindGenerator", "generating", new Color(100, 180, 220));
         TryLoadStateTexture(e, "BasicBattery", "low", new Color(60, 180, 60));
@@ -1202,6 +1239,8 @@ internal sealed class ModEntry : Mod
             I18n.Get("item.steam-generator.description"), SteamGeneratorTexture);
         RegisterBigCraftable(dict, template, PowerConstants.CombustionGeneratorId, CombustionGeneratorRecipeKey, I18n.Get("item.combustion-generator.name"),
             I18n.Get("item.combustion-generator.description"), CombustionGeneratorTexture);
+        RegisterBigCraftable(dict, template, PowerConstants.RadioisotopeGeneratorId, RadioisotopeGeneratorRecipeKey, I18n.Get("item.radioisotope-generator.name"),
+            I18n.Get("item.radioisotope-generator.description"), RadioisotopeGeneratorTexture);
         RegisterBigCraftable(dict, template, PowerConstants.WindGeneratorId, "Wind Generator", I18n.Get("item.wind-generator.name"),
             I18n.Get("item.wind-generator.description"), WindGeneratorTexture);
 
@@ -1383,49 +1422,51 @@ internal sealed class ModEntry : Mod
         dict["Iron Cable"] = $"335 3/Field/{PowerConstants.IronCableId} 10/true/null/";
         // Iridium Cable: 337 (Iridium Bar) x2, 338 (Refined Quartz) x1 => 10 cables
         dict["Iridium Cable"] = $"337 2 338 1/Field/{PowerConstants.IridiumCableId} 10/true/null/";
-        // Energized Iridium Cable: 337 (Iridium Bar) x4, 910 (Radioactive Bar) x1, 787 (Battery Pack) x2, 338 (Refined Quartz) x3 => 10 cables
-        dict["Energized Iridium Cable"] = $"337 4 910 1 787 2 338 3/Field/{PowerConstants.EnergizedIridiumCableId} 10/true/null/";
+        // Energized Iridium Cable: 337 (Iridium Bar) x4, 910 (Radioactive Bar) x1, 787 (Battery Pack) x1, 338 (Refined Quartz) x2 => 10 cables
+        dict["Energized Iridium Cable"] = $"337 4 910 1 787 1 338 2/Field/{PowerConstants.EnergizedIridiumCableId} 10/true/null/";
 
         // Biofuel: 771 (Fiber) x10, 388 (Wood) x5, 382 (Coal) x1 => 8 Biofuel
         dict[BiofuelRecipeKey] = $"771 10 388 5 382 1/Field/{PowerConstants.BiofuelId} 8/false/null/";
 
-        // Steam Generator: 335 (Iron Bar) x6, 334 (Copper Bar) x3, 382 (Coal) x8, 338 (Refined Quartz) x2
-        dict["Steam Generator"] = $"335 6 334 3 382 8 338 2/Field/{PowerConstants.SteamGeneratorId}/true/null/";
-        // Combustion Generator: Steam Generator x1, Iron Bar x10, Gold Bar x6, Refined Quartz x4
-        dict[CombustionGeneratorRecipeKey] = $"{PowerConstants.SteamGeneratorId} 1 335 10 336 6 338 4/Field/{PowerConstants.CombustionGeneratorId}/true/null/";
+        // Steam Generator: 335 (Iron Bar) x5, 334 (Copper Bar) x2, 382 (Coal) x6, 338 (Refined Quartz) x1
+        dict["Steam Generator"] = $"335 5 334 2 382 6 338 1/Field/{PowerConstants.SteamGeneratorId}/true/null/";
+        // Combustion Generator: Steam Generator x1, Iron Bar x8, Gold Bar x5, Refined Quartz x3
+        dict[CombustionGeneratorRecipeKey] = $"{PowerConstants.SteamGeneratorId} 1 335 8 336 5 338 3/Field/{PowerConstants.CombustionGeneratorId}/true/null/";
+        // Radioisotope Generator: Combustion Generator x1, Radioactive Bar x3, Iridium Bar x6, Iridium Power Battery x1, Refined Quartz x4
+        dict[RadioisotopeGeneratorRecipeKey] = $"{PowerConstants.CombustionGeneratorId} 1 910 3 337 6 {PowerConstants.IridiumBatteryId} 1 338 4/Field/{PowerConstants.RadioisotopeGeneratorId}/true/null/";
         // Wind Generator: 335 (Iron Bar) x6, 338 (Refined Quartz) x4, 787 (Battery Pack) x1, 382 (Coal) x4
         dict["Wind Generator"] = $"335 6 338 4 787 1 382 4/Field/{PowerConstants.WindGeneratorId}/true/null/";
 
-        // Basic Power Battery: 787 (Battery Pack) x1, 334 (Copper Bar) x5, 338 (Refined Quartz) x2
-        dict["Basic Power Battery"] = $"787 1 334 5 338 2/Field/{PowerConstants.BasicBatteryId}/true/null/";
-        // Iridium Power Battery: 787 (Battery Pack) x3, 337 (Iridium Bar) x2, 338 (Refined Quartz) x5
-        dict["Iridium Power Battery"] = $"787 3 337 2 338 5/Field/{PowerConstants.IridiumBatteryId}/true/null/";
+        // Basic Power Battery: 787 (Battery Pack) x1, 334 (Copper Bar) x4, 338 (Refined Quartz) x1
+        dict["Basic Power Battery"] = $"787 1 334 4 338 1/Field/{PowerConstants.BasicBatteryId}/true/null/";
+        // Iridium Power Battery: 787 (Battery Pack) x2, 337 (Iridium Bar) x2, 338 (Refined Quartz) x3
+        dict["Iridium Power Battery"] = $"787 2 337 2 338 3/Field/{PowerConstants.IridiumBatteryId}/true/null/";
 
-        // Power Conduit: 337 (Iridium Bar) x1, 787 (Battery Pack) x1, 338 (Refined Quartz) x2
-        dict["Power Conduit"] = $"337 1 787 1 338 2/Field/{PowerConstants.PowerConduitId}/true/null/";
+        // Power Conduit: 337 (Iridium Bar) x1, 787 (Battery Pack) x1, 338 (Refined Quartz) x1
+        dict["Power Conduit"] = $"337 1 787 1 338 1/Field/{PowerConstants.PowerConduitId}/true/null/";
 
         string? preservesTemplate = dict.TryGetValue("Preserves Jar", out string? value) ? value : null;
         dict[IndustrialPreservesJarRecipeKey] = BuildRecipeFromTemplate(
             preservesTemplate,
-            ingredients: "388 30 382 6 335 6 338 1",
+            ingredients: "388 30 382 4 335 4 338 1",
             resultItemId: PowerConstants.IndustrialPreservesJarId);
 
         string? caskTemplate = dict.TryGetValue("Cask", out string? caskValue) ? caskValue : null;
         dict[MetalCaskRecipeKey] = BuildRecipeFromTemplate(
             caskTemplate,
-            ingredients: "709 10 335 8 337 3 338 1",
+            ingredients: "709 8 335 6 337 2 338 1",
             resultItemId: PowerConstants.MetalCaskId);
 
         string? kegTemplate = dict.TryGetValue("Keg", out string? kegValue) ? kegValue : null;
         dict[MetalKegRecipeKey] = BuildRecipeFromTemplate(
             kegTemplate,
-            ingredients: "335 8 334 6 338 1",
+            ingredients: "335 6 334 4 338 1",
             resultItemId: PowerConstants.MetalKegId);
 
         string? hardwoodKegTemplate = dict.TryGetValue("Hardwood Keg", out string? hardwoodValue) ? hardwoodValue : null;
         dict[HardIridiumKegRecipeKey] = BuildRecipeFromTemplate(
             hardwoodKegTemplate ?? kegTemplate,
-            ingredients: "337 5 335 4 338 1",
+            ingredients: "337 4 335 2 338 1",
             resultItemId: PowerConstants.HardIridiumKegId);
     }
 
@@ -1434,6 +1475,7 @@ internal sealed class ModEntry : Mod
         IDictionary<string, MachineData> machines = asset.AsDictionary<string, MachineData>().Data;
         RegisterSteamGeneratorMachine(machines);
         RegisterCombustionGeneratorMachine(machines);
+        RegisterRadioisotopeGeneratorMachine(machines);
 
         string? templateKey = GetPreservesJarMachineKey(machines, vanillaPreservesJarBigCraftableId);
         if (templateKey == null || !machines.TryGetValue(templateKey, out MachineData? template))
@@ -1467,6 +1509,13 @@ internal sealed class ModEntry : Mod
         MachineData machine = CreateInputOnlyMachineData();
         machines[PowerConstants.Q(PowerConstants.CombustionGeneratorId)] = machine;
         machines[PowerConstants.CombustionGeneratorId] = machine;
+    }
+
+    private void RegisterRadioisotopeGeneratorMachine(IDictionary<string, MachineData> machines)
+    {
+        MachineData machine = CreateInputOnlyMachineData();
+        machines[PowerConstants.Q(PowerConstants.RadioisotopeGeneratorId)] = machine;
+        machines[PowerConstants.RadioisotopeGeneratorId] = machine;
     }
 
     private void RegisterMetalCaskMachine(IDictionary<string, MachineData> machines)
@@ -1939,7 +1988,8 @@ internal sealed class ModEntry : Mod
 
     private static readonly string[] HighDensityGridRecipeKeys =
     {
-        "Energized Iridium Cable"
+        "Energized Iridium Cable",
+        RadioisotopeGeneratorRecipeKey
     };
 
     private void CmdUnlock(string command, string[] args)
@@ -1992,6 +2042,7 @@ internal sealed class ModEntry : Mod
         bool knowsKeg = player.craftingRecipes.ContainsKey("Keg");
         bool knowsPreservesJar = player.craftingRecipes.ContainsKey("Preserves Jar");
         bool knowsSolarPanel = player.craftingRecipes.ContainsKey("Solar Panel");
+        bool knowsIridiumBattery = player.craftingRecipes.ContainsKey("Iridium Power Battery");
 
         if (player.MiningLevel >= 5 || knowsLightningRod)
             any |= GrantRecipeSet(player, GridStarterRecipeKeys);
@@ -2005,7 +2056,7 @@ internal sealed class ModEntry : Mod
         if (player.MiningLevel >= 9 && knowsLightningRod)
             any |= GrantRecipeSet(player, AdvancedGridRecipeKeys);
 
-        if (player.MiningLevel >= 10 && knowsLightningRod && knowsSolarPanel)
+        if (player.MiningLevel >= 10 && knowsLightningRod && knowsSolarPanel && knowsIridiumBattery)
             any |= GrantRecipeSet(player, HighDensityGridRecipeKeys);
 
         return any;
@@ -2056,6 +2107,7 @@ internal sealed class ModEntry : Mod
                 _ => false
             },
             PowerConstants.CombustionGeneratorId => fuel.QualifiedItemId == PowerConstants.QObject(PowerConstants.BiofuelId),
+            PowerConstants.RadioisotopeGeneratorId => fuel.QualifiedItemId == "(O)910",
             _ => false
         };
     }
@@ -2535,31 +2587,30 @@ internal sealed class ModEntry : Mod
         float pulse = 0.55f + ((float)Math.Sin(totalSeconds * 7f) + 1f) * 0.225f;
         float drift = (float)Math.Sin(totalSeconds * 3.2f);
         float flicker = (float)Math.Sin(totalSeconds * 16f) * 0.6f;
+        int motionFrame = ((int)(totalSeconds * 6f)) % 3;
         float overlayDepth = Math.Min(1f, layerDepth + SteamActiveOverlayLayerOffset);
 
         bool isCombustion = obj.ItemId == PowerConstants.CombustionGeneratorId;
+        bool isRadioisotope = obj.ItemId == PowerConstants.RadioisotopeGeneratorId;
+        if (isCombustion)
+            DrawCombustionFluidOverlay(spriteBatch, screenPos, alpha, pulse, drift, motionFrame, overlayDepth);
+        else if (isRadioisotope)
+            DrawRadioisotopeCoreOverlay(spriteBatch, screenPos, alpha, pulse, flicker, motionFrame, overlayDepth);
+        else
+        {
+            Vector2 fireboxCenter = new(screenPos.X + 22f + flicker, screenPos.Y + 90f);
+            Color outerGlow = new Color(255, 160, 72) * Math.Min(1f, alpha * (0.32f + pulse * 0.28f));
+            Color midGlow = new Color(255, 198, 96) * Math.Min(1f, alpha * (0.5f + pulse * 0.25f));
+            Color coreGlow = new Color(255, 236, 156) * Math.Min(1f, alpha * (0.75f + pulse * 0.2f));
 
-        // Chamber glow anchored to the lit viewport on the generator face.
-        Vector2 fireboxCenter = isCombustion
-            ? new Vector2(screenPos.X + 24f + flicker, screenPos.Y + 88f)
-            : new Vector2(screenPos.X + 22f + flicker, screenPos.Y + 90f);
-        Color outerGlow = isCombustion
-            ? new Color(72, 212, 132) * Math.Min(1f, alpha * (0.28f + pulse * 0.24f))
-            : new Color(255, 160, 72) * Math.Min(1f, alpha * (0.32f + pulse * 0.28f));
-        Color midGlow = isCombustion
-            ? new Color(116, 240, 160) * Math.Min(1f, alpha * (0.48f + pulse * 0.22f))
-            : new Color(255, 198, 96) * Math.Min(1f, alpha * (0.5f + pulse * 0.25f));
-        Color coreGlow = isCombustion
-            ? new Color(196, 255, 220) * Math.Min(1f, alpha * (0.7f + pulse * 0.18f))
-            : new Color(255, 236, 156) * Math.Min(1f, alpha * (0.75f + pulse * 0.2f));
+            Rectangle outerRect = new((int)fireboxCenter.X - 7, (int)fireboxCenter.Y - 4, 14, 8);
+            Rectangle midRect = new((int)fireboxCenter.X - 5, (int)fireboxCenter.Y - 3, 10, 6);
+            Rectangle coreRect = new((int)fireboxCenter.X - 2, (int)fireboxCenter.Y - 1, 5, 3);
 
-        Rectangle outerRect = new((int)fireboxCenter.X - 7, (int)fireboxCenter.Y - 4, 14, 8);
-        Rectangle midRect = new((int)fireboxCenter.X - 5, (int)fireboxCenter.Y - 3, 10, 6);
-        Rectangle coreRect = new((int)fireboxCenter.X - 2, (int)fireboxCenter.Y - 1, 5, 3);
-
-        spriteBatch.Draw(Game1.staminaRect, outerRect, null, outerGlow, 0f, Vector2.Zero, SpriteEffects.None, overlayDepth);
-        spriteBatch.Draw(Game1.staminaRect, midRect, null, midGlow, 0f, Vector2.Zero, SpriteEffects.None, overlayDepth);
-        spriteBatch.Draw(Game1.staminaRect, coreRect, null, coreGlow, 0f, Vector2.Zero, SpriteEffects.None, overlayDepth);
+            spriteBatch.Draw(Game1.staminaRect, outerRect, null, outerGlow, 0f, Vector2.Zero, SpriteEffects.None, overlayDepth);
+            spriteBatch.Draw(Game1.staminaRect, midRect, null, midGlow, 0f, Vector2.Zero, SpriteEffects.None, overlayDepth);
+            spriteBatch.Draw(Game1.staminaRect, coreRect, null, coreGlow, 0f, Vector2.Zero, SpriteEffects.None, overlayDepth);
+        }
 
         // Steam puffs near the stack to make active state readable at a glance.
         Color steamColor = new Color(224, 230, 236) * Math.Min(1f, alpha * (0.4f + pulse * 0.5f));
@@ -2609,6 +2660,79 @@ internal sealed class ModEntry : Mod
             Vector2.Zero,
             SpriteEffects.None,
             overlayDepth);
+    }
+
+    private static void DrawCombustionFluidOverlay(SpriteBatch spriteBatch, Vector2 screenPos, float alpha, float pulse, float drift, int motionFrame, float overlayDepth)
+    {
+        float shimmer = 0.94f + Math.Abs(drift) * 0.18f;
+        Color deepFuel = new Color(138, 70, 24) * Math.Min(1f, alpha * (0.86f + pulse * 0.14f));
+        Color warmFuel = new Color(236, 150, 46) * Math.Min(1f, alpha * (0.98f + pulse * 0.22f) * shimmer);
+        Color hotFuel = new Color(255, 226, 122) * Math.Min(1f, alpha * (0.92f + pulse * 0.28f) * shimmer);
+
+        DrawOverlayPixel(spriteBatch, screenPos, 4, 20, 2, 4, deepFuel * 0.95f, overlayDepth);
+
+        switch (motionFrame)
+        {
+            case 0:
+                DrawOverlayPixel(spriteBatch, screenPos, 4, 20, 2, 1, hotFuel, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 4, 21, 1, 1, warmFuel, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 5, 22, 1, 1, warmFuel * 0.92f, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 4, 23, 1, 1, hotFuel * 0.72f, overlayDepth);
+                break;
+            case 1:
+                DrawOverlayPixel(spriteBatch, screenPos, 4, 21, 2, 1, hotFuel, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 5, 20, 1, 1, warmFuel * 0.9f, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 4, 22, 1, 1, warmFuel, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 5, 23, 1, 1, hotFuel * 0.72f, overlayDepth);
+                break;
+            default:
+                DrawOverlayPixel(spriteBatch, screenPos, 4, 22, 2, 1, hotFuel, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 4, 20, 1, 1, warmFuel * 0.88f, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 5, 21, 1, 1, warmFuel, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 4, 23, 2, 1, deepFuel * 0.82f, overlayDepth);
+                break;
+        }
+    }
+
+    private static void DrawRadioisotopeCoreOverlay(SpriteBatch spriteBatch, Vector2 screenPos, float alpha, float pulse, float flicker, int motionFrame, float overlayDepth)
+    {
+        Color wasteGreen = new Color(70, 186, 92) * Math.Min(1f, alpha * (0.8f + pulse * 0.18f));
+        Color barGreen = new Color(118, 242, 122) * Math.Min(1f, alpha * (0.96f + pulse * 0.22f));
+        Color hotGreen = new Color(224, 255, 150) * Math.Min(1f, alpha * (0.92f + pulse * 0.18f + Math.Abs(flicker) * 0.18f));
+
+        DrawOverlayPixel(spriteBatch, screenPos, 6, 20, 4, 4, wasteGreen * 0.72f, overlayDepth);
+
+        switch (motionFrame)
+        {
+            case 0:
+                DrawOverlayPixel(spriteBatch, screenPos, 6, 20, 4, 1, barGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 7, 21, 2, 1, hotGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 6, 22, 3, 1, barGreen * 0.92f, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 8, 23, 1, 1, hotGreen * 0.8f, overlayDepth);
+                break;
+            case 1:
+                DrawOverlayPixel(spriteBatch, screenPos, 6, 21, 4, 1, barGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 8, 20, 1, 1, hotGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 7, 22, 2, 1, hotGreen * 0.88f, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 6, 23, 3, 1, barGreen * 0.86f, overlayDepth);
+                break;
+            default:
+                DrawOverlayPixel(spriteBatch, screenPos, 6, 22, 4, 1, barGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 7, 20, 1, 1, hotGreen * 0.86f, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 8, 21, 1, 1, hotGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 7, 23, 2, 1, barGreen * 0.9f, overlayDepth);
+                break;
+        }
+    }
+
+    private static void DrawOverlayPixel(SpriteBatch spriteBatch, Vector2 screenPos, int spriteX, int spriteY, int widthPixels, int heightPixels, Color color, float layerDepth)
+    {
+        Rectangle rect = new(
+            (int)screenPos.X + spriteX * 4,
+            (int)screenPos.Y + spriteY * 4,
+            widthPixels * 4,
+            heightPixels * 4);
+        spriteBatch.Draw(Game1.staminaRect, rect, null, color, 0f, Vector2.Zero, SpriteEffects.None, layerDepth);
     }
 
     private bool TryDrawStatefulTileReplacement(StardewValley.Object obj, SpriteBatch spriteBatch, int tileX, int tileY, float alpha, string source)
@@ -2715,6 +2839,7 @@ internal sealed class ModEntry : Mod
     {
         return itemId == PowerConstants.SteamGeneratorId
             || itemId == PowerConstants.CombustionGeneratorId
+            || itemId == PowerConstants.RadioisotopeGeneratorId
             || itemId == PowerConstants.WindGeneratorId
             || itemId == PowerConstants.BasicBatteryId
             || itemId == PowerConstants.IridiumBatteryId
@@ -2744,6 +2869,7 @@ internal sealed class ModEntry : Mod
         {
             PowerConstants.SteamGeneratorId => GetSteamGeneratorState(locationName, tile),
             PowerConstants.CombustionGeneratorId => GetCombustionGeneratorState(locationName, tile),
+            PowerConstants.RadioisotopeGeneratorId => GetRadioisotopeGeneratorState(locationName, tile),
             PowerConstants.WindGeneratorId => GetWindGeneratorState(obj),
             PowerConstants.BasicBatteryId => GetBatteryState(locationName, tile, itemId),
             PowerConstants.IridiumBatteryId => GetBatteryState(locationName, tile, itemId),
@@ -2813,6 +2939,14 @@ internal sealed class ModEntry : Mod
             return null;
 
         return GetFueledGeneratorState(locationName, tile, PowerConstants.CombustionGeneratorId);
+    }
+
+    private string? GetRadioisotopeGeneratorState(string locationName, Vector2 tile)
+    {
+        if (string.IsNullOrWhiteSpace(locationName))
+            return null;
+
+        return GetFueledGeneratorState(locationName, tile, PowerConstants.RadioisotopeGeneratorId);
     }
 
     private string GetFueledGeneratorState(string locationName, Vector2 tile, string itemId)
@@ -3122,6 +3256,10 @@ internal sealed class ModEntry : Mod
                 qualifiedFuelId = PowerConstants.QObject(PowerConstants.BiofuelId);
                 ticksPerUnit = Math.Max(1, Config.BiofuelFuelTicks);
                 break;
+            case PowerConstants.RadioisotopeGeneratorId:
+                qualifiedFuelId = "(O)910";
+                ticksPerUnit = Math.Max(1, Config.RadioactiveBarFuelTicks);
+                break;
             default:
                 return;
         }
@@ -3201,6 +3339,7 @@ internal sealed class ModEntry : Mod
         {
             PowerConstants.SteamGeneratorId => "SteamGenerator",
             PowerConstants.CombustionGeneratorId => "CombustionGenerator",
+            PowerConstants.RadioisotopeGeneratorId => "RadioisotopeGenerator",
             PowerConstants.WindGeneratorId => "WindGenerator",
             PowerConstants.BasicBatteryId => "BasicBattery",
             PowerConstants.IridiumBatteryId => "IridiumBattery",

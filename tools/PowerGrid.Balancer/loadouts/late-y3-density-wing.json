@@ -1,0 +1,33 @@
+{
+  "name": "Late Y3 Density Wing",
+  "description": "A premium late-game room using radioactive tech to reduce clutter and support a denser powered mix.",
+  "generator": "Radioisotope Generator",
+  "cable": "Energized Iridium Cable",
+  "battery": "Iridium Power Battery",
+  "batteryCount": 3,
+  "cableCount": 80,
+  "conduitCount": 2,
+  "reserveDays": 14,
+  "comfortHeadroom": 0.20,
+  "poweredMachines": {
+    "Metal Keg": 60,
+    "Industrial Preserves Jar": 16,
+    "Hard Iridium Keg": 12,
+    "Metal Cask": 24
+  },
+  "stockpile": {
+    "Wood": 2200,
+    "Hardwood": 150,
+    "Fiber": 2600,
+    "Sap": 80,
+    "Coal": 450,
+    "Copper Bar": 500,
+    "Iron Bar": 300,
+    "Gold Bar": 600,
+    "Iridium Bar": 650,
+    "Refined Quartz": 180,
+    "Battery Pack": 20,
+    "Radioactive Ore": 40,
+    "Radioactive Bar": 18
+  }
+}
