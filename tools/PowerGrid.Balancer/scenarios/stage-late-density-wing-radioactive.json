@@ -1,0 +1,47 @@
+{
+  "name": "Stage - Late Y3 Density Wing (Radioactive)",
+  "description": "Premium late-game density tier: Radioisotope Generator with Energized Iridium Cable and Iridium Batteries. Validates the 900 EU/t density generator and 3000 EU/t cable tier under realistic load.",
+  "days": 1,
+  "cable": "Energized Iridium Cable",
+  "initialBatteryChargePercent": 1.0,
+  "weather": {
+    "clear": 1.0
+  },
+  "machines": [
+    {
+      "id": "Metal Keg",
+      "count": 60,
+      "activeFraction": 1.0
+    },
+    {
+      "id": "Industrial Preserves Jar",
+      "count": 16,
+      "activeFraction": 1.0
+    },
+    {
+      "id": "Hard Iridium Keg",
+      "count": 12,
+      "activeFraction": 1.0
+    },
+    {
+      "id": "Metal Cask",
+      "count": 24,
+      "activeFraction": 1.0
+    }
+  ],
+  "generators": [
+    {
+      "id": "Radioisotope Generator",
+      "count": 3
+    }
+  ],
+  "batteries": [
+    {
+      "id": "Iridium Power Battery",
+      "count": 3
+    }
+  ],
+  "fuelInventory": {
+    "Radioactive Bar": 5
+  }
+}

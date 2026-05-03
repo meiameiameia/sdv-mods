@@ -1,0 +1,32 @@
+{
+  "name": "Stress - Density Cable Saturation",
+  "description": "Pushes the Energized Iridium Cable (3000 EU/t) to its limit. 75 Metal Casks demand exactly 3000 EU/t while 4 Radioisotope Generators produce 3600 EU/t. Expect throughput limiting and generation waste.",
+  "days": 1,
+  "cable": "Energized Iridium Cable",
+  "initialBatteryChargePercent": 1.0,
+  "weather": {
+    "clear": 1.0
+  },
+  "machines": [
+    {
+      "id": "Metal Cask",
+      "count": 75,
+      "activeFraction": 1.0
+    }
+  ],
+  "generators": [
+    {
+      "id": "Radioisotope Generator",
+      "count": 4
+    }
+  ],
+  "batteries": [
+    {
+      "id": "Iridium Power Battery",
+      "count": 3
+    }
+  ],
+  "fuelInventory": {
+    "Radioactive Bar": 6
+  }
+}
