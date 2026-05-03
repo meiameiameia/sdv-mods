@@ -188,6 +188,13 @@ internal static class GmcmIntegration
             () => I18n.Get("gmcm.radioactive-bar.tooltip"),
             min: 30, max: 1440, interval: 10);
 
+        gmcmApi.AddNumberOption(manifest,
+            () => config.RadioisotopeFuelFuelTicks,
+            (int val) => config.RadioisotopeFuelFuelTicks = val,
+            () => I18n.Get("gmcm.radioisotope-fuel.name"),
+            () => I18n.Get("gmcm.radioisotope-fuel.tooltip"),
+            min: 30, max: 1440, interval: 10);
+
         // --- PowerGrid-owned machines ---
         gmcmApi.AddSectionTitle(manifest, () => I18n.Get("item.industrial-preserves-jar.name"));
 

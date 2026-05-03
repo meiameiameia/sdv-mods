@@ -47,7 +47,7 @@ If you use Generic Mod Config Menu, recipe unlock behavior can be changed in-gam
 | --- | ---: | --- | --- |
 | Steam Generator | 75 EU/tick | Coal, Wood, Hardwood | Early generator. Good for small rooms. |
 | Combustion Generator | 240 EU/tick | Biofuel | Midgame generator. Good for larger machine groups. |
-| Radioisotope Generator | 900 EU/tick | Radioactive Bar | Late-game density generator for heavy machine rooms. |
+| Radioisotope Generator | 900 EU/tick | Radioisotope Fuel, Radioactive Bar | Late-game density generator for heavy machine rooms. |
 | Wind Generator | 25 EU/tick base | none | Passive power, outdoors only, weather adjusted. |
 
 Wind output changes with weather:
@@ -64,13 +64,20 @@ Wind output changes with weather:
 | Wood | Steam Generator | Easy backup fuel. |
 | Hardwood | Steam Generator | Better than Wood. |
 | Biofuel | Combustion Generator | Crafted midgame fuel. |
-| Radioactive Bar | Radioisotope Generator | Dense late-game fuel for very high EU output. |
+| Radioisotope Fuel | Radioisotope Generator | Crafted late-game fuel. Much more efficient than raw bars. |
+| Radioactive Bar | Radioisotope Generator | Legacy raw fuel. Less efficient than Radioisotope Fuel. |
 
 Biofuel recipe:
 
 | Recipe | Output |
 | --- | ---: |
 | Fiber x10, Wood x5, Coal x1 | Biofuel x8 |
+
+Radioisotope Fuel recipe:
+
+| Recipe | Output |
+| --- | ---: |
+| Radioactive Bar x1, Refined Quartz x1 | Radioisotope Fuel x7 |
 
 ## Cables
 

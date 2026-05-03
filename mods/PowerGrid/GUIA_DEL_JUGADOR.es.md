@@ -47,7 +47,7 @@ Si usas Generic Mod Config Menu, el comportamiento de los desbloqueos puede camb
 | --- | ---: | --- | --- |
 | Generador de Vapor | 75 EU/tick | Carbón, Madera, Madera Noble | Generador inicial. Va bien para salas pequeñas. |
 | Generador de Combustión | 240 EU/tick | Biocombustible | Generador de mitad de juego. Va bien para grupos mayores de máquinas. |
-| Generador Radioisotópico | 900 EU/tick | Barra Radiactiva | Generador de alta densidad para juego tardío y salas de producción pesadas. |
+| Generador Radioisotópico | 900 EU/tick | Combustible de Radioisótopos, Barra Radiactiva | Generador de alta densidad para juego tardío y salas de producción pesadas. |
 | Generador Eólico | 25 EU/tick base | ninguno | Energía pasiva, solo en exteriores y ajustada por el clima. |
 
 La producción eólica cambia con el clima:
@@ -64,13 +64,20 @@ La producción eólica cambia con el clima:
 | Madera | Generador de Vapor | Combustible de respaldo fácil de conseguir. |
 | Madera Noble | Generador de Vapor | Mejor que la Madera. |
 | Biocombustible | Generador de Combustión | Combustible fabricado para mitad de juego. |
-| Barra Radiactiva | Generador Radioisotópico | Combustible denso de juego tardío para una producción de EU muy alta. |
+| Combustible de Radioisótopos | Generador Radioisotópico | Combustible fabricado de juego tardío. Mucho más eficiente que barras en bruto. |
+| Barra Radiactiva | Generador Radioisotópico | Combustible en bruto heredado. Menos eficiente que el Combustible de Radioisótopos. |
 
 Receta de Biocombustible:
 
 | Receta | Resultado |
 | --- | ---: |
 | Fibra x10, Madera x5, Carbón x1 | Biocombustible x8 |
+
+Receta de Combustible de Radioisótopos:
+
+| Receta | Resultado |
+| --- | ---: |
+| Barra Radiactiva x1, Cuarzo Refinado x1 | Combustible de Radioisótopos x7 |
 
 ## Cables
 

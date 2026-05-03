@@ -120,9 +120,11 @@ internal sealed class FuelManager
 
         if (generatorItemId == PowerConstants.RadioisotopeGeneratorId)
         {
-            return qualifiedId == "(O)910"
-                ? config.RadioactiveBarFuelTicks
-                : 0;
+            if (qualifiedId == "(O)910")
+                return config.RadioactiveBarFuelTicks;    // Legacy raw bar
+            if (qualifiedId == PowerConstants.QObject(PowerConstants.RadioisotopeFuelId))
+                return config.RadioisotopeFuelFuelTicks;
+            return 0;
         }
 
         return 0;

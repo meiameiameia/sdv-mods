@@ -47,7 +47,7 @@ Se você usa Generic Mod Config Menu, o comportamento dos desbloqueios pode ser 
 | --- | ---: | --- | --- |
 | Gerador a Vapor | 75 EU/tick | Carvão, Madeira, Madeira de Lei | Gerador inicial. Bom para salas pequenas. |
 | Gerador de Combustão | 240 EU/tick | Biocombustível | Gerador de meio de jogo. Bom para grupos maiores de máquinas. |
-| Gerador Radioisotópico | 900 EU/tick | Barra Radioativa | Gerador de alta densidade para o fim de jogo e salas de produção pesadas. |
+| Gerador Radioisotópico | 900 EU/tick | Combustível Radioisotópico, Barra Radioativa | Gerador de alta densidade para o fim de jogo e salas de produção pesadas. |
 | Gerador Eólico | 25 EU/tick base | nenhum | Energia passiva, apenas ao ar livre, ajustada pelo clima. |
 
 A produção eólica muda com o clima:
@@ -56,7 +56,7 @@ A produção eólica muda com o clima:
 - Chuva ou tempestade: produção maior
 - Neve: produção menor
 
-Clique com o botão direito em um Gerador a Vapor segurando Carvão, Madeira ou Madeira de Lei para abastecer. Clique com o botão direito em um Gerador de Combustão segurando Biocombustível para abastecer. Clique com o botão direito em um Gerador Radioisotópico segurando uma Barra Radioativa para abastecer.
+Clique com o botão direito em um Gerador a Vapor segurando Carvão, Madeira ou Madeira de Lei para abastecer. Clique com o botão direito em um Gerador de Combustão segurando Biocombustível para abastecer. Clique com o botão direito em um Gerador Radioisotópico segurando Combustível Radioisotópico ou uma Barra Radioativa para abastecer.
 
 ## Combustível
 
@@ -66,13 +66,20 @@ Clique com o botão direito em um Gerador a Vapor segurando Carvão, Madeira ou 
 | Madeira | Gerador a Vapor | Combustível reserva fácil de conseguir. |
 | Madeira de Lei | Gerador a Vapor | Melhor que Madeira. |
 | Biocombustível | Gerador de Combustão | Combustível criado no meio do jogo. |
-| Barra Radioativa | Gerador Radioisotópico | Combustível denso de fim de jogo para produção muito alta de EU. |
+| Combustível Radioisotópico | Gerador Radioisotópico | Combustível fabricado de fim de jogo. Muito mais eficiente que barras em bruto. |
+| Barra Radioativa | Gerador Radioisotópico | Combustível em bruto legado. Menos eficiente que Combustível Radioisotópico. |
 
 Receita do Biocombustível:
 
 | Receita | Resultado |
 | --- | ---: |
 | Fibra x10, Madeira x5, Carvão x1 | Biocombustível x8 |
+
+Receita do Combustível Radioisotópico:
+
+| Receita | Resultado |
+| --- | ---: |
+| Barra Radioativa x1, Cuarzo Refinado x1 | Combustível Radioisotópico x7 |
 
 ## Cabos
 

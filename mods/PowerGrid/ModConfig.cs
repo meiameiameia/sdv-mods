@@ -38,6 +38,7 @@ internal sealed class ModConfig
     public int HardwoodFuelTicks { get; set; } = 20;
     public int BiofuelFuelTicks { get; set; } = 60;
     public int RadioactiveBarFuelTicks { get; set; } = 360;
+    public int RadioisotopeFuelFuelTicks { get; set; } = 720;
 
     // --- PowerGrid-owned machines ---
     public int IndustrialPreservesJarEUPerMinute { get; set; } = 2;

@@ -14,6 +14,7 @@ internal static class PowerConstants
     public const string EnergizedIridiumCableId = ModPrefix + "EnergizedIridiumCable";
 
     public const string BiofuelId = ModPrefix + "Biofuel";
+    public const string RadioisotopeFuelId = ModPrefix + "RadioisotopeFuel";
 
     public const string SteamGeneratorId = ModPrefix + "SteamGenerator";
     public const string CombustionGeneratorId = ModPrefix + "CombustionGenerator";

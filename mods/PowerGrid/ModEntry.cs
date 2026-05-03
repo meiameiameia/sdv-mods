@@ -46,6 +46,7 @@ internal sealed class ModEntry : Mod
     private const string RuntimeOnlineKey = PersistedModDataPrefix + "online";
     private const string RuntimeGeneratedThisTickKey = PersistedModDataPrefix + "generatedThisTick";
     private const string BiofuelRecipeKey = "Biofuel";
+    private const string RadioisotopeFuelRecipeKey = "Radioisotope Fuel";
     private const string CombustionGeneratorRecipeKey = "Combustion Generator";
     private const string RadioisotopeGeneratorRecipeKey = "Radioisotope Generator";
     private const string IndustrialPreservesJarRecipeKey = "Industrial Preserves Jar";
@@ -148,6 +149,7 @@ internal sealed class ModEntry : Mod
     private string IridiumCableTexture => GetTextureAsset("IridiumCable");
     private string EnergizedIridiumCableTexture => GetTextureAsset("EnergizedIridiumCable");
     private string BiofuelTexture => GetTextureAsset("Biofuel");
+    private string RadioisotopeFuelTexture => GetTextureAsset("RadioisotopeFuel");
     private string SteamGeneratorTexture => GetTextureAsset("SteamGenerator");
     private string CombustionGeneratorTexture => GetTextureAsset("CombustionGenerator");
     private string RadioisotopeGeneratorTexture => GetTextureAsset("RadioisotopeGenerator");
@@ -186,6 +188,7 @@ internal sealed class ModEntry : Mod
         migratedConfig |= TryMigrateModerateBalanceConfig(Config);
         migratedConfig |= TryMigrateDenseBiofuelConfig(Config);
         migratedConfig |= TryMigrateSmoothSteamFuelConfig(Config);
+        migratedConfig |= TryMigrateRadioisotopeFuelConfig(Config);
         if (migratedConfig)
         {
             helper.WriteConfig(Config);
@@ -394,6 +397,15 @@ internal sealed class ModEntry : Mod
         config.CoalFuelTicks = 30;
         config.WoodFuelTicks = 10;
         config.HardwoodFuelTicks = 20;
+        return true;
+    }
+
+    private static bool TryMigrateRadioisotopeFuelConfig(ModConfig config)
+    {
+        if (config.RadioisotopeFuelFuelTicks != 0)
+            return false;
+
+        config.RadioisotopeFuelFuelTicks = 720;
         return true;
     }
 
@@ -952,6 +964,7 @@ internal sealed class ModEntry : Mod
         TryLoadTexture(e, IridiumCableTexture, "IridiumCable", new Color(120, 70, 200));
         TryLoadTexture(e, EnergizedIridiumCableTexture, "EnergizedIridiumCable", new Color(100, 220, 180));
         TryLoadObjectTexture(e, BiofuelTexture, "Biofuel", new Color(84, 196, 118));
+        TryLoadObjectTexture(e, RadioisotopeFuelTexture, "RadioisotopeFuel", new Color(160, 220, 80));
         TryLoadTexture(e, SteamGeneratorTexture, "SteamGenerator", new Color(140, 140, 160));
         TryLoadTexture(e, CombustionGeneratorTexture, "CombustionGenerator", new Color(120, 128, 144));
         TryLoadTexture(e, RadioisotopeGeneratorTexture, "RadioisotopeGenerator", new Color(110, 184, 132));
@@ -1141,6 +1154,7 @@ internal sealed class ModEntry : Mod
         int sourceIndex = spriteName switch
         {
             "Biofuel" => 92,          // Sap
+            "RadioisotopeFuel" => 74, // Solar Essence
             "SteamGenerator" => 13,   // Furnace
             "CombustionGenerator" => 13,
             "WindGenerator" => 10,    // Bee House
@@ -1263,6 +1277,7 @@ internal sealed class ModEntry : Mod
     {
         var dict = asset.AsDictionary<string, ObjectData>().Data;
         dict[PowerConstants.BiofuelId] = CreateBiofuelObjectData();
+        dict[PowerConstants.RadioisotopeFuelId] = CreateRadioisotopeFuelObjectData();
     }
 
     private ObjectData CreateBiofuelObjectData()
@@ -1292,6 +1307,35 @@ internal sealed class ModEntry : Mod
             GameDataCloneJsonOptions);
 
         return data ?? throw new InvalidOperationException("Failed to build Biofuel object data.");
+    }
+
+    private ObjectData CreateRadioisotopeFuelObjectData()
+    {
+        string displayName = I18n.Get("item.radioisotope-fuel.name");
+        string description = I18n.Get("item.radioisotope-fuel.description");
+
+        ObjectData? data = JsonSerializer.Deserialize<ObjectData>(
+            $$"""
+            {
+              "Name": "{{RadioisotopeFuelRecipeKey}}",
+              "DisplayName": "{{displayName}}",
+              "Description": "{{description}}",
+              "Type": "Basic",
+              "Category": 0,
+              "Price": 300,
+              "Texture": "{{RadioisotopeFuelTexture}}",
+              "SpriteIndex": 0,
+              "Edibility": -300,
+              "CanBeGivenAsGift": false,
+              "CanBeTrashed": true,
+              "ExcludeFromShippingCollection": true,
+              "ExcludeFromRandomSale": true,
+              "ContextTags": [ "powergrid_radioisotope_fuel", "powergrid_fuel" ]
+            }
+            """,
+            GameDataCloneJsonOptions);
+
+        return data ?? throw new InvalidOperationException("Failed to build Radioisotope Fuel object data.");
     }
 
     private void RegisterIndustrialPreservesJar(IDictionary<string, BigCraftableData> dict)
@@ -1427,6 +1471,8 @@ internal sealed class ModEntry : Mod
 
         // Biofuel: 771 (Fiber) x10, 388 (Wood) x5, 382 (Coal) x1 => 8 Biofuel
         dict[BiofuelRecipeKey] = $"771 10 388 5 382 1/Field/{PowerConstants.BiofuelId} 8/false/null/";
+        // Radioisotope Fuel: 910 (Radioactive Bar) x1, 338 (Refined Quartz) x1 => 7 Radioisotope Fuel
+        dict[RadioisotopeFuelRecipeKey] = $"910 1 338 1/Field/{PowerConstants.RadioisotopeFuelId} 7/false/null/";
 
         // Steam Generator: 335 (Iron Bar) x5, 334 (Copper Bar) x2, 382 (Coal) x6, 338 (Refined Quartz) x1
         dict["Steam Generator"] = $"335 5 334 2 382 6 338 1/Field/{PowerConstants.SteamGeneratorId}/true/null/";

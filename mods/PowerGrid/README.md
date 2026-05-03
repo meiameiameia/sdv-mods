@@ -48,6 +48,7 @@ Stardew Valley/Mods/PowerGrid/manifest.json
 - `Iridium Power Battery`
 - `Power Conduit`
 - `Biofuel`
+- `Radioisotope Fuel`
 
 ### Powered Machines
 
