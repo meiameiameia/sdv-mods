@@ -87,7 +87,8 @@
         "Gold Bar": { "weeklyIncome": 120, "reserveFloor": 200, "maxPowerGridShare": 0.35, "notes": "Gold should be comfortable for mature saves." },
         "Iridium Bar": { "weeklyIncome": 55, "reserveFloor": 100, "maxPowerGridShare": 0.30, "notes": "Iridium is allowed to gate advanced conversion." },
         "Refined Quartz": { "weeklyIncome": 70, "reserveFloor": 120, "maxPowerGridShare": 0.35, "notes": "Quartz should not be the main pain point." },
-        "Battery Pack": { "weeklyIncome": 8, "reserveFloor": 10, "maxPowerGridShare": 0.35, "notes": "Battery packs should support infrastructure and future power-cell ideas." }
+        "Battery Pack": { "weeklyIncome": 8, "reserveFloor": 10, "maxPowerGridShare": 0.35, "notes": "Battery packs should support infrastructure and future power-cell ideas." },
+        "Radioactive Bar": { "weeklyIncome": 3, "reserveFloor": 4, "maxPowerGridShare": 0.35, "notes": "Radioactive bars should support a premium density route, but stay rare enough to feel special." }
       }
     },
     {

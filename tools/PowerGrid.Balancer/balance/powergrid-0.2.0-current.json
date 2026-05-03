@@ -109,7 +109,7 @@
     },
     "Radioisotope Fuel": {
       "name": "Radioisotope Fuel",
-      "ticksPerUnit": 360
+      "ticksPerUnit": 720
     }
   },
   "recipes": {

@@ -1,8 +1,8 @@
 {
   "name": "Mature Y3 Organized Conversion",
   "description": "A mature save converting an organized production shed into powered machines.",
-  "generator": "Combustion Generator",
-  "cable": "Iridium Cable",
+  "generator": "Radioisotope Generator",
+  "cable": "Energized Iridium Cable",
   "battery": "Iridium Power Battery",
   "batteryCount": 4,
   "cableCount": 100,
@@ -20,13 +20,13 @@
     "Fiber": 2200,
     "Sap": 1,
     "Coal": 313,
-    "Copper Bar": 466,
-    "Iron Bar": 108,
+    "Copper Bar": 500,
+    "Iron Bar": 600,
     "Gold Bar": 550,
     "Iridium Bar": 455,
-    "Refined Quartz": 96,
-    "Battery Pack": 11,
-    "Radioactive Ore": 9,
-    "Radioactive Bar": 0
+    "Refined Quartz": 300,
+    "Battery Pack": 20,
+    "Radioactive Ore": 25,
+    "Radioactive Bar": 20
   }
 }
