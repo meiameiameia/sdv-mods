@@ -29,3 +29,13 @@ Packaged mod downloads are published on Nexus Mods. GitHub is source-only and ma
 ```powershell
 .\scripts\build-mod.ps1 -Mods PowerGrid -Bump none
 ```
+
+## Local Artifacts
+
+`artifacts/` is ignored by Git. Do not commit build outputs, generated reports, or zip packages. Published package files are distributed through Nexus Mods, not GitHub.
+
+Use these folders:
+
+- `artifacts/install-snapshots/<mod>/latest/` for the newest installable local snapshot.
+- `artifacts/local-packages/<mod>/latest/` for local-only packages that are not release or test zips.
+- `artifacts/balance-lab/<YYYYMMDD>-<topic>/<command-or-suite>/` for generated balance reports.
