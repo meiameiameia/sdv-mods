@@ -1,6 +1,6 @@
 {
   "name": "Stage - Late Y3 Density Wing (Radioactive)",
-  "description": "Premium late-game density tier: Radioisotope Generator with Energized Iridium Cable and Iridium Batteries. 150 machines over 7 days tests sustained fuel burn and battery stability at 2550 EU/t demand.",
+  "description": "Premium late-game density tier: Radioisotope Generator with Energized Iridium Cable and Iridium Batteries. 150 machines over 7 days tests sustained fuel burn with craftable Radioisotope Fuel (1 Radioactive Bar + 1 Refined Quartz = 7 fuel).",
   "days": 7,
   "cable": "Energized Iridium Cable",
   "initialBatteryChargePercent": 1.0,
@@ -42,6 +42,6 @@
     }
   ],
   "fuelInventory": {
-    "Radioactive Bar": 8
+    "Radioisotope Fuel": 7
   }
 }

@@ -46,7 +46,7 @@
     "Radioisotope Generator": {
       "name": "Radioisotope Generator",
       "outputEuPerTick": 900,
-      "fuel": "Radioactive Bar",
+      "fuel": "Radioisotope Fuel",
       "weatherAdjusted": false,
       "notes": "Premium late-game density generator."
     },
@@ -106,6 +106,10 @@
     "Radioactive Bar": {
       "name": "Radioactive Bar",
       "ticksPerUnit": 360
+    },
+    "Radioisotope Fuel": {
+      "name": "Radioisotope Fuel",
+      "ticksPerUnit": 360
     }
   },
   "recipes": {
@@ -135,6 +139,13 @@
         "Radioactive Bar": 1,
         "Battery Pack": 1,
         "Refined Quartz": 2
+      }
+    },
+    "Radioisotope Fuel": {
+      "outputCount": 7,
+      "ingredients": {
+        "Radioactive Bar": 1,
+        "Refined Quartz": 1
       }
     },
     "Biofuel": {
