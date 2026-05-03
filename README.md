@@ -15,8 +15,8 @@ These are community mods maintained or preserved here with clear provenance and 
 
 ## Layout
 
-- `mods/PowerGrid/[SMAPI] PowerGrid`
-- `mods/FishSmokerRecipe/[CP] FishSmoker Recipe`
+- `mods/PowerGrid`
+- `mods/FishSmokerRecipe`
 - `stewarded/MatrixFishingUI`
 - `scripts/build-mod.ps1`
 

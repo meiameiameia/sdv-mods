@@ -17,6 +17,7 @@
   "stockpile": {
     "Wood": 2500,
     "Hardwood": 160,
+    "Fiber": 900,
     "Sap": 2500,
     "Coal": 500,
     "Copper Bar": 220,

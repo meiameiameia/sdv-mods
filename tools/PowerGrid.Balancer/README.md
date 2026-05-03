@@ -42,7 +42,7 @@ dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- batc
 Use `audit` when you want files that can shape balance decisions:
 
 ```powershell
-dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- audit tools/PowerGrid.Balancer/scenarios --out artifacts/balance-lab/current
+dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- audit tools/PowerGrid.Balancer/scenarios --out artifacts/balance-lab/20260502-density-tier/audit
 ```
 
 The audit command writes:
@@ -56,12 +56,32 @@ The audit command writes:
 
 Generated audit files are local artifacts. Re-run the command whenever balance defaults or benchmark scenarios change.
 
+## Artifact Convention
+
+Balance Lab outputs are local decision artifacts, not stewarded source. Clean `artifacts/balance-lab/` before starting a new balance pass unless you intentionally need to compare against an older generated report.
+
+Use one named output folder per investigation:
+
+```text
+artifacts/balance-lab/<YYYYMMDD>-<topic>/<command-or-suite>/
+```
+
+Examples:
+
+```text
+artifacts/balance-lab/20260502-density-tier/audit/
+artifacts/balance-lab/20260502-density-tier/loadout-suite/
+artifacts/balance-lab/20260502-density-tier/sustainability/
+```
+
+Keep the topic short and tied to the decision being tested, such as `density-tier`, `biofuel-candidates`, or `late-y3-loadouts`. Do not mix unrelated investigations in the same folder. If a generated report is worth preserving, copy the conclusion into a tracked proposal or README section instead of committing the artifact output.
+
 ## Generate Progression Data
 
 Use `progression` when you want to audit whether PowerGrid grows well across a save:
 
 ```powershell
-dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- progression tools/PowerGrid.Balancer/profiles/powergrid-progression-ladder.json --out artifacts/balance-lab/progression
+dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- progression tools/PowerGrid.Balancer/profiles/powergrid-progression-ladder.json --out artifacts/balance-lab/20260502-density-tier/progression
 ```
 
 The progression command writes:
@@ -80,13 +100,13 @@ The included profile uses approximate early/mid-game checkpoints and an anonymiz
 Use `plan` when you want to ask, "If I build this room, what power setup do I need?"
 
 ```powershell
-dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- plan tools/PowerGrid.Balancer/loadouts/sample-big-shed.json --config tools/PowerGrid.Balancer/balance/powergrid-0.1.x-moderate.json --out artifacts/balance-lab/loadout-sample
+dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- plan tools/PowerGrid.Balancer/loadouts/sample-big-shed.json --config tools/PowerGrid.Balancer/balance/powergrid-0.2.0-current.json --out artifacts/balance-lab/20260502-density-tier/loadout-sample
 ```
 
 You can also point it at the whole loadout folder to generate an index and one report per preset:
 
 ```powershell
-dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- plan tools/PowerGrid.Balancer/loadouts --config tools/PowerGrid.Balancer/balance/powergrid-0.1.x-moderate.json --out artifacts/balance-lab/loadout-suite
+dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- plan tools/PowerGrid.Balancer/loadouts --config tools/PowerGrid.Balancer/balance/powergrid-0.2.0-current.json --out artifacts/balance-lab/20260502-density-tier/loadout-suite
 ```
 
 The plan command writes:
@@ -104,7 +124,7 @@ Loadout plans estimate how quickly spare generation fills the configured batteri
 Use `resources` when you want to know which ingredients are blocking planned setups:
 
 ```powershell
-dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- resources tools/PowerGrid.Balancer/loadouts --config tools/PowerGrid.Balancer/balance/powergrid-0.1.x-moderate.json --out artifacts/balance-lab/resource-pressure
+dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- resources tools/PowerGrid.Balancer/loadouts --config tools/PowerGrid.Balancer/balance/powergrid-0.2.0-current.json --out artifacts/balance-lab/20260502-density-tier/resource-pressure
 ```
 
 The resources command writes:
@@ -112,14 +132,14 @@ The resources command writes:
 - `resource-pressure.md`: ranked ingredient pressure, main pressure source, and short balance notes.
 - `resource-pressure.csv`: sortable data for comparing recipe and fuel changes.
 
-This is the first pass for answering questions like "is Biofuel asking for too much Sap?" or "are powered machines leaning too hard on one metal tier?"
+This is the first pass for answering questions like "is Biofuel asking for too much of its input mix?" or "are powered machines leaning too hard on one metal tier?"
 
 ## Check Resource Sustainability
 
 Use `sustainability` when you want to know whether PowerGrid is using a fair share of the player's wider resource economy:
 
 ```powershell
-dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- sustainability tools/PowerGrid.Balancer/loadouts --config tools/PowerGrid.Balancer/balance/powergrid-0.1.x-moderate.json --out artifacts/balance-lab/sustainability
+dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- sustainability tools/PowerGrid.Balancer/loadouts --config tools/PowerGrid.Balancer/balance/powergrid-0.2.0-current.json --out artifacts/balance-lab/20260502-density-tier/sustainability
 ```
 
 This command compares each loadout against a resource budget profile. Setup costs are checked against stockpiles after a protected reserve floor. Ongoing fuel costs are checked against a safe share of expected weekly income.
@@ -138,7 +158,7 @@ Use this before changing fuel or recipe defaults. A resource can be technically 
 Use `compare-sustainability` when you want to compare several balance candidates against the same safe resource budget:
 
 ```powershell
-dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- compare-sustainability tools/PowerGrid.Balancer/balance/powergrid-0.1.x-moderate.json tools/PowerGrid.Balancer/balance/powergrid-0.1.x-biofuel-*.json tools/PowerGrid.Balancer/loadouts --out artifacts/balance-lab/biofuel-sustainability
+dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- compare-sustainability tools/PowerGrid.Balancer/balance/powergrid-0.2.0-current.json tools/PowerGrid.Balancer/balance/powergrid-0.1.x-biofuel-*.json tools/PowerGrid.Balancer/loadouts --out artifacts/balance-lab/20260502-biofuel-candidates/sustainability
 ```
 
 The comparison command writes:
@@ -153,7 +173,7 @@ Use this alongside `compare-resources`. Resource pressure answers "what blocks t
 Use `compare-resources` when you want to test several balance candidates against the same loadout suite:
 
 ```powershell
-dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- compare-resources tools/PowerGrid.Balancer/balance/powergrid-0.1.x-moderate.json tools/PowerGrid.Balancer/balance/powergrid-0.1.x-biofuel-*.json tools/PowerGrid.Balancer/loadouts --out artifacts/balance-lab/biofuel-candidates
+dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- compare-resources tools/PowerGrid.Balancer/balance/powergrid-0.2.0-current.json tools/PowerGrid.Balancer/balance/powergrid-0.1.x-biofuel-*.json tools/PowerGrid.Balancer/loadouts --out artifacts/balance-lab/20260502-biofuel-candidates/resource-pressure
 ```
 
 The included Biofuel candidates only change Biofuel output or fuel duration. They are sandbox configs for analysis, not shipped defaults.
@@ -170,7 +190,7 @@ The comparison command writes:
 Use `compare-progression` before applying balance changes to the mod:
 
 ```powershell
-dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- compare-progression tools/PowerGrid.Balancer/balance/powergrid-0.1.0.json tools/PowerGrid.Balancer/balance/powergrid-0.1.x-moderate.json tools/PowerGrid.Balancer/profiles/powergrid-progression-ladder.json --out artifacts/balance-lab/comparison-moderate
+dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- compare-progression tools/PowerGrid.Balancer/balance/powergrid-0.1.0.json tools/PowerGrid.Balancer/balance/powergrid-0.2.0-current.json tools/PowerGrid.Balancer/profiles/powergrid-progression-ladder.json --out artifacts/balance-lab/20260502-density-tier/comparison-current
 ```
 
 The comparison command writes:
@@ -181,7 +201,8 @@ The comparison command writes:
 
 ## Files
 
-- `balance/powergrid-0.1.0.json`: current PowerGrid defaults.
+- `balance/powergrid-0.2.0-current.json`: current PowerGrid defaults mirrored from the live mod.
+- `balance/powergrid-0.1.0.json`: historical baseline used for comparison.
 - `balance/powergrid-0.1.x-test.json`: generous tuning sandbox, not runtime defaults.
 - `balance/powergrid-0.1.x-moderate.json`: moderate Biofuel tuning sandbox, not runtime defaults.
 - `balance/powergrid-0.1.x-biofuel-*.json`: Biofuel candidate sandboxes for resource-pressure comparison.

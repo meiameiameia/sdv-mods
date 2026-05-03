@@ -89,6 +89,25 @@
         "Refined Quartz": { "weeklyIncome": 70, "reserveFloor": 120, "maxPowerGridShare": 0.35, "notes": "Quartz should not be the main pain point." },
         "Battery Pack": { "weeklyIncome": 8, "reserveFloor": 10, "maxPowerGridShare": 0.35, "notes": "Battery packs should support infrastructure and future power-cell ideas." }
       }
+    },
+    {
+      "name": "Late Y3 Density Wing",
+      "description": "Premium radioactive density stage. This should feel expensive and special, but not absurd once the save is already deep into endgame production.",
+      "resources": {
+        "Wood": { "weeklyIncome": 950, "reserveFloor": 1500, "maxPowerGridShare": 0.35, "notes": "Wood should still leave room for sheds, casks, and normal late projects." },
+        "Hardwood": { "weeklyIncome": 90, "reserveFloor": 120, "maxPowerGridShare": 0.30, "notes": "Hardwood remains protected even in premium setups." },
+        "Fiber": { "weeklyIncome": 550, "reserveFloor": 800, "maxPowerGridShare": 0.40, "notes": "Fiber can comfortably support biomass fuel when the player has a mature farm loop." },
+        "Moss": { "weeklyIncome": 220, "reserveFloor": 250, "maxPowerGridShare": 0.35, "notes": "Moss stays optional support, not a required treadmill." },
+        "Sap": { "weeklyIncome": 650, "reserveFloor": 1200, "maxPowerGridShare": 0.35, "notes": "Sap should remain mostly free for fertilizer and side crafting." },
+        "Coal": { "weeklyIncome": 240, "reserveFloor": 450, "maxPowerGridShare": 0.35, "notes": "Coal can support premium infrastructure, but should not become a permanent chore." },
+        "Copper Bar": { "weeklyIncome": 100, "reserveFloor": 200, "maxPowerGridShare": 0.35, "notes": "Copper should be painless at this point." },
+        "Iron Bar": { "weeklyIncome": 160, "reserveFloor": 250, "maxPowerGridShare": 0.35, "notes": "Iron is still a real industrial input, but should not stall a density upgrade." },
+        "Gold Bar": { "weeklyIncome": 130, "reserveFloor": 220, "maxPowerGridShare": 0.35, "notes": "Gold is fair material for premium machinery." },
+        "Iridium Bar": { "weeklyIncome": 65, "reserveFloor": 120, "maxPowerGridShare": 0.30, "notes": "Iridium can gate advanced conversion without turning into a wall." },
+        "Refined Quartz": { "weeklyIncome": 80, "reserveFloor": 140, "maxPowerGridShare": 0.35, "notes": "Quartz should be noticeable but not the reason the upgrade dies." },
+        "Battery Pack": { "weeklyIncome": 10, "reserveFloor": 12, "maxPowerGridShare": 0.35, "notes": "Battery packs remain premium components, not throwaway fuel." },
+        "Radioactive Bar": { "weeklyIncome": 3, "reserveFloor": 4, "maxPowerGridShare": 0.35, "notes": "Radioactive bars should support a premium density route, but stay rare enough to feel special." }
+      }
     }
   ]
 }
