@@ -36,6 +36,6 @@ Packaged mod downloads are published on Nexus Mods. GitHub is source-only and ma
 
 Use these folders:
 
-- `artifacts/install-snapshots/<mod>/latest/` for the newest installable local snapshot.
+- `artifacts/release-candidates/<mod>/<version>/` for zips ready for testing.
 - `artifacts/local-packages/<mod>/latest/` for local-only packages that are not release or test zips.
 - `artifacts/balance-lab/<YYYYMMDD>-<topic>/<command-or-suite>/` for generated balance reports.
