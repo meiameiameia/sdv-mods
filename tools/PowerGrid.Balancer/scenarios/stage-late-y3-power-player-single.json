@@ -1,6 +1,6 @@
 {
-  "name": "Stage - Late Y3 Density Wing (Radioactive)",
-  "description": "Premium late-game density tier: Radioisotope Generator with Energized Iridium Cable and Iridium Batteries. 150 machines over 7 days tests sustained fuel burn and battery stability at 2550 EU/t demand.",
+  "name": "Stage - Late Y3 Power Player (Single Network)",
+  "description": "Maxes a single Energized Iridium Cable network at 3000 EU/t. 160 machines: kegs, preserves, hard kegs, casks. 4 Radioisotope Generators produce 3600 EU/t but cable limits to 3000. 7-day duration tests fuel drain and steady-state waste.",
   "days": 7,
   "cable": "Energized Iridium Cable",
   "initialBatteryChargePercent": 1.0,
@@ -10,38 +10,38 @@
   "machines": [
     {
       "id": "Metal Keg",
-      "count": 90,
+      "count": 100,
       "activeFraction": 1.0
     },
     {
       "id": "Industrial Preserves Jar",
-      "count": 24,
+      "count": 30,
       "activeFraction": 1.0
     },
     {
       "id": "Hard Iridium Keg",
-      "count": 18,
+      "count": 20,
       "activeFraction": 1.0
     },
     {
       "id": "Metal Cask",
-      "count": 18,
+      "count": 20,
       "activeFraction": 1.0
     }
   ],
   "generators": [
     {
       "id": "Radioisotope Generator",
-      "count": 3
+      "count": 4
     }
   ],
   "batteries": [
     {
       "id": "Iridium Power Battery",
-      "count": 3
+      "count": 4
     }
   ],
   "fuelInventory": {
-    "Radioactive Bar": 8
+    "Radioactive Bar": 15
   }
 }

@@ -1,0 +1,52 @@
+{
+  "name": "Stage - Late Y3 Power Player (Full Farm)",
+  "description": "Represents a power player's entire farm: 4 big sheds plus cellar and barn preserves. 380 machines demanding 7900 EU/t. Uses 5 Radioisotope + 15 Combustion generators (8100 EU/t total). Single Energized Iridium Cable is massively undersized — expect severe throughput limiting, demonstrating why multiple networks are required.",
+  "days": 14,
+  "cable": "Energized Iridium Cable",
+  "initialBatteryChargePercent": 1.0,
+  "weather": {
+    "clear": 1.0
+  },
+  "machines": [
+    {
+      "id": "Metal Keg",
+      "count": 280,
+      "activeFraction": 1.0
+    },
+    {
+      "id": "Industrial Preserves Jar",
+      "count": 80,
+      "activeFraction": 1.0
+    },
+    {
+      "id": "Hard Iridium Keg",
+      "count": 50,
+      "activeFraction": 1.0
+    },
+    {
+      "id": "Metal Cask",
+      "count": 50,
+      "activeFraction": 1.0
+    }
+  ],
+  "generators": [
+    {
+      "id": "Radioisotope Generator",
+      "count": 5
+    },
+    {
+      "id": "Combustion Generator",
+      "count": 15
+    }
+  ],
+  "batteries": [
+    {
+      "id": "Iridium Power Battery",
+      "count": 8
+    }
+  ],
+  "fuelInventory": {
+    "Radioactive Bar": 25,
+    "Biofuel": 450
+  }
+}

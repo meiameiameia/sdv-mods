@@ -193,7 +193,7 @@ public sealed class PowerGridSimulator
             foreach (string fuelId in fuelOptions)
             {
                 generatorFuelTicksNeeded.TryGetValue(fuelId, out int current);
-                generatorFuelTicksNeeded[fuelId] = current;
+                generatorFuelTicksNeeded[fuelId] = current + load.Count;
             }
         }
 
