@@ -84,8 +84,12 @@ internal sealed class ModEntry : Mod
     private static readonly MethodInfo? CaskCheckForMaturityMethod = AccessTools.Method(typeof(Cask), "checkForMaturity");
     private static readonly MethodInfo? ResetParentSheetIndexMethod = AccessTools.Method(typeof(StardewValley.Object), "ResetParentSheetIndex");
     private static readonly MethodInfo? PerformObjectDropInActionMethod = AccessTools.Method(typeof(StardewValley.Object), nameof(StardewValley.Object.performObjectDropInAction));
+    private static readonly MethodInfo? PerformToolActionMethod = AccessTools.Method(typeof(StardewValley.Object), nameof(StardewValley.Object.performToolAction), new[] { typeof(Tool) });
+    private static readonly MethodInfo? PerformRemoveActionMethod = AccessTools.Method(typeof(StardewValley.Object), nameof(StardewValley.Object.performRemoveAction));
+    private static readonly MethodInfo? DropObjectMethod = AccessTools.Method(typeof(GameLocation), nameof(GameLocation.dropObject), new[] { typeof(StardewValley.Object), typeof(Vector2), typeof(xTile.Dimensions.Rectangle), typeof(bool), typeof(Farmer) });
     private readonly HashSet<string> invalidStateSpritesLogged = new(StringComparer.Ordinal);
     private readonly HashSet<string> conduitRenderDiagnosticsLogged = new(StringComparer.Ordinal);
+    private readonly List<PendingBatteryCharge> pendingBatteryCharges = new();
     private static readonly string[] RequiredSpriteNames =
     {
         "CopperCable",
@@ -93,6 +97,7 @@ internal sealed class ModEntry : Mod
         "IridiumCable",
         "EnergizedIridiumCable",
         "Biofuel",
+        "RadioisotopeFuel",
         "SteamGenerator",
         "SteamGenerator__off",
         "SteamGenerator__on",
@@ -214,6 +219,7 @@ internal sealed class ModEntry : Mod
         helper.Events.GameLoop.UpdateTicked += OnUpdateTicked;
         helper.Events.Content.AssetRequested += OnAssetRequested;
         helper.Events.World.ObjectListChanged += OnObjectListChanged;
+        helper.Events.Player.InventoryChanged += OnInventoryChanged;
         helper.Events.Input.ButtonPressed += OnButtonPressed;
         helper.Events.Display.RenderedWorld += OnRenderedWorld;
 
@@ -237,6 +243,8 @@ internal sealed class ModEntry : Mod
         RegisterPowerGridOwnedConsumers();
         ValidateCriticalSpritePaths();
         LogConduitStateSpriteAvailability();
+        if (harmony != null)
+            UiInfoSuiteIntegration.TryRegister(Helper, Monitor, harmony);
         Monitor.Log("[PowerGrid] Loaded. Waiting for save.", LogLevel.Trace);
     }
 
@@ -433,6 +441,7 @@ internal sealed class ModEntry : Mod
         BatteryState.ImportState(batteryData);
         ConduitMgr.ImportState(conduitData);
         FuelMgr.ImportState(fuelData);
+        RehydrateBatteryChargeState();
         PruneStaleGeneratorFuelState();
         PruneStaleConduitLinks();
         RehydrateMetalCasks();
@@ -448,7 +457,7 @@ internal sealed class ModEntry : Mod
                 LogLevel.Warn);
         }
 
-        Monitor.Log($"[PowerGrid] Save loaded. Batteries: {BatteryState.TotalStoredEU()} EU stored. Conduit links: {ConduitMgr.GetAllLinks().Count}.", LogLevel.Trace);
+        Monitor.Log($"[PowerGrid] Save loaded. Batteries: {GetTotalBatteryChargeInWorld() + BatteryState.TotalStoredEU()} EU stored. Conduit links: {ConduitMgr.GetAllLinks().Count}.", LogLevel.Trace);
 
         TryGrantRecipes(reason: "SaveLoaded");
     }
@@ -582,6 +591,188 @@ internal sealed class ModEntry : Mod
         return itemId == PowerConstants.BasicBatteryId || itemId == PowerConstants.IridiumBatteryId;
     }
 
+    private void RehydrateBatteryChargeState()
+    {
+        if (!Context.IsWorldReady)
+            return;
+
+        foreach (GameLocation location in EnumerateLoadedLocations())
+        {
+            foreach ((Vector2 tile, StardewValley.Object obj) in location.objects.Pairs)
+            {
+                if (!TryBuildBatteryNode(location, tile, obj, out PowerNode batteryNode))
+                    continue;
+
+                BatteryState.GetCharge(batteryNode);
+            }
+        }
+    }
+
+    private void ApplyDailyBatteryLeakToPlacedBatteries()
+    {
+        if (!Context.IsWorldReady)
+            return;
+
+        foreach (GameLocation location in EnumerateLoadedLocations())
+        {
+            foreach ((Vector2 tile, StardewValley.Object obj) in location.objects.Pairs)
+            {
+                if (!TryBuildBatteryNode(location, tile, obj, out PowerNode batteryNode))
+                    continue;
+
+                BatteryState.ApplyDailyLeak(batteryNode);
+            }
+        }
+    }
+
+    private int GetTotalBatteryChargeInWorld()
+    {
+        if (!Context.IsWorldReady)
+            return 0;
+
+        int total = 0;
+        foreach (GameLocation location in EnumerateLoadedLocations())
+        {
+            foreach ((Vector2 tile, StardewValley.Object obj) in location.objects.Pairs)
+            {
+                if (!TryBuildBatteryNode(location, tile, obj, out PowerNode batteryNode))
+                    continue;
+
+                total += BatteryState.GetCharge(batteryNode);
+            }
+        }
+
+        return total;
+    }
+
+    private bool TryBuildBatteryNode(GameLocation location, Vector2 tile, StardewValley.Object obj, out PowerNode batteryNode)
+    {
+        batteryNode = null!;
+        string itemId = obj.ItemId ?? "";
+        if (!IsBatteryItem(itemId))
+            return false;
+
+        int capacity = GetBatteryCapacity(itemId);
+        if (capacity <= 0)
+            return false;
+
+        batteryNode = new PowerNode
+        {
+            NodeType = PowerNodeType.Battery,
+            LocationName = location.NameOrUniqueName,
+            Tile = tile,
+            ItemId = itemId,
+            Capacity = capacity,
+            SourceObject = obj
+        };
+        return true;
+    }
+
+    private void QueuePendingBatteryCharge(GameLocation location, Vector2 tile, StardewValley.Object obj)
+    {
+        if (!TryBuildBatteryNode(location, tile, obj, out PowerNode batteryNode))
+            return;
+
+        int charge = BatteryState.GetCharge(batteryNode);
+        obj.modData[PersistedChargeKey] = charge.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        RemovePendingBatteryCharge(location.NameOrUniqueName, tile, obj.ItemId ?? "");
+        pendingBatteryCharges.Add(new PendingBatteryCharge(location.NameOrUniqueName, tile, obj.ItemId ?? "", charge));
+    }
+
+    private void ApplyHeldBatteryChargeToPlacedObject(StardewValley.Object heldObject, StardewValley.Object placedObject, GameLocation location, Vector2 tile)
+    {
+        if (!IsBatteryItem(heldObject.ItemId ?? "") || !IsBatteryItem(placedObject.ItemId ?? ""))
+            return;
+
+        if (!TryReadNonNegativeInt(heldObject.modData, PersistedChargeKey, out int charge))
+            return;
+
+        placedObject.modData[PersistedChargeKey] = charge.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        if (!TryBuildBatteryNode(location, tile, placedObject, out PowerNode batteryNode))
+            return;
+
+        BatteryState.SetCharge(batteryNode, charge);
+        PowerMgr.MarkDirty(location.NameOrUniqueName);
+    }
+
+    private void ApplyPendingBatteryChargeToItem(Item item)
+    {
+        if (item is not StardewValley.Object obj || !IsBatteryItem(obj.ItemId ?? ""))
+            return;
+
+        if (TryReadNonNegativeInt(obj.modData, PersistedChargeKey, out int existingCharge) && existingCharge > 0)
+        {
+            TryConsumePendingBatteryCharge(obj.ItemId ?? "", out _);
+            return;
+        }
+
+        if (!TryConsumePendingBatteryCharge(obj.ItemId ?? "", out int charge))
+            return;
+
+        obj.modData[PersistedChargeKey] = charge.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private void CopyPendingBatteryChargeToItem(Item item)
+    {
+        if (item is not StardewValley.Object obj || !IsBatteryItem(obj.ItemId ?? ""))
+            return;
+
+        if (TryReadNonNegativeInt(obj.modData, PersistedChargeKey, out int existingCharge) && existingCharge > 0)
+            return;
+
+        if (!TryPeekPendingBatteryCharge(obj.ItemId ?? "", out int charge))
+            return;
+
+        obj.modData[PersistedChargeKey] = charge.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private bool TryPeekPendingBatteryCharge(string itemId, out int charge)
+    {
+        charge = 0;
+        for (int i = pendingBatteryCharges.Count - 1; i >= 0; i--)
+        {
+            PendingBatteryCharge pending = pendingBatteryCharges[i];
+            if (!string.Equals(pending.ItemId, itemId, StringComparison.Ordinal))
+                continue;
+
+            charge = pending.Charge;
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool TryConsumePendingBatteryCharge(string itemId, out int charge)
+    {
+        charge = 0;
+        for (int i = pendingBatteryCharges.Count - 1; i >= 0; i--)
+        {
+            PendingBatteryCharge pending = pendingBatteryCharges[i];
+            if (!string.Equals(pending.ItemId, itemId, StringComparison.Ordinal))
+                continue;
+
+            charge = pending.Charge;
+            pendingBatteryCharges.RemoveAt(i);
+            return true;
+        }
+
+        return false;
+    }
+
+    private void RemovePendingBatteryCharge(string locationName, Vector2 tile, string itemId)
+    {
+        for (int i = pendingBatteryCharges.Count - 1; i >= 0; i--)
+        {
+            PendingBatteryCharge pending = pendingBatteryCharges[i];
+            if (string.Equals(pending.LocationName, locationName, StringComparison.Ordinal)
+                && pending.Tile == tile
+                && string.Equals(pending.ItemId, itemId, StringComparison.Ordinal))
+            {
+                pendingBatteryCharges.RemoveAt(i);
+            }
+        }
+    }
+
     private static bool IsGeneratorItem(string itemId)
     {
         return itemId == PowerConstants.SteamGeneratorId
@@ -666,6 +857,7 @@ internal sealed class ModEntry : Mod
 
     private void OnDayStarted(object? sender, DayStartedEventArgs e)
     {
+        ApplyDailyBatteryLeakToPlacedBatteries();
         BatteryState.ApplyDailyLeak();
         RehydrateMetalCasks();
         RefreshMetalCaskTelemetry();
@@ -684,6 +876,7 @@ internal sealed class ModEntry : Mod
     private void OnReturnedToTitle(object? sender, ReturnedToTitleEventArgs e)
     {
         PowerMgr.ResetRuntimeState();
+        pendingBatteryCharges.Clear();
         lastTimeOfDay = 0;
     }
 
@@ -730,6 +923,7 @@ internal sealed class ModEntry : Mod
         bool removedConduitState = false;
         foreach ((Vector2 tile, StardewValley.Object removedObj) in e.Removed)
         {
+            HandleRemovedBatteryState(e.Location, tile, removedObj);
             HandleRemovedGeneratorFuelState(e.Location, tile, removedObj);
             removedConduitState |= HandleRemovedConduitState(e.Location, tile, removedObj);
         }
@@ -741,6 +935,15 @@ internal sealed class ModEntry : Mod
         PowerMgr.MarkDirty(e.Location.NameOrUniqueName);
         if (removedConduitState)
             PowerMgr.MarkAllDirty();
+    }
+
+    private void OnInventoryChanged(object? sender, InventoryChangedEventArgs e)
+    {
+        if (!Context.IsWorldReady || !e.IsLocalPlayer)
+            return;
+
+        foreach (Item item in e.Added)
+            ApplyPendingBatteryChargeToItem(item);
     }
 
     private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
@@ -2035,6 +2238,7 @@ internal sealed class ModEntry : Mod
     private static readonly string[] HighDensityGridRecipeKeys =
     {
         "Energized Iridium Cable",
+        RadioisotopeFuelRecipeKey,
         RadioisotopeGeneratorRecipeKey
     };
 
@@ -2153,7 +2357,8 @@ internal sealed class ModEntry : Mod
                 _ => false
             },
             PowerConstants.CombustionGeneratorId => fuel.QualifiedItemId == PowerConstants.QObject(PowerConstants.BiofuelId),
-            PowerConstants.RadioisotopeGeneratorId => fuel.QualifiedItemId == "(O)910",
+            PowerConstants.RadioisotopeGeneratorId => fuel.QualifiedItemId == "(O)910"
+                || fuel.QualifiedItemId == PowerConstants.QObject(PowerConstants.RadioisotopeFuelId),
             _ => false
         };
     }
@@ -2215,7 +2420,7 @@ internal sealed class ModEntry : Mod
                 modifiers: null);
             if (drawWithLayerTarget != null)
             {
-                harmony.Patch(drawWithLayerTarget, postfix: new HarmonyMethod(typeof(ModEntry), nameof(StatefulObjectScreenDrawPostfix)));
+                harmony.Patch(drawWithLayerTarget, prefix: new HarmonyMethod(typeof(ModEntry), nameof(StatefulObjectScreenDrawPrefix)));
             }
 
             MethodInfo? drawAboveFrontLayerTarget = typeof(StardewValley.Object).GetMethod(
@@ -2268,6 +2473,15 @@ internal sealed class ModEntry : Mod
                     prefix: new HarmonyMethod(typeof(ModEntry), nameof(SteamGeneratorDropInActionPrefix)));
             }
 
+            if (PerformToolActionMethod != null)
+                harmony.Patch(PerformToolActionMethod, prefix: new HarmonyMethod(typeof(ModEntry), nameof(BatteryToolActionPrefix)));
+
+            if (PerformRemoveActionMethod != null)
+                harmony.Patch(PerformRemoveActionMethod, prefix: new HarmonyMethod(typeof(ModEntry), nameof(BatteryRemoveActionPrefix)));
+
+            if (DropObjectMethod != null)
+                harmony.Patch(DropObjectMethod, prefix: new HarmonyMethod(typeof(ModEntry), nameof(BatteryDropObjectPrefix)));
+
             MethodInfo? isValidCaskLocationTarget = typeof(Cask).GetMethod(
                 "IsValidCaskLocation",
                 BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
@@ -2310,7 +2524,7 @@ internal sealed class ModEntry : Mod
 
     private static void MetalCaskPlacementPostfix(StardewValley.Object __instance, object[] __args, ref bool __result)
     {
-        if (Instance == null || !__result || __instance?.QualifiedItemId != PowerConstants.Q(PowerConstants.MetalCaskId))
+        if (Instance == null || !__result || __instance == null)
             return;
 
         if (__args.Length < 3
@@ -2323,6 +2537,11 @@ internal sealed class ModEntry : Mod
 
         Vector2 tile = new(x / 64, y / 64);
         if (!location.objects.TryGetValue(tile, out StardewValley.Object? placedObject) || placedObject == null)
+            return;
+
+        Instance.ApplyHeldBatteryChargeToPlacedObject(__instance, placedObject, location, tile);
+
+        if (__instance.QualifiedItemId != PowerConstants.Q(PowerConstants.MetalCaskId))
             return;
 
         location.objects[tile] = Instance.CreatePlacedMetalCask(tile, placedObject, location);
@@ -2343,6 +2562,38 @@ internal sealed class ModEntry : Mod
             return;
 
         Instance.ApplyMetalCaskPowerBonus(__instance, __instance.Location);
+    }
+
+    private static void BatteryToolActionPrefix(StardewValley.Object __instance)
+    {
+        if (Instance == null || __instance == null || !IsBatteryItem(__instance.ItemId ?? ""))
+            return;
+
+        GameLocation? location = __instance.Location ?? Game1.currentLocation;
+        if (location == null)
+            return;
+
+        Instance.QueuePendingBatteryCharge(location, __instance.TileLocation, __instance);
+    }
+
+    private static void BatteryRemoveActionPrefix(StardewValley.Object __instance)
+    {
+        if (Instance == null || __instance == null || !IsBatteryItem(__instance.ItemId ?? ""))
+            return;
+
+        GameLocation? location = __instance.Location ?? Game1.currentLocation;
+        if (location == null)
+            return;
+
+        Instance.QueuePendingBatteryCharge(location, __instance.TileLocation, __instance);
+    }
+
+    private static void BatteryDropObjectPrefix(GameLocation __instance, StardewValley.Object obj)
+    {
+        if (Instance == null || __instance == null || obj == null || !IsBatteryItem(obj.ItemId ?? ""))
+            return;
+
+        Instance.CopyPendingBatteryChargeToItem(obj);
     }
 
     private static bool SteamGeneratorDropInActionPrefix(StardewValley.Object __instance, Item dropInItem, bool probe, Farmer who, bool returnFalseIfItemConsumed, ref bool __result)
@@ -2423,18 +2674,24 @@ internal sealed class ModEntry : Mod
         Instance.DrawStatefulObjectOverlayAtTile(__instance, spriteBatch, tileX, tileY, alpha);
     }
 
-    private static void StatefulObjectScreenDrawPostfix(StardewValley.Object __instance, object[] __args)
+    private static bool StatefulObjectScreenDrawPrefix(StardewValley.Object __instance, object[] __args)
     {
         if (Instance == null || __args.Length < 5 || __args[0] is not SpriteBatch spriteBatch)
-            return;
+            return true;
+
+        if (IsCableItem(__instance.ItemId))
+            return false;
+
+        if (!IsStatefulPowerGridItem(__instance.ItemId))
+            return true;
 
         if (__args[1] is not int xNonTile || __args[2] is not int yNonTile)
-            return;
+            return true;
 
         float? layerDepth = __args[3] is float explicitLayerDepth ? explicitLayerDepth : null;
         float alpha = __args[4] is float explicitAlpha ? explicitAlpha : 1f;
-        Instance.LogConduitRenderDiagnostic(__instance, "screen-postfix", __args);
-        Instance.DrawStatefulObjectOverlayAtScreen(__instance, spriteBatch, xNonTile, yNonTile, alpha, layerDepth);
+        Instance.LogConduitRenderDiagnostic(__instance, "screen-prefix", __args);
+        return !Instance.TryDrawStatefulScreenReplacement(__instance, spriteBatch, xNonTile, yNonTile, alpha, layerDepth);
     }
 
     private static void StatefulObjectAboveFrontLayerPostfix(StardewValley.Object __instance, object[] __args)
@@ -2494,6 +2751,31 @@ internal sealed class ModEntry : Mod
         float layerDepth = GetStatefulObjectLayerDepth(obj, tileX, tileY, layerDepthOverride);
 
         DrawStatefulTexture(spriteBatch, texture!, screenPos, alpha, layerDepth, obj, stateSpriteName!);
+    }
+
+    private bool TryDrawStatefulScreenReplacement(StardewValley.Object obj, SpriteBatch spriteBatch, int xNonTile, int yNonTile, float alpha, float? layerDepthOverride)
+    {
+        if (!Context.IsWorldReady || Game1.currentLocation == null || obj == null || !obj.bigCraftable.Value)
+            return false;
+
+        Vector2 tile = obj.TileLocation;
+        int tileX = (int)tile.X;
+        int tileY = (int)tile.Y;
+
+        if (Game1.currentLocation.getObjectAtTile(tileX, tileY) != obj)
+            return false;
+
+        if (!TryGetStatefulSpriteName(obj, tile, out string? stateSpriteName))
+            return false;
+
+        if (!TryLoadStateTextureForDraw(stateSpriteName!, out Texture2D? texture))
+            return false;
+
+        Vector2 screenPos = new(xNonTile, yNonTile);
+        float layerDepth = GetStatefulObjectLayerDepth(obj, tileX, tileY, layerDepthOverride);
+
+        DrawStatefulTexture(spriteBatch, texture!, screenPos, alpha, layerDepth, obj, stateSpriteName!);
+        return true;
     }
 
     private void DrawStatefulTexture(SpriteBatch spriteBatch, Texture2D texture, Vector2 screenPos, float alpha, float layerDepth, StardewValley.Object obj, string stateSpriteName)
@@ -2633,15 +2915,16 @@ internal sealed class ModEntry : Mod
         float pulse = 0.55f + ((float)Math.Sin(totalSeconds * 7f) + 1f) * 0.225f;
         float drift = (float)Math.Sin(totalSeconds * 3.2f);
         float flicker = (float)Math.Sin(totalSeconds * 16f) * 0.6f;
-        int motionFrame = ((int)(totalSeconds * 6f)) % 3;
+        int motionFrame = ((int)(totalSeconds * 4f)) % 3;
         float overlayDepth = Math.Min(1f, layerDepth + SteamActiveOverlayLayerOffset);
 
+        Rectangle unitSrc = new(0, 0, 1, 1);
         bool isCombustion = obj.ItemId == PowerConstants.CombustionGeneratorId;
         bool isRadioisotope = obj.ItemId == PowerConstants.RadioisotopeGeneratorId;
         if (isCombustion)
-            DrawCombustionFluidOverlay(spriteBatch, screenPos, alpha, pulse, drift, motionFrame, overlayDepth);
+            DrawCombustionFluidOverlay(spriteBatch, screenPos, alpha, motionFrame, overlayDepth);
         else if (isRadioisotope)
-            DrawRadioisotopeCoreOverlay(spriteBatch, screenPos, alpha, pulse, flicker, motionFrame, overlayDepth);
+            DrawRadioisotopeCoreOverlay(spriteBatch, screenPos, alpha, motionFrame, overlayDepth);
         else
         {
             Vector2 fireboxCenter = new(screenPos.X + 22f + flicker, screenPos.Y + 90f);
@@ -2649,136 +2932,150 @@ internal sealed class ModEntry : Mod
             Color midGlow = new Color(255, 198, 96) * Math.Min(1f, alpha * (0.5f + pulse * 0.25f));
             Color coreGlow = new Color(255, 236, 156) * Math.Min(1f, alpha * (0.75f + pulse * 0.2f));
 
-            Rectangle outerRect = new((int)fireboxCenter.X - 7, (int)fireboxCenter.Y - 4, 14, 8);
-            Rectangle midRect = new((int)fireboxCenter.X - 5, (int)fireboxCenter.Y - 3, 10, 6);
-            Rectangle coreRect = new((int)fireboxCenter.X - 2, (int)fireboxCenter.Y - 1, 5, 3);
-
-            spriteBatch.Draw(Game1.staminaRect, outerRect, null, outerGlow, 0f, Vector2.Zero, SpriteEffects.None, overlayDepth);
-            spriteBatch.Draw(Game1.staminaRect, midRect, null, midGlow, 0f, Vector2.Zero, SpriteEffects.None, overlayDepth);
-            spriteBatch.Draw(Game1.staminaRect, coreRect, null, coreGlow, 0f, Vector2.Zero, SpriteEffects.None, overlayDepth);
+            spriteBatch.Draw(Game1.staminaRect, new Vector2(fireboxCenter.X - 7f, fireboxCenter.Y - 4f), unitSrc, outerGlow, 0f, Vector2.Zero, new Vector2(14f, 8f), SpriteEffects.None, overlayDepth);
+            spriteBatch.Draw(Game1.staminaRect, new Vector2(fireboxCenter.X - 5f, fireboxCenter.Y - 3f), unitSrc, midGlow, 0f, Vector2.Zero, new Vector2(10f, 6f), SpriteEffects.None, overlayDepth);
+            spriteBatch.Draw(Game1.staminaRect, new Vector2(fireboxCenter.X - 2f, fireboxCenter.Y - 1f), unitSrc, coreGlow, 0f, Vector2.Zero, new Vector2(5f, 3f), SpriteEffects.None, overlayDepth);
         }
 
         // Steam puffs near the stack to make active state readable at a glance.
         Color steamColor = new Color(224, 230, 236) * Math.Min(1f, alpha * (0.4f + pulse * 0.5f));
         float stackCenterX = screenPos.X + 22f;
-        Rectangle puffA = new(
-            (int)stackCenterX - 3,
-            (int)(screenPos.Y + 18 - drift * 2f),
-            7,
-            4);
-        Rectangle puffB = new(
-            (int)stackCenterX - 3,
-            (int)(screenPos.Y + 12 - drift * 3f),
-            6,
-            3);
-        Rectangle puffCore = new(
-            (int)stackCenterX - 1,
-            (int)(screenPos.Y + 10 - drift * 2.2f),
-            3,
-            2);
 
         spriteBatch.Draw(
             Game1.staminaRect,
-            puffA,
-            null,
+            new Vector2(stackCenterX - 3f, screenPos.Y + 18f - drift * 2f),
+            unitSrc,
             steamColor,
             0f,
             Vector2.Zero,
+            new Vector2(7f, 4f),
             SpriteEffects.None,
             overlayDepth);
 
         spriteBatch.Draw(
             Game1.staminaRect,
-            puffB,
-            null,
+            new Vector2(stackCenterX - 3f, screenPos.Y + 12f - drift * 3f),
+            unitSrc,
             steamColor * 0.85f,
             0f,
             Vector2.Zero,
+            new Vector2(6f, 3f),
             SpriteEffects.None,
             overlayDepth);
 
         spriteBatch.Draw(
             Game1.staminaRect,
-            puffCore,
-            null,
+            new Vector2(stackCenterX - 1f, screenPos.Y + 10f - drift * 2.2f),
+            unitSrc,
             steamColor * 0.95f,
             0f,
             Vector2.Zero,
+            new Vector2(3f, 2f),
             SpriteEffects.None,
             overlayDepth);
     }
 
-    private static void DrawCombustionFluidOverlay(SpriteBatch spriteBatch, Vector2 screenPos, float alpha, float pulse, float drift, int motionFrame, float overlayDepth)
+    private static void DrawCombustionFluidOverlay(SpriteBatch spriteBatch, Vector2 screenPos, float alpha, int motionFrame, float overlayDepth)
     {
-        float shimmer = 0.94f + Math.Abs(drift) * 0.18f;
-        Color deepFuel = new Color(138, 70, 24) * Math.Min(1f, alpha * (0.86f + pulse * 0.14f));
-        Color warmFuel = new Color(236, 150, 46) * Math.Min(1f, alpha * (0.98f + pulse * 0.22f) * shimmer);
-        Color hotFuel = new Color(255, 226, 122) * Math.Min(1f, alpha * (0.92f + pulse * 0.28f) * shimmer);
-
-        DrawOverlayPixel(spriteBatch, screenPos, 4, 20, 2, 4, deepFuel * 0.95f, overlayDepth);
+        Color deepFuel = new Color(86, 55, 26) * alpha;
+        Color midFuel = new Color(141, 91, 36) * alpha;
+        Color warmFuel = new Color(186, 144, 39) * alpha;
+        Color hotFuel = new Color(211, 148, 61) * alpha;
 
         switch (motionFrame)
         {
             case 0:
-                DrawOverlayPixel(spriteBatch, screenPos, 4, 20, 2, 1, hotFuel, overlayDepth);
-                DrawOverlayPixel(spriteBatch, screenPos, 4, 21, 1, 1, warmFuel, overlayDepth);
-                DrawOverlayPixel(spriteBatch, screenPos, 5, 22, 1, 1, warmFuel * 0.92f, overlayDepth);
-                DrawOverlayPixel(spriteBatch, screenPos, 4, 23, 1, 1, hotFuel * 0.72f, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 4, 20, 1, 1, hotFuel, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 5, 20, 1, 1, midFuel, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 4, 21, 1, 1, midFuel, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 5, 21, 1, 1, warmFuel, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 4, 22, 1, 1, hotFuel, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 5, 22, 1, 1, midFuel, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 4, 23, 1, 1, midFuel, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 5, 23, 1, 1, deepFuel, overlayDepth);
                 break;
             case 1:
-                DrawOverlayPixel(spriteBatch, screenPos, 4, 21, 2, 1, hotFuel, overlayDepth);
-                DrawOverlayPixel(spriteBatch, screenPos, 5, 20, 1, 1, warmFuel * 0.9f, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 4, 20, 1, 1, warmFuel, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 5, 20, 1, 1, deepFuel, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 4, 21, 1, 1, hotFuel, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 5, 21, 1, 1, midFuel, overlayDepth);
                 DrawOverlayPixel(spriteBatch, screenPos, 4, 22, 1, 1, warmFuel, overlayDepth);
-                DrawOverlayPixel(spriteBatch, screenPos, 5, 23, 1, 1, hotFuel * 0.72f, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 5, 22, 1, 1, hotFuel, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 4, 23, 1, 1, deepFuel, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 5, 23, 1, 1, midFuel, overlayDepth);
                 break;
             default:
-                DrawOverlayPixel(spriteBatch, screenPos, 4, 22, 2, 1, hotFuel, overlayDepth);
-                DrawOverlayPixel(spriteBatch, screenPos, 4, 20, 1, 1, warmFuel * 0.88f, overlayDepth);
-                DrawOverlayPixel(spriteBatch, screenPos, 5, 21, 1, 1, warmFuel, overlayDepth);
-                DrawOverlayPixel(spriteBatch, screenPos, 4, 23, 2, 1, deepFuel * 0.82f, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 4, 20, 1, 1, midFuel, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 5, 20, 1, 1, warmFuel, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 4, 21, 1, 1, warmFuel, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 5, 21, 1, 1, hotFuel, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 4, 22, 1, 1, midFuel, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 5, 22, 1, 1, warmFuel, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 4, 23, 1, 1, hotFuel, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 5, 23, 1, 1, deepFuel, overlayDepth);
                 break;
         }
     }
 
-    private static void DrawRadioisotopeCoreOverlay(SpriteBatch spriteBatch, Vector2 screenPos, float alpha, float pulse, float flicker, int motionFrame, float overlayDepth)
+    private static void DrawRadioisotopeCoreOverlay(SpriteBatch spriteBatch, Vector2 screenPos, float alpha, int motionFrame, float overlayDepth)
     {
-        Color wasteGreen = new Color(70, 186, 92) * Math.Min(1f, alpha * (0.8f + pulse * 0.18f));
-        Color barGreen = new Color(118, 242, 122) * Math.Min(1f, alpha * (0.96f + pulse * 0.22f));
-        Color hotGreen = new Color(224, 255, 150) * Math.Min(1f, alpha * (0.92f + pulse * 0.18f + Math.Abs(flicker) * 0.18f));
-
-        DrawOverlayPixel(spriteBatch, screenPos, 6, 20, 4, 4, wasteGreen * 0.72f, overlayDepth);
+        Color deepGreen = new Color(0, 198, 70) * alpha;
+        Color vividGreen = new Color(0, 255, 3) * alpha;
+        Color brightGreen = new Color(136, 255, 3) * alpha;
+        Color hotGreen = new Color(209, 255, 3) * alpha;
 
         switch (motionFrame)
         {
             case 0:
-                DrawOverlayPixel(spriteBatch, screenPos, 6, 20, 4, 1, barGreen, overlayDepth);
-                DrawOverlayPixel(spriteBatch, screenPos, 7, 21, 2, 1, hotGreen, overlayDepth);
-                DrawOverlayPixel(spriteBatch, screenPos, 6, 22, 3, 1, barGreen * 0.92f, overlayDepth);
-                DrawOverlayPixel(spriteBatch, screenPos, 8, 23, 1, 1, hotGreen * 0.8f, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 7, 20, 1, 1, hotGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 8, 20, 1, 1, hotGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 6, 21, 1, 1, vividGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 7, 21, 1, 1, brightGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 8, 21, 1, 1, vividGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 9, 21, 1, 1, hotGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 6, 22, 1, 1, deepGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 7, 22, 1, 1, vividGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 8, 22, 1, 1, brightGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 9, 22, 1, 1, brightGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 7, 23, 1, 1, deepGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 8, 23, 1, 1, vividGreen, overlayDepth);
                 break;
             case 1:
-                DrawOverlayPixel(spriteBatch, screenPos, 6, 21, 4, 1, barGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 7, 20, 1, 1, brightGreen, overlayDepth);
                 DrawOverlayPixel(spriteBatch, screenPos, 8, 20, 1, 1, hotGreen, overlayDepth);
-                DrawOverlayPixel(spriteBatch, screenPos, 7, 22, 2, 1, hotGreen * 0.88f, overlayDepth);
-                DrawOverlayPixel(spriteBatch, screenPos, 6, 23, 3, 1, barGreen * 0.86f, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 6, 21, 1, 1, deepGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 7, 21, 1, 1, vividGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 8, 21, 1, 1, brightGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 9, 21, 1, 1, vividGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 6, 22, 1, 1, vividGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 7, 22, 1, 1, brightGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 8, 22, 1, 1, hotGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 9, 22, 1, 1, vividGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 7, 23, 1, 1, vividGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 8, 23, 1, 1, deepGreen, overlayDepth);
                 break;
             default:
-                DrawOverlayPixel(spriteBatch, screenPos, 6, 22, 4, 1, barGreen, overlayDepth);
-                DrawOverlayPixel(spriteBatch, screenPos, 7, 20, 1, 1, hotGreen * 0.86f, overlayDepth);
-                DrawOverlayPixel(spriteBatch, screenPos, 8, 21, 1, 1, hotGreen, overlayDepth);
-                DrawOverlayPixel(spriteBatch, screenPos, 7, 23, 2, 1, barGreen * 0.9f, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 7, 20, 1, 1, hotGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 8, 20, 1, 1, brightGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 6, 21, 1, 1, vividGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 7, 21, 1, 1, hotGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 8, 21, 1, 1, brightGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 9, 21, 1, 1, vividGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 6, 22, 1, 1, deepGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 7, 22, 1, 1, vividGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 8, 22, 1, 1, vividGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 9, 22, 1, 1, hotGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 7, 23, 1, 1, brightGreen, overlayDepth);
+                DrawOverlayPixel(spriteBatch, screenPos, 8, 23, 1, 1, vividGreen, overlayDepth);
                 break;
         }
     }
 
     private static void DrawOverlayPixel(SpriteBatch spriteBatch, Vector2 screenPos, int spriteX, int spriteY, int widthPixels, int heightPixels, Color color, float layerDepth)
     {
-        Rectangle rect = new(
-            (int)screenPos.X + spriteX * 4,
-            (int)screenPos.Y + spriteY * 4,
-            widthPixels * 4,
-            heightPixels * 4);
-        spriteBatch.Draw(Game1.staminaRect, rect, null, color, 0f, Vector2.Zero, SpriteEffects.None, layerDepth);
+        Vector2 pos = new(screenPos.X + spriteX * 4f, screenPos.Y + spriteY * 4f);
+        Vector2 scale = new(widthPixels * 4f, heightPixels * 4f);
+        spriteBatch.Draw(Game1.staminaRect, pos, new Rectangle(0, 0, 1, 1), color, 0f, Vector2.Zero, scale, SpriteEffects.None, layerDepth);
     }
 
     private bool TryDrawStatefulTileReplacement(StardewValley.Object obj, SpriteBatch spriteBatch, int tileX, int tileY, float alpha, string source)
@@ -2917,8 +3214,8 @@ internal sealed class ModEntry : Mod
             PowerConstants.CombustionGeneratorId => GetCombustionGeneratorState(locationName, tile),
             PowerConstants.RadioisotopeGeneratorId => GetRadioisotopeGeneratorState(locationName, tile),
             PowerConstants.WindGeneratorId => GetWindGeneratorState(obj),
-            PowerConstants.BasicBatteryId => GetBatteryState(locationName, tile, itemId),
-            PowerConstants.IridiumBatteryId => GetBatteryState(locationName, tile, itemId),
+            PowerConstants.BasicBatteryId => GetBatteryState(locationName, tile, itemId, obj),
+            PowerConstants.IridiumBatteryId => GetBatteryState(locationName, tile, itemId, obj),
             PowerConstants.PowerConduitId => GetConduitState(locationName, tile),
             PowerConstants.IndustrialPreservesJarId => GetIndustrialPreservesJarState(obj),
             PowerConstants.MetalCaskId => GetPoweredMachineState(obj),
@@ -3215,6 +3512,9 @@ internal sealed class ModEntry : Mod
                 if (FuelMgr.GetFuelTicksRemaining(generatorKey) <= 0)
                     continue;
 
+                if (obj.ItemId == PowerConstants.CombustionGeneratorId || obj.ItemId == PowerConstants.RadioisotopeGeneratorId)
+                    continue;
+
                 // Keep a guaranteed visible active cue even when machine-data working effects are unavailable.
                 obj.shakeTimer = Math.Max(obj.shakeTimer, 120);
                 obj.addWorkingAnimation();
@@ -3276,6 +3576,15 @@ internal sealed class ModEntry : Mod
             DropFuelFromTicks(location, tile, itemId, removedTicks);
     }
 
+    private void HandleRemovedBatteryState(GameLocation location, Vector2 tile, StardewValley.Object removedObj)
+    {
+        if (!TryBuildBatteryNode(location, tile, removedObj, out PowerNode batteryNode))
+            return;
+
+        QueuePendingBatteryCharge(location, tile, removedObj);
+        BatteryState.RemoveTileState(batteryNode);
+    }
+
     private bool HandleRemovedConduitState(GameLocation location, Vector2 tile, StardewValley.Object removedObj)
     {
         if (removedObj.ItemId != PowerConstants.PowerConduitId)
@@ -3323,7 +3632,7 @@ internal sealed class ModEntry : Mod
         }
     }
 
-    private string? GetBatteryState(string locationName, Vector2 tile, string itemId)
+    private string? GetBatteryState(string locationName, Vector2 tile, string itemId, StardewValley.Object obj)
     {
         int capacity = GetBatteryCapacity(itemId);
         if (string.IsNullOrWhiteSpace(locationName) || capacity <= 0)
@@ -3335,7 +3644,8 @@ internal sealed class ModEntry : Mod
             LocationName = locationName,
             Tile = tile,
             ItemId = itemId,
-            Capacity = capacity
+            Capacity = capacity,
+            SourceObject = obj
         };
 
         float chargePercent = capacity > 0
@@ -3609,4 +3919,6 @@ internal sealed class ModEntry : Mod
         return JsonSerializer.Deserialize<T>(json, JsonOpts)
             ?? throw new InvalidOperationException($"Failed to clone {typeof(T).FullName}");
     }
+
+    private sealed record PendingBatteryCharge(string LocationName, Vector2 Tile, string ItemId, int Charge);
 }

@@ -37,7 +37,7 @@ Powered machines can pass power to other powered machines touching them, so you 
 | Powered Artisan | Know Preserves Jar or Keg | Industrial Preserves Jar, Metal Keg |
 | Fuel Tech | Mining 7 and know Lightning Rod | Biofuel, Iron Cable, Combustion Generator |
 | Advanced Grid | Mining 9 and know Lightning Rod | Iridium Cable, Wind Generator, Iridium Power Battery, Power Conduit, Metal Cask, Hard Iridium Keg |
-| High Density Grid | Mining 10, know Lightning Rod, know Solar Panel, and know Iridium Power Battery | Energized Iridium Cable, Radioisotope Generator |
+| High Density Grid | Mining 10, know Lightning Rod, know Solar Panel, and know Iridium Power Battery | Energized Iridium Cable, Radioisotope Fuel, Radioisotope Generator |
 
 If you use Generic Mod Config Menu, recipe unlock behavior can be changed in-game.
 
@@ -50,11 +50,22 @@ If you use Generic Mod Config Menu, recipe unlock behavior can be changed in-gam
 | Radioisotope Generator | 900 EU/tick | Radioisotope Fuel, Radioactive Bar | Late-game density generator for heavy machine rooms. |
 | Wind Generator | 25 EU/tick base | none | Passive power, outdoors only, weather adjusted. |
 
+Generator recipes:
+
+| Generator | Recipe |
+| --- | --- |
+| Steam Generator | Iron Bar x5, Copper Bar x2, Coal x6, Refined Quartz x1 |
+| Combustion Generator | Steam Generator x1, Iron Bar x8, Gold Bar x5, Refined Quartz x3 |
+| Radioisotope Generator | Combustion Generator x1, Radioactive Bar x3, Iridium Bar x6, Iridium Power Battery x1, Refined Quartz x4 |
+| Wind Generator | Iron Bar x6, Refined Quartz x4, Battery Pack x1, Coal x4 |
+
 Wind output changes with weather:
 
 - Clear weather: normal output
 - Rain or storm: higher output
 - Snow: lower output
+
+Right-click a Steam Generator while holding Coal, Wood, or Hardwood to fuel it. Right-click a Combustion Generator while holding Biofuel to fuel it. Right-click a Radioisotope Generator while holding Radioisotope Fuel or a Radioactive Bar to fuel it.
 
 ## Fuel
 
@@ -99,9 +110,15 @@ Throughput is the amount of EU a network can move each tick. If a network mixes 
 
 Batteries are worth building early. They store surplus EU, cover demand spikes, and keep machines powered when generators run out of fuel or wind output drops.
 
+Stored EU stays on the battery item when you pick it up and place it somewhere else.
+
 ## Power Conduits
 
 Power Conduits link networks between locations, like Farm to Shed or Farm to FarmHouse.
+
+| Item | Recipe |
+| --- | --- |
+| Power Conduit | Iridium Bar x1, Battery Pack x1, Refined Quartz x1 |
 
 To link conduits:
 

@@ -27,15 +27,15 @@ function Get-RepoRoot {
 }
 
 function Parse-Version([string]$versionText) {
-    if ($versionText -notmatch '^\d+\.\d+\.\d+$') {
-        throw "Version '$versionText' must use semantic format MAJOR.MINOR.PATCH."
+    if ($versionText -notmatch '^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(?<suffix>-[0-9A-Za-z.-]+)?$') {
+        throw "Version '$versionText' must use semantic format MAJOR.MINOR.PATCH or MAJOR.MINOR.PATCH-prerelease."
     }
 
-    $parts = $versionText.Split(".")
     return @{
-        Major = [int]$parts[0]
-        Minor = [int]$parts[1]
-        Patch = [int]$parts[2]
+        Major = [int]$Matches.major
+        Minor = [int]$Matches.minor
+        Patch = [int]$Matches.patch
+        Suffix = if ($Matches.ContainsKey("suffix")) { [string]$Matches.suffix } else { "" }
     }
 }
 
@@ -84,7 +84,7 @@ function Set-ManifestVersion([string]$manifestPath, [string]$newVersion) {
     $json = Get-Content -Raw -LiteralPath $manifestPath
     $updated = [System.Text.RegularExpressions.Regex]::Replace(
         $json,
-        '"Version"\s*:\s*"[0-9]+\.[0-9]+\.[0-9]+"',
+        '"Version"\s*:\s*"[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?"',
         "`"Version`": `"$newVersion`"",
         1
     )
@@ -108,7 +108,8 @@ function Sync-CsprojVersion([string]$csprojPath, [string]$version) {
         throw "No PropertyGroup found in '$csprojPath'."
     }
 
-    $assemblyVersion = "$version.0"
+    $parsedVersion = Parse-Version $version
+    $assemblyVersion = "$($parsedVersion.Major).$($parsedVersion.Minor).$($parsedVersion.Patch).0"
 
     $fieldMap = @{
         Version = $version
@@ -137,8 +138,9 @@ function Build-Mod([string]$csprojPath, [string]$configuration) {
 }
 
 function Test-PackageDenyListed([System.IO.FileInfo]$file, [string]$relativePath) {
-    if ($relativePath -match '^(bin|obj)\\') { return $true }
-    if ($relativePath -match '(^|\\)(\.vs|\.vscode)\\') { return $true }
+    $normalizedRelativePath = $relativePath.TrimStart([char]'\', [char]'/') -replace '/', '\\'
+    if ($normalizedRelativePath -match '(^|\\)(bin|obj)(\\|$)') { return $true }
+    if ($normalizedRelativePath -match '(^|\\)(\.vs|\.vscode)(\\|$)') { return $true }
 
     $deniedExtensions = @(
         ".cs",
@@ -189,7 +191,7 @@ function Package-Mod([hashtable]$modDef, [string]$version, [string]$outputDir) {
 
     try {
         Copy-ModPayload -sourceDir $modDef.ModDir -destDir $stageFolder
-        Compress-Archive -Path (Join-Path $stageRoot '*') -DestinationPath $zipPath -CompressionLevel Optimal
+        Compress-Archive -LiteralPath $stageFolder -DestinationPath $zipPath -CompressionLevel Optimal
     }
     finally {
         if (Test-Path -LiteralPath $stageRoot) {

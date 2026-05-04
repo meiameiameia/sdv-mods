@@ -87,7 +87,7 @@ Throughput is how much power a network can move each tick. If a network contains
 
 ## Batteries
 
-Batteries store extra power and help cover demand when generators cannot keep up. They are especially useful when your wind output drops, fuel runs out, or a group of machines starts working at once. By default, batteries leak a small amount of stored energy each morning.
+Batteries store extra power and help cover demand when generators cannot keep up. They are especially useful when your wind output drops, fuel runs out, or a group of machines starts working at once. Stored EU stays on the battery item when you pick it up and place it somewhere else. By default, batteries leak a small amount of stored energy each morning.
 
 ## Power Conduits
 

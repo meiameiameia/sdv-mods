@@ -338,9 +338,9 @@ static string FindDefaultConfig()
     string cwd = Directory.GetCurrentDirectory();
     string[] candidates =
     {
-        Path.Combine(cwd, "balance", "powergrid-0.1.0.json"),
-        Path.Combine(cwd, "tools", "PowerGrid.Balancer", "balance", "powergrid-0.1.0.json"),
-        Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "balance", "powergrid-0.1.0.json"))
+        Path.Combine(cwd, "balance", "powergrid-0.2.0-current.json"),
+        Path.Combine(cwd, "tools", "PowerGrid.Balancer", "balance", "powergrid-0.2.0-current.json"),
+        Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "balance", "powergrid-0.2.0-current.json"))
     };
 
     return candidates.FirstOrDefault(File.Exists)
@@ -473,7 +473,7 @@ static void PrintHelp()
           dotnet run --project tools/PowerGrid.Balancer/src/PowerGrid.Balancer.Cli -- compare-progression <baseline-config.json> <proposed-config.json> [profile.json] [--out <folder>]
 
         Options:
-          --config <path>   Balance config JSON. Defaults to balance/powergrid-0.1.0.json.
+          --config <path>   Balance config JSON. Defaults to balance/powergrid-0.2.0-current.json.
           --budget <path>   Resource budget JSON. Defaults to resource-budgets/powergrid-sustainability.json.
           --out <folder>    Audit output folder. Defaults to artifacts/balance-lab/current.
 

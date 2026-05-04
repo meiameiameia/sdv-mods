@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using StardewModdingAPI;
+using System.Globalization;
 
 namespace Meiameiameia.PowerGrid.Core;
 
@@ -7,6 +8,7 @@ internal sealed class BatteryStateManager
 {
     private readonly IMonitor monitor;
     private readonly ModConfig config;
+    private const string MdCharge = "meiameiameia.PowerGrid/charge";
 
     // Key: "LocationName|TileX|TileY|ItemId" -> stored EU
     private Dictionary<string, int> batteryCharges = new();
@@ -19,12 +21,32 @@ internal sealed class BatteryStateManager
 
     public int GetCharge(PowerNode battery)
     {
-        return batteryCharges.TryGetValue(battery.UniqueKey, out int charge) ? charge : 0;
+        if (TryReadObjectCharge(battery.SourceObject, battery.Capacity, out int objectCharge))
+        {
+            batteryCharges.Remove(battery.UniqueKey);
+            return objectCharge;
+        }
+
+        if (!batteryCharges.TryGetValue(battery.UniqueKey, out int charge))
+            return 0;
+
+        charge = Math.Clamp(charge, 0, battery.Capacity);
+        WriteObjectCharge(battery.SourceObject, charge);
+        batteryCharges.Remove(battery.UniqueKey);
+        return charge;
     }
 
     public void SetCharge(PowerNode battery, int charge)
     {
-        batteryCharges[battery.UniqueKey] = Math.Clamp(charge, 0, battery.Capacity);
+        int clamped = Math.Clamp(charge, 0, battery.Capacity);
+        if (battery.SourceObject != null)
+        {
+            WriteObjectCharge(battery.SourceObject, clamped);
+            batteryCharges.Remove(battery.UniqueKey);
+            return;
+        }
+
+        batteryCharges[battery.UniqueKey] = clamped;
     }
 
     public int AddCharge(PowerNode battery, int amount)
@@ -61,6 +83,19 @@ internal sealed class BatteryStateManager
         }
     }
 
+    public void ApplyDailyLeak(PowerNode battery)
+    {
+        if (config.BatteryDailyLeakPercent <= 0f)
+            return;
+
+        int current = GetCharge(battery);
+        if (current <= 0)
+            return;
+
+        int leak = Math.Max(1, (int)(current * config.BatteryDailyLeakPercent / 100f));
+        SetCharge(battery, current - leak);
+    }
+
     public void PruneStaleEntries(HashSet<string> activeKeys)
     {
         var toRemove = new List<string>();
@@ -71,6 +106,11 @@ internal sealed class BatteryStateManager
         }
         foreach (string key in toRemove)
             batteryCharges.Remove(key);
+    }
+
+    public void RemoveTileState(PowerNode battery)
+    {
+        batteryCharges.Remove(battery.UniqueKey);
     }
 
     public Dictionary<string, int> ExportState() => new(batteryCharges);
@@ -86,5 +126,26 @@ internal sealed class BatteryStateManager
         foreach (int charge in batteryCharges.Values)
             total += charge;
         return total;
+    }
+
+    private static bool TryReadObjectCharge(StardewValley.Object? obj, int capacity, out int charge)
+    {
+        charge = 0;
+        if (obj == null)
+            return false;
+
+        if (!obj.modData.TryGetValue(MdCharge, out string? raw) || !int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out charge))
+            return false;
+
+        charge = Math.Clamp(charge, 0, capacity);
+        return true;
+    }
+
+    private static void WriteObjectCharge(StardewValley.Object? obj, int charge)
+    {
+        if (obj == null)
+            return;
+
+        obj.modData[MdCharge] = charge.ToString(CultureInfo.InvariantCulture);
     }
 }

@@ -139,7 +139,8 @@ internal sealed class GraphBuilder
                 LocationName = locName,
                 Tile = tile,
                 ItemId = itemId,
-                Capacity = config.BasicBatteryCapacity
+                Capacity = config.BasicBatteryCapacity,
+                SourceObject = obj
             };
         if (itemId == PowerConstants.IridiumBatteryId)
             return new PowerNode
@@ -148,7 +149,8 @@ internal sealed class GraphBuilder
                 LocationName = locName,
                 Tile = tile,
                 ItemId = itemId,
-                Capacity = config.IridiumBatteryCapacity
+                Capacity = config.IridiumBatteryCapacity,
+                SourceObject = obj
             };
 
         // Power Conduit (cross-location bridge)

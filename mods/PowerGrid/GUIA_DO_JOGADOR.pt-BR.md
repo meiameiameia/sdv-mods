@@ -37,7 +37,7 @@ Máquinas energizadas podem passar energia para outras máquinas energizadas enc
 | Artesanato Energizado | Conhecer Jarra de Conserva ou Barril | Jarra de Conserva Industrial, Barril de Metal |
 | Tecnologia de Combustível | Mineração 7 e conhecer Para-raios | Biocombustível, Cabo de Ferro, Gerador de Combustão |
 | Rede Avançada | Mineração 9 e conhecer Para-raios | Cabo de Irídio, Gerador Eólico, Bateria de Energia de Irídio, Conduíte de Energia, Barril de Envelhecimento de Metal, Barril de Irídio Rígido |
-| Rede de Alta Densidade | Mineração 10, conhecer Para-raios, conhecer Painel Solar e conhecer Bateria de Energia de Irídio | Cabo de Irídio Energizado, Gerador Radioisotópico |
+| Rede de Alta Densidade | Mineração 10, conhecer Para-raios, conhecer Painel Solar e conhecer Bateria de Energia de Irídio | Cabo de Irídio Energizado, Combustível Radioisotópico, Gerador Radioisotópico |
 
 Se você usa Generic Mod Config Menu, o comportamento dos desbloqueios pode ser ajustado dentro do jogo.
 
@@ -49,6 +49,15 @@ Se você usa Generic Mod Config Menu, o comportamento dos desbloqueios pode ser 
 | Gerador de Combustão | 240 EU/tick | Biocombustível | Gerador de meio de jogo. Bom para grupos maiores de máquinas. |
 | Gerador Radioisotópico | 900 EU/tick | Combustível Radioisotópico, Barra Radioativa | Gerador de alta densidade para o fim de jogo e salas de produção pesadas. |
 | Gerador Eólico | 25 EU/tick base | nenhum | Energia passiva, apenas ao ar livre, ajustada pelo clima. |
+
+Receitas de geradores:
+
+| Gerador | Receita |
+| --- | --- |
+| Gerador a Vapor | Barra de Ferro x5, Barra de Cobre x2, Carvão x6, Quartzo Refinado x1 |
+| Gerador de Combustão | Gerador a Vapor x1, Barra de Ferro x8, Barra de Ouro x5, Quartzo Refinado x3 |
+| Gerador Radioisotópico | Gerador de Combustão x1, Barra Radioativa x3, Barra de Irídio x6, Bateria de Energia de Irídio x1, Quartzo Refinado x4 |
+| Gerador Eólico | Barra de Ferro x6, Quartzo Refinado x4, Bateria x1, Carvão x4 |
 
 A produção eólica muda com o clima:
 
@@ -101,9 +110,15 @@ Capacidade é quanto EU uma rede consegue mover por tick. Se uma rede mistura ca
 
 Baterias valem a pena cedo. Elas guardam EU sobrando, cobrem picos de demanda e mantêm máquinas energizadas quando os geradores ficam sem combustível ou quando a produção eólica cai.
 
+O EU armazenado fica na própria bateria quando você a pega e coloca em outro lugar.
+
 ## Conduítes de Energia
 
 Conduítes de Energia conectam redes entre locais, como Fazenda para Galpão ou Fazenda para Casa da Fazenda.
+
+| Item | Receita |
+| --- | --- |
+| Conduíte de Energia | Barra de Irídio x1, Bateria x1, Quartzo Refinado x1 |
 
 Para ligar conduítes:
 

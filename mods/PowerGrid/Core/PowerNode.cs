@@ -20,6 +20,7 @@ internal sealed class PowerNode
 
     // Battery-specific
     public int Capacity { get; init; }
+    public StardewValley.Object? SourceObject { get; init; }
 
     // Consumer-specific
     public int DemandPerTick { get; init; }
