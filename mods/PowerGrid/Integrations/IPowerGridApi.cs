@@ -7,6 +7,8 @@ namespace Meiameiameia.PowerGrid.Integrations;
 /// </summary>
 public interface IPowerGridApi
 {
+    int ApiVersion { get; }
+
     void RegisterConsumer(string qualifiedItemId, int demandPerTick, float maxSpeedupFraction, int priority, string displayName);
 
     void UnregisterConsumer(string qualifiedItemId);
@@ -16,12 +18,4 @@ public interface IPowerGridApi
     float GetSpeedupAtTile(string locationName, Vector2 tile);
 
     int GetTotalStoredEU(string locationName);
-
-    IReadOnlyList<PowerNetworkSnapshot> GetNetworkSnapshots(string? locationName = null);
-
-    IReadOnlyList<PowerConsumerSnapshot> GetConsumerSnapshots(string? locationName = null);
-
-    IReadOnlyList<PowerGeneratorSnapshot> GetGeneratorSnapshots(string? locationName = null);
-
-    IReadOnlyList<PowerBatterySnapshot> GetBatterySnapshots(string? locationName = null);
 }

@@ -148,6 +148,10 @@ If GMCM is installed, PowerGrid settings are available in-game. Without GMCM, ed
 
 Grapes of Ferngill provides the Hardwood Keg behavior used by Hard Iridium Keg. PowerGrid can load without it, but Hard Iridium Keg will behave like a vanilla Keg instead of a Hardwood Keg.
 
+### Mod Author API
+
+PowerGrid includes a public SMAPI API for registering compatible custom machines and querying tile power state. See `API.md` for the current contract, a minimum working example, common mistakes, and a beginner-oriented verification checklist.
+
 ### Multiplayer
 
 The host runs the power simulation. Clients receive normal synced machine state from Stardew Valley.
