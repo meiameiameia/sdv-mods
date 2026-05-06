@@ -32,7 +32,7 @@ Download packaged releases from [PowerGrid on Nexus Mods](https://www.nexusmods.
 The installed folder should look like this:
 
 ```text
-Stardew Valley/Mods/PowerGrid/manifest.json
+Stardew Valley/Mods/[SMAPI] PowerGrid/manifest.json
 ```
 
 ## What PowerGrid Adds
