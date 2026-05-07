@@ -1,0 +1,11 @@
+{
+  "Name": "Prospector's Pan",
+  "Author": "meiameiameia",
+  "Version": "0.1.0",
+  "Description": "A lightweight Stardew Valley 1.6+ panning improvement mod.",
+  "UniqueID": "meiameiameia.ProspectorsPan",
+  "EntryDll": "ProspectorsPan.dll",
+  "MinimumApiVersion": "4.0.0",
+  "UpdateKeys": [ "Nexus:45921" ],
+  "Dependencies": []
+}

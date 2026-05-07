@@ -1,0 +1,5 @@
+{
+  "message.loaded": "Prospector's Pan cargado.",
+  "hint.direction": "Punto de bateo {{arrow}}",
+  "hint.direction-distance": "Punto de bateo {{arrow}} {{tiles}} casillas"
+}

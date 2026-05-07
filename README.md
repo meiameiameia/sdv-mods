@@ -1,41 +1,69 @@
 # sdv-mods
 
-Source repository for small Stardew Valley mods by meiameiameia.
+Source repository for Stardew Valley mods by meiameiameia.
 
-## Mods
+This repo is source-first. Public downloads are published on Nexus Mods; GitHub is used for source, history, and in-progress development.
 
-- `PowerGrid`: electrical infrastructure for Stardew Valley, with generators, batteries, conduits, powered artisan machines, and automation-friendly fuel handling. Public releases are available on [Nexus Mods](https://www.nexusmods.com/stardewvalley/mods/45572).
-- `FishSmokerRecipe`: small Content Patcher recipe tweak for the Fish Smoker.
+## Released Mods
+
+| Mod | Type | Summary | Downloads |
+| --- | --- | --- | --- |
+| `PowerGrid` | SMAPI mod | Electrical infrastructure for Stardew Valley: generators, batteries, cables, conduits, powered artisan machines, automation-friendly fuel handling, and a public integration API. | [Nexus Mods](https://www.nexusmods.com/stardewvalley/mods/45572) |
+| `ProspectorsPan` | SMAPI mod | Lightweight panning improvements: more reliable reachable spots, modest progression-aware bonus rewards, configurable hints, and optional GMCM support. | [Nexus Mods](https://www.nexusmods.com/stardewvalley/mods/45921) |
+| `FishSmokerRecipe` | Content Patcher pack | Small recipe tweak for the Fish Smoker. | Source only |
 
 ## Stewarded Mods
 
 These are community mods maintained or preserved here with clear provenance and a narrow maintenance-first posture.
 
-- `MatrixFishingUI`: stewarded maintenance copy of Matrix Fishing UI by Script Kitty / LetsTussleBoiz. See [`stewarded/MatrixFishingUI`](stewarded/MatrixFishingUI) for source notes and release context.
+| Mod | Summary |
+| --- | --- |
+| `MatrixFishingUI` | Stewarded maintenance copy of Matrix Fishing UI by Script Kitty / LetsTussleBoiz. See `stewarded/MatrixFishingUI` for source notes and release context. |
 
-## Layout
+## Repository Layout
 
-- `mods/PowerGrid`
-- `mods/FishSmokerRecipe`
-- `stewarded/MatrixFishingUI`
-- `scripts/build-mod.ps1`
+```text
+mods/
+  FishSmokerRecipe/
+  PowerGrid/
+  ProspectorsPan/
+stewarded/
+  MatrixFishingUI/
+scripts/
+  build-mod.ps1
+```
 
-## Downloads
+## Building Locally
 
-Packaged mod downloads are published on Nexus Mods. GitHub is source-only and may contain work-in-progress code between packaged releases.
-
-## Build Locally
+Use the repo build helper for released SMAPI mods:
 
 ```powershell
 .\scripts\build-mod.ps1 -Mods PowerGrid -Bump none
 ```
 
-## Local Artifacts
+Individual SMAPI projects can also be built directly:
 
-`artifacts/` is ignored by Git. Do not commit build outputs, generated reports, or zip packages. Published package files are distributed through Nexus Mods, not GitHub.
+```powershell
+dotnet build .\mods\ProspectorsPan\ProspectorsPan.csproj -c Release
+```
 
-Use these folders:
+## Downloads And Packages
+
+Packaged mod downloads are distributed through Nexus Mods, not GitHub.
+
+Generated packages, release candidates, local install snapshots, balance reports, and build outputs belong under `artifacts/` or build folders and should not be committed.
+
+Common local artifact folders:
 
 - `artifacts/release-candidates/<mod>/<version>/` for zips ready for testing.
 - `artifacts/local-packages/<mod>/latest/` for local-only packages that are not release or test zips.
 - `artifacts/balance-lab/<YYYYMMDD>-<topic>/<command-or-suite>/` for generated balance reports.
+
+## Requirements
+
+Most SMAPI mods in this repo target:
+
+- Stardew Valley 1.6+
+- SMAPI 4.0.0+
+
+Check each mod folder for its own README, manifest, compatibility notes, and optional integration details.
