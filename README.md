@@ -1,8 +1,8 @@
-# sdv-mods
+# Stardew Valley Mods
 
-Source repository for Stardew Valley mods by meiameiameia.
+Stardew Valley mods by meiameiameia.
 
-This repo is source-first. Public downloads are published on Nexus Mods; GitHub is used for source, history, and in-progress development.
+If you just want to play the mods, download the packaged versions from Nexus Mods. This GitHub repository is mainly here for source code, changelogs, and transparency.
 
 ## Released Mods
 
@@ -20,7 +20,30 @@ These are community mods maintained or preserved here with clear provenance and 
 | --- | --- |
 | `MatrixFishingUI` | Stewarded maintenance copy of Matrix Fishing UI by Script Kitty / LetsTussleBoiz. See `stewarded/MatrixFishingUI` for source notes and release context. |
 
-## Repository Layout
+## Downloads
+
+Use the Nexus links above for normal installation.
+
+GitHub's "Download ZIP" button gives you the source code, not a ready-to-install mod package.
+
+## Requirements
+
+Most SMAPI mods here target:
+
+- Stardew Valley 1.6+
+- SMAPI 4.0.0+
+
+Check each mod page or mod folder for its own install notes, compatibility notes, and optional integrations.
+
+## For Mod Authors And Source Readers
+
+The source is available here for reference, compatibility work, and local builds.
+
+PowerGrid includes a small public SMAPI API for machine mods that want to register their own big craftables as powered consumers. See [`mods/PowerGrid/API.md`](mods/PowerGrid/API.md) for the interface, minimum integration example, and beginner-friendly notes.
+
+For simple PowerGrid support, most machine mods only need to call `RegisterConsumer(...)` with their machine's qualified item ID. Advanced mods can also query whether a tile is powered and what speedup it received.
+
+Repository layout:
 
 ```text
 mods/
@@ -33,37 +56,14 @@ scripts/
   build-mod.ps1
 ```
 
-## Building Locally
-
-Use the repo build helper for released SMAPI mods:
+Build all supported SMAPI projects through the repo helper when appropriate:
 
 ```powershell
 .\scripts\build-mod.ps1 -Mods PowerGrid -Bump none
 ```
 
-Individual SMAPI projects can also be built directly:
+Or build an individual project directly:
 
 ```powershell
 dotnet build .\mods\ProspectorsPan\ProspectorsPan.csproj -c Release
 ```
-
-## Downloads And Packages
-
-Packaged mod downloads are distributed through Nexus Mods, not GitHub.
-
-Generated packages, release candidates, local install snapshots, balance reports, and build outputs belong under `artifacts/` or build folders and should not be committed.
-
-Common local artifact folders:
-
-- `artifacts/release-candidates/<mod>/<version>/` for zips ready for testing.
-- `artifacts/local-packages/<mod>/latest/` for local-only packages that are not release or test zips.
-- `artifacts/balance-lab/<YYYYMMDD>-<topic>/<command-or-suite>/` for generated balance reports.
-
-## Requirements
-
-Most SMAPI mods in this repo target:
-
-- Stardew Valley 1.6+
-- SMAPI 4.0.0+
-
-Check each mod folder for its own README, manifest, compatibility notes, and optional integration details.
