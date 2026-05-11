@@ -1,0 +1,42 @@
+{
+  "name": "Stress - 0.3 Upgrade Throughput",
+  "description": "Stress test for upgraded 0.3 machines on Iron Cable. This should warn when upgraded industrial processing wants a stronger cable split or Iridium Cable.",
+  "days": 1,
+  "cable": "Iron Cable",
+  "initialBatteryChargePercent": 1.0,
+  "weather": {
+    "clear": 1.0
+  },
+  "machines": [
+    {
+      "id": "Electric Smelter + Heating Coil",
+      "count": 4,
+      "activeFraction": 1.0
+    },
+    {
+      "id": "Powered Dehydrator + Heat Regulator",
+      "count": 4,
+      "activeFraction": 1.0
+    },
+    {
+      "id": "Industrial Recycler + Sorting Magnet",
+      "count": 3,
+      "activeFraction": 1.0
+    }
+  ],
+  "generators": [
+    {
+      "id": "Combustion Generator",
+      "count": 2
+    }
+  ],
+  "batteries": [
+    {
+      "id": "Iridium Power Battery",
+      "count": 1
+    }
+  ],
+  "fuelInventory": {
+    "Biofuel": 4
+  }
+}

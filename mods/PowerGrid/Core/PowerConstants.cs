@@ -15,6 +15,12 @@ internal static class PowerConstants
 
     public const string BiofuelId = ModPrefix + "Biofuel";
     public const string RadioisotopeFuelId = ModPrefix + "RadioisotopeFuel";
+    public const string HeatingCoilId = ModPrefix + "HeatingCoil";
+    public const string EfficiencyCoreId = ModPrefix + "EfficiencyCore";
+    public const string CatalystChamberId = ModPrefix + "CatalystChamber";
+    public const string SortingMagnetId = ModPrefix + "SortingMagnet";
+    public const string DryingRackArrayId = ModPrefix + "DryingRackArray";
+    public const string HeatRegulatorId = ModPrefix + "HeatRegulator";
 
     public const string SteamGeneratorId = ModPrefix + "SteamGenerator";
     public const string CombustionGeneratorId = ModPrefix + "CombustionGenerator";
@@ -29,6 +35,9 @@ internal static class PowerConstants
     public const string MetalCaskId = ModPrefix + "MetalCask";
     public const string MetalKegId = ModPrefix + "MetalKeg";
     public const string HardIridiumKegId = ModPrefix + "HardIridiumKeg";
+    public const string ElectricSmelterId = ModPrefix + "ElectricSmelter";
+    public const string IndustrialRecyclerId = ModPrefix + "IndustrialRecycler";
+    public const string PoweredDehydratorId = ModPrefix + "PoweredDehydrator";
 
     // Qualified versions (for Data/Machines keys etc.)
     public static string Q(string itemId) => $"(BC){itemId}";

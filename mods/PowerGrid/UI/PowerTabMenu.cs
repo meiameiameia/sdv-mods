@@ -172,22 +172,26 @@ internal sealed class PowerTabMenu : IClickableMenu
         return new StatusBadge(I18n.Get("ui.badge.offline"), NegativeColor);
     }
 
-    private static StatusBadge GetConsumerBadge(PowerConsumerSnapshot consumer)
+    private static StatusBadge GetConsumerBadge(PowerConsumerSnapshot consumer, PowerNetworkSnapshot? network)
     {
+        PowerConsumerPowerState state = PowerConsumerPowerStatus.Classify(consumer, network);
         if (consumer.ProgressMode == "days" && consumer.IsProcessing)
-            return consumer.IsPowered
+            return state == PowerConsumerPowerState.Powered
                 ? new StatusBadge(I18n.Get("ui.badge.aging-power"), PositiveColor)
-                : new StatusBadge(I18n.Get("ui.badge.aging-no-power"), WarningColor);
+                : new StatusBadge(FormatPowerState(state).ToUpperInvariant(), GetPowerStateColor(state));
 
         if (consumer.IsProcessing)
-            return consumer.IsPowered
-                ? new StatusBadge(I18n.Get("ui.badge.active"), PositiveColor)
-                : new StatusBadge(I18n.Get("ui.badge.waiting"), WarningColor);
+        {
+            if (state == PowerConsumerPowerState.Powered)
+                return new StatusBadge(I18n.Get("ui.badge.active"), PositiveColor);
 
-        if (consumer.IsPowered)
-            return new StatusBadge(I18n.Get("ui.badge.ready"), PositiveColor);
+            return new StatusBadge(FormatPowerState(state).ToUpperInvariant(), GetPowerStateColor(state));
+        }
 
-        return new StatusBadge(I18n.Get("ui.badge.idle"), MutedColor);
+        if (state == PowerConsumerPowerState.Standby)
+            return new StatusBadge(I18n.Get("ui.badge.standby"), PositiveColor);
+
+        return new StatusBadge(FormatPowerState(state).ToUpperInvariant(), GetPowerStateColor(state));
     }
 
     private static string FormatMachineSummary(ConsumerCounts counts)
@@ -252,18 +256,42 @@ internal sealed class PowerTabMenu : IClickableMenu
         return TrimDetail(text, 82);
     }
 
-    private static string FormatConsumerDetail(PowerConsumerSnapshot consumer)
+    private static string FormatConsumerDetail(PowerConsumerSnapshot consumer, PowerNetworkSnapshot? network = null)
     {
+        PowerConsumerPowerState state = PowerConsumerPowerStatus.Classify(consumer, network);
+        string stateLabel = FormatPowerState(state);
+
         if (consumer.ProgressMode == "days" && !string.IsNullOrWhiteSpace(consumer.ProgressText))
-            return I18n.Get("ui.consumer-detail.days", new { eu = consumer.EUAllocated, demand = consumer.DemandPerTick, speed = consumer.SpeedupFraction.ToString("P0"), progress = TrimProgressText(consumer.ProgressText) });
+            return I18n.Get("ui.consumer-detail.days", new { state = stateLabel, eu = consumer.EUAllocated, demand = consumer.DemandPerTick, speed = consumer.SpeedupFraction.ToString("P0"), progress = TrimProgressText(consumer.ProgressText) });
 
         if (consumer.IsProcessing)
-            return I18n.Get("ui.consumer-detail.processing", new { eu = consumer.EUAllocated, demand = consumer.DemandPerTick, speed = consumer.SpeedupFraction.ToString("P0"), minutes = consumer.MinutesAccelerated, remaining = consumer.MinutesRemaining });
+            return I18n.Get("ui.consumer-detail.processing", new { state = stateLabel, eu = consumer.EUAllocated, demand = consumer.DemandPerTick, speed = consumer.SpeedupFraction.ToString("P0"), minutes = consumer.MinutesAccelerated, remaining = consumer.MinutesRemaining });
 
-        if (consumer.IsPowered)
-            return I18n.Get("ui.consumer-detail.ready", new { eu = consumer.EUAllocated, demand = consumer.DemandPerTick, speed = consumer.SpeedupFraction.ToString("P0") });
+        return I18n.Get("ui.consumer-detail.idle", new { state = stateLabel, demand = consumer.DemandPerTick, speed = consumer.SpeedupFraction.ToString("P0") });
+    }
 
-        return I18n.Get("ui.consumer-detail.idle", new { eu = consumer.EUAllocated, demand = consumer.DemandPerTick });
+    private static string FormatPowerState(PowerConsumerPowerState state)
+    {
+        return state switch
+        {
+            PowerConsumerPowerState.GridOffline => I18n.Get("ui.power-state.grid-offline"),
+            PowerConsumerPowerState.Standby => I18n.Get("ui.power-state.standby"),
+            PowerConsumerPowerState.Powered => I18n.Get("ui.power-state.powered"),
+            PowerConsumerPowerState.LowPower => I18n.Get("ui.power-state.low-power"),
+            PowerConsumerPowerState.ProcessingUnpowered => I18n.Get("ui.power-state.processing-unpowered"),
+            _ => I18n.Get("ui.power-state.not-connected")
+        };
+    }
+
+    private static Color GetPowerStateColor(PowerConsumerPowerState state)
+    {
+        if (PowerConsumerPowerStatus.IsPositive(state))
+            return PositiveColor;
+
+        if (PowerConsumerPowerStatus.IsWarning(state))
+            return WarningColor;
+
+        return NegativeColor;
     }
 
     private static string FormatGeneratorDetail(PowerGeneratorSnapshot generator)
@@ -678,7 +706,7 @@ internal sealed class PowerTabMenu : IClickableMenu
 
                 AddLine(I18n.Get("ui.overview.attention.machine", new { name = consumer.DisplayName, location = consumer.LocationName, x = consumer.TileX, y = consumer.TileY }), WarningColor);
                 AddLine($"  {networkLabel} | {I18n.Get("ui.overview.attention.need", new { demand = consumer.DemandPerTick })} {BuildPowerFixHint(consumer, network)}", MutedColor);
-                AddLine($"  {I18n.Get("ui.label.current")}: {TrimDetail(FormatConsumerDetail(consumer), 88)}", MutedColor);
+                AddLine($"  {I18n.Get("ui.label.current")}: {TrimDetail(FormatConsumerDetail(consumer, network), 88)}", MutedColor);
             }
         }
 
@@ -718,7 +746,7 @@ internal sealed class PowerTabMenu : IClickableMenu
 
                 PowerConsumerSnapshot? topMachine = networkConsumers.FirstOrDefault(consumer => consumer.IsProcessing);
                 if (topMachine != null)
-                    AddLine($"  {I18n.Get("ui.label.main-machine")}: {topMachine.DisplayName} ({topMachine.LocationName} {topMachine.TileX},{topMachine.TileY}) - {TrimDetail(FormatConsumerDetail(topMachine), 74)}", topMachine.IsPowered ? PositiveColor : WarningColor);
+                    AddLine($"  {I18n.Get("ui.label.main-machine")}: {topMachine.DisplayName} ({topMachine.LocationName} {topMachine.TileX},{topMachine.TileY}) - {TrimDetail(FormatConsumerDetail(topMachine, net), 74)}", GetPowerStateColor(PowerConsumerPowerStatus.Classify(topMachine, net)));
             }
         }
     }
@@ -813,11 +841,11 @@ internal sealed class PowerTabMenu : IClickableMenu
             .ThenBy(consumer => consumer.TileY)
             .ThenBy(consumer => consumer.TileX))
         {
-            StatusBadge badge = GetConsumerBadge(consumer);
             PowerNetworkSnapshot? network = FindMatchingNetwork(consumer, networkSnapshots);
+            StatusBadge badge = GetConsumerBadge(consumer, network);
             string scope = network == null ? I18n.Get("ui.network.unknown") : FormatLocationScope(network.LocationNames);
             AddLine($"{consumer.DisplayName} | {badge.Label} | {consumer.LocationName} ({consumer.TileX},{consumer.TileY})", badge.Color);
-            AddLine($"  Net #{consumer.NetworkId} | {scope} | {TrimDetail(FormatConsumerDetail(consumer), 74)}", MutedColor);
+            AddLine($"  Net #{consumer.NetworkId} | {scope} | {TrimDetail(FormatConsumerDetail(consumer, network), 74)}", MutedColor);
         }
     }
 

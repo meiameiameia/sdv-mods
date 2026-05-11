@@ -154,7 +154,7 @@ internal static class UiInfoSuiteIntegration
             entries.Add(tileObject.heldObject.Value.DisplayName);
 
         AddSectionBreak(entries);
-        entries.Add($"PowerGrid: {GetConsumerPowerState(isProcessing, powered, energized)}");
+        entries.Add($"PowerGrid: {GetConsumerPowerState(isProcessing, powered, energized, networkId, euAllocated, euDemanded)}");
         entries.Add($"Power: {euAllocated}/{euDemanded} EU/tick");
         if (speedup > 0f)
             entries.Add($"Speed bonus: {speedup.ToString("P0", CultureInfo.InvariantCulture)}");
@@ -181,12 +181,20 @@ internal static class UiInfoSuiteIntegration
         return true;
     }
 
-    private static string GetConsumerPowerState(bool isProcessing, bool powered, bool energized)
+    private static string GetConsumerPowerState(bool isProcessing, bool powered, bool energized, int networkId, int euAllocated, int euDemanded)
     {
         if (isProcessing)
-            return powered ? "powered" : energized ? "connected, waiting for power" : "unpowered";
+        {
+            if (powered)
+                return euDemanded <= 0 || euAllocated >= euDemanded ? "powered" : "low power";
 
-        return energized ? "connected" : "unpowered";
+            return "processing unpowered";
+        }
+
+        if (networkId <= 0)
+            return "not connected";
+
+        return energized ? "standby" : "grid offline";
     }
 
     private static bool IsConsumerProcessing(Object tileObject, bool isMetalCask)
@@ -291,7 +299,10 @@ internal static class UiInfoSuiteIntegration
         return itemId == PowerConstants.IndustrialPreservesJarId
             || itemId == PowerConstants.MetalCaskId
             || itemId == PowerConstants.MetalKegId
-            || itemId == PowerConstants.HardIridiumKegId;
+            || itemId == PowerConstants.HardIridiumKegId
+            || itemId == PowerConstants.ElectricSmelterId
+            || itemId == PowerConstants.IndustrialRecyclerId
+            || itemId == PowerConstants.PoweredDehydratorId;
     }
 
     private static bool IsMetalCask(Object tileObject, string itemId)
@@ -330,6 +341,9 @@ internal static class UiInfoSuiteIntegration
             PowerConstants.MetalCaskId => Math.Max(0, config.MetalCaskEUPerMinute * PowerConstants.TickIntervalMinutes),
             PowerConstants.MetalKegId => Math.Max(0, config.MetalKegEUPerMinute * PowerConstants.TickIntervalMinutes),
             PowerConstants.HardIridiumKegId => Math.Max(0, config.HardIridiumKegEUPerMinute * PowerConstants.TickIntervalMinutes),
+            PowerConstants.ElectricSmelterId => Math.Max(0, config.ElectricSmelterEUPerTick),
+            PowerConstants.IndustrialRecyclerId => Math.Max(0, config.IndustrialRecyclerEUPerTick),
+            PowerConstants.PoweredDehydratorId => Math.Max(0, config.PoweredDehydratorEUPerTick),
             _ => 0
         };
     }

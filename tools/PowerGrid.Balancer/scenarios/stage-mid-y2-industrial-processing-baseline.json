@@ -1,0 +1,51 @@
+{
+  "name": "Stage - Mid Y2 Industrial Processing Baseline",
+  "description": "Year 2 industrial starter room: base Electric Smelter, Industrial Recycler, and Powered Dehydrator on Iron Cable with Combustion support. Tests whether the 0.3 machine trio can fit before radioactive-tier power.",
+  "days": 1,
+  "cable": "Iron Cable",
+  "initialBatteryChargePercent": 0.5,
+  "weather": {
+    "clear": 1.0
+  },
+  "machines": [
+    {
+      "id": "Electric Smelter",
+      "count": 2,
+      "activeFraction": 0.80
+    },
+    {
+      "id": "Industrial Recycler",
+      "count": 1,
+      "activeFraction": 0.50
+    },
+    {
+      "id": "Powered Dehydrator",
+      "count": 2,
+      "activeFraction": 0.75
+    },
+    {
+      "id": "Metal Keg",
+      "count": 8,
+      "activeFraction": 1.0
+    }
+  ],
+  "generators": [
+    {
+      "id": "Combustion Generator",
+      "count": 1
+    },
+    {
+      "id": "Wind Generator",
+      "count": 2
+    }
+  ],
+  "batteries": [
+    {
+      "id": "Basic Power Battery",
+      "count": 2
+    }
+  ],
+  "fuelInventory": {
+    "Biofuel": 2
+  }
+}

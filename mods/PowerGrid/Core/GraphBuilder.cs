@@ -166,18 +166,79 @@ internal sealed class GraphBuilder
         // Check registered external consumers
         var registered = ConsumerRegistry.Instance.GetConsumerDef(qualifiedId);
         if (registered != null)
+        {
+            (int demandPerTick, float maxSpeedupFraction) = GetConsumerPowerProfile(itemId, obj, registered.DemandPerTick, registered.MaxSpeedupFraction);
             return new PowerNode
             {
                 NodeType = PowerNodeType.Consumer,
                 LocationName = locName,
                 Tile = tile,
                 ItemId = itemId,
-                DemandPerTick = registered.DemandPerTick,
-                MaxSpeedupFraction = registered.MaxSpeedupFraction,
+                DemandPerTick = demandPerTick,
+                MaxSpeedupFraction = maxSpeedupFraction,
                 Priority = registered.Priority
             };
+        }
 
         return null;
+    }
+
+    private static (int DemandPerTick, float MaxSpeedupFraction) GetConsumerPowerProfile(
+        string itemId,
+        StardewValley.Object obj,
+        int baseDemandPerTick,
+        float baseMaxSpeedupFraction)
+    {
+        if (baseDemandPerTick <= 0 || !IsIndustrialProcessingMachine(itemId))
+            return (baseDemandPerTick, baseMaxSpeedupFraction);
+
+        float demandMultiplier = 1f;
+        float speedupMultiplier = 1f;
+
+        if (MachineUpgradeState.HasUpgrade(obj, PowerConstants.EfficiencyCoreId))
+        {
+            demandMultiplier = 0.70f;
+        }
+        else if (itemId == PowerConstants.ElectricSmelterId)
+        {
+            if (MachineUpgradeState.HasUpgrade(obj, PowerConstants.HeatingCoilId))
+            {
+                demandMultiplier = 1.25f;
+                speedupMultiplier = 1.60f;
+            }
+            else if (MachineUpgradeState.HasUpgrade(obj, PowerConstants.CatalystChamberId))
+            {
+                demandMultiplier = 1.125f;
+            }
+        }
+        else if (itemId == PowerConstants.IndustrialRecyclerId)
+        {
+            if (MachineUpgradeState.HasUpgrade(obj, PowerConstants.SortingMagnetId))
+                demandMultiplier = 1.25f;
+        }
+        else if (itemId == PowerConstants.PoweredDehydratorId)
+        {
+            if (MachineUpgradeState.HasUpgrade(obj, PowerConstants.HeatRegulatorId))
+            {
+                demandMultiplier = 1.50f;
+                speedupMultiplier = 1.625f;
+            }
+            else if (MachineUpgradeState.HasUpgrade(obj, PowerConstants.DryingRackArrayId))
+            {
+                demandMultiplier = 1.50f;
+            }
+        }
+
+        int demandPerTick = Math.Max(1, (int)MathF.Ceiling(baseDemandPerTick * demandMultiplier));
+        float maxSpeedupFraction = Math.Clamp(baseMaxSpeedupFraction * speedupMultiplier, 0f, 1f);
+        return (demandPerTick, maxSpeedupFraction);
+    }
+
+    private static bool IsIndustrialProcessingMachine(string itemId)
+    {
+        return itemId == PowerConstants.ElectricSmelterId
+            || itemId == PowerConstants.IndustrialRecyclerId
+            || itemId == PowerConstants.PoweredDehydratorId;
     }
 
     private static PowerNode MakeCable(string locName, Vector2 tile, string itemId, CableTier tier, int throughput)

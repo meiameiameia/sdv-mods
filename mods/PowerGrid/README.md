@@ -1,8 +1,8 @@
 # PowerGrid
 
-PowerGrid adds a small electrical system to Stardew Valley. You can build generators, run cables, store extra power in batteries, and use powered artisan machines that work faster when your grid can support them.
+PowerGrid adds a compact electrical infrastructure layer to Stardew Valley. You can build generators, route power with cables, store surplus EU in batteries, link locations with conduits, and speed up compatible machines when a network can keep up with demand.
 
-The goal is to make production rooms a little more interesting to plan without replacing Stardew's normal crafting and farming loop. Power does not duplicate items, change machine outputs, or skip input requirements.
+Power does not duplicate items, skip inputs, or change normal machine outputs by itself. In PowerGrid, electricity is a production bonus and planning layer, not a replacement for Stardew's normal machine gameplay.
 
 ## Requirements
 
@@ -12,11 +12,12 @@ The goal is to make production rooms a little more interesting to plan without r
 ## Strongly Recommended
 
 - Grapes of Ferngill for Hard Iridium Keg to use Hardwood Keg behavior
-- Automate or Event Driven Automation for chest-based machine logistics
+- Automate or Event Driven Automation for larger machine rooms
 
 ## Optional
 
 - Generic Mod Config Menu for in-game settings
+- UI Info Suite for extra machine status integration
 
 ## Download
 
@@ -56,16 +57,38 @@ Stardew Valley/Mods/[SMAPI] PowerGrid/manifest.json
 - `Metal Keg`
 - `Hard Iridium Keg`
 - `Metal Cask`
+- `Electric Smelter`
+- `Industrial Recycler`
+- `Powered Dehydrator`
+
+### Machine Upgrades
+
+- `Heating Coil`
+- `Efficiency Core`
+- `Catalyst Chamber`
+- `Sorting Magnet`
+- `Drying Rack Array`
+- `Heat Regulator`
+
+## New In 0.3
+
+PowerGrid's industrial processing tier adds three new powered machines and a simple machine panel:
+
+- `Electric Smelter` for powered ore smelting
+- `Industrial Recycler` for powered trash recycling
+- `Powered Dehydrator` for powered fruit and mushroom dehydration
+- a machine panel opened with `Shift + right-click` on those new machines
+- one upgrade slot per new machine
+
+Supported upgrade pairs:
+
+- Electric Smelter: `Heating Coil`, `Efficiency Core`, `Catalyst Chamber`
+- Industrial Recycler: `Sorting Magnet`, `Efficiency Core`
+- Powered Dehydrator: `Drying Rack Array`, `Heat Regulator`, `Efficiency Core`
+
+Hold a compatible upgrade item and open the machine panel to install it. Use the same panel to remove an installed upgrade later.
 
 ## Basic Use
-
-The zip also includes short player guides in English, Brazilian Portuguese, and Spanish:
-
-- `PLAYER_GUIDE.md`
-- `GUIA_DO_JOGADOR.pt-BR.md`
-- `GUIA_DEL_JUGADOR.es.md`
-
-Use those guides for the current recipes, unlock milestones, generator outputs, cable throughputs, battery capacities, machine power values, and balance defaults. This README is intentionally limited to overview, installation, compatibility, troubleshooting, and source-build notes.
 
 1. Place a generator.
 2. Add fuel if the generator needs fuel.
@@ -75,19 +98,32 @@ Use those guides for the current recipes, unlock milestones, generator outputs, 
 
 Power networks connect through 4-directional adjacency: up, down, left, and right. Diagonal tiles do not connect.
 
-Powered machines can pass power to other powered machines next to them. You do not need to place a cable between every machine. A good rule of thumb is to use cables like trunk lines: bridge gaps, reach generators or batteries, and route power around the room.
+Powered machines can pass power to other powered machines next to them. You do not need a cable between every machine. Use cables like trunk lines: bridge gaps, connect generators or batteries, and route power around the room.
 
-Cables currently occupy their own tile. I know that farm space and tidy layouts matter, so a future wiring polish pass may explore cable-underlay or buried-cable behavior. For now, plan cables as visible infrastructure.
+## How The New 0.3 Machines Behave
 
-## Generators, Fuel, And Cables
+### Electric Smelter
 
-PowerGrid includes fuel generators, a passive outdoor wind generator, and late-game high-density generation. Some generators need fuel before they can produce EU. Wind Generators only produce EU outdoors, and outdoor output changes with weather.
+- Smelts ore into bars and must be connected to a live PowerGrid network to start.
+- If it loses power connection while processing, the current ore pops back out instead of finishing for free.
+- `Heating Coil` reduces smelting time.
+- `Catalyst Chamber` improves the extra bar chance.
+- `Efficiency Core` reduces EU demand.
 
-Throughput is how much power a network can move each tick. If a network contains multiple cable tiers, the weakest cable limits the network.
+### Industrial Recycler
 
-## Batteries
+- Recycles supported trash into useful infrastructure materials.
+- Still works without power, but power speeds it up.
+- `Sorting Magnet` improves metal salvage chances.
+- `Efficiency Core` reduces EU demand.
 
-Batteries store extra power and help cover demand when generators cannot keep up. They are especially useful when your wind output drops, fuel runs out, or a group of machines starts working at once. Stored EU stays on the battery item when you pick it up and place it somewhere else. By default, batteries leak a small amount of stored energy each morning.
+### Powered Dehydrator
+
+- Dehydrates fruit and mushrooms like the vanilla dehydrator.
+- Still works without power, but power speeds it up.
+- `Drying Rack Array` can improve batch output.
+- `Heat Regulator` reduces dehydration time.
+- `Efficiency Core` reduces EU demand.
 
 ## Power Conduits
 
@@ -101,17 +137,16 @@ To link conduits:
 
 You can also right-click one conduit, then right-click the other conduit. To unlink or cancel pairing, Shift + right-click a conduit.
 
-## Powered Machines
+## Bundled Guides
 
-Powered machines still work normally without power. PowerGrid is a bonus layer, not a punishment layer. When a powered machine has enough EU, it gets a speed bonus. Metal Casks use power for faster aging progress.
+The zip also includes short player guides:
 
-Hard Iridium Keg is designed to use Grapes of Ferngill's Hardwood Keg behavior. If Grapes of Ferngill is not installed, PowerGrid falls back to vanilla Keg behavior so the machine can still work.
+- `PLAYER_GUIDE.md` for English
+- `GUIA_DO_JOGADOR.pt-BR.md` for Brazilian Portuguese
 
-If Generic Mod Config Menu is installed, you can tune each powered machine's EU demand, maximum speed bonus, and priority in-game.
+The bundled Spanish guide is still waiting on a human translation refresh for the 0.3 industrial processing update.
 
-## Recipe Unlocks
-
-By default, PowerGrid grants recipe bundles as you progress through vanilla-aligned milestones. See the bundled player guide for the current unlock list. This can be changed in the config.
+Use the player guides for the current recipes, unlock milestones, generator outputs, cable throughputs, battery capacities, machine power values, and upgrade summaries.
 
 ## Power Tab
 
@@ -134,9 +169,9 @@ Use this tab when something is not receiving power. It is the easiest way to see
 
 PowerGrid is designed to work alongside automation mods:
 
-- Automate-style mods move items.
-- PowerGrid provides speed boosts.
-- Fuel generators can draw supported fuel from connected chests.
+- automation moves items
+- PowerGrid provides speed boosts
+- fuel generators can draw supported fuel from connected chests
 
 Cables, batteries, and conduits are not automation connectors.
 
@@ -152,15 +187,17 @@ Grapes of Ferngill provides the Hardwood Keg behavior used by Hard Iridium Keg. 
 
 PowerGrid includes a public SMAPI API for registering compatible custom machines and querying tile power state. See `API.md` for the current contract, a minimum working example, common mistakes, and a beginner-oriented verification checklist.
 
+For a simple integration, most third-party machine mods only need to call `RegisterConsumer(...)`.
+
 ### Multiplayer
 
 The host runs the power simulation. Clients receive normal synced machine state from Stardew Valley.
 
 ## Testing Before A Real Save
 
-If you want to try PowerGrid before using it on your real farm, use Cinderleaf's sandbox capabilities and a test save. That is the recommended way to experiment with recipes, layouts, conduits, automation, and balance without risking your main save.
+If you want to try PowerGrid before using it on a real farm, use a test save first. That is the safest way to experiment with recipes, layouts, conduits, automation, and balance without risking a long-running save.
 
-PowerGrid can be added to existing saves, but very packed Automate buildings may need some layout adjustment. The mod is easiest to learn on a new or test save where power rooms and machine rows can be planned from the start.
+PowerGrid can be added to existing saves, but very packed automation-heavy rooms may need some layout adjustment.
 
 ## Troubleshooting
 
@@ -169,7 +206,13 @@ PowerGrid can be added to existing saves, but very packed Automate buildings may
 - Check that cables connect the machine to a generator network.
 - Check that the generator is fueled or producing power.
 - Open the Power Tab and look at the machine's network.
-- Make sure the machine is actively processing something.
+- Make sure the machine is actively processing something if you expect a speed bonus.
+
+### My new 0.3 machine panel says no compatible upgrade
+
+- Hold a compatible upgrade item in your hands before opening the panel.
+- Each new industrial machine only accepts specific upgrade types.
+- Only one upgrade slot is available per machine in the current version.
 
 ### My generator is offline
 

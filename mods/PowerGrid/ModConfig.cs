@@ -53,6 +53,15 @@ internal sealed class ModConfig
     public int HardIridiumKegEUPerMinute { get; set; } = 3;
     public float HardIridiumKegMaxSpeedup { get; set; } = 0.30f;
     public int HardIridiumKegPriority { get; set; } = 10;
+    public int ElectricSmelterEUPerTick { get; set; } = 40;
+    public float ElectricSmelterMaxSpeedup { get; set; } = 0.50f;
+    public int ElectricSmelterPriority { get; set; } = 10;
+    public int IndustrialRecyclerEUPerTick { get; set; } = 20;
+    public float IndustrialRecyclerMaxSpeedup { get; set; } = 0.35f;
+    public int IndustrialRecyclerPriority { get; set; } = 20;
+    public int PoweredDehydratorEUPerTick { get; set; } = 20;
+    public float PoweredDehydratorMaxSpeedup { get; set; } = 0.40f;
+    public int PoweredDehydratorPriority { get; set; } = 20;
 
     // --- Debug ---
     public bool DebugOverlayEnabled { get; set; } = false;

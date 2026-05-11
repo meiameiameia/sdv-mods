@@ -1,0 +1,56 @@
+{
+  "name": "Stage - Late Y3 Industrial Processing Upgraded",
+  "description": "Late-game industrial wing with upgraded 0.3 machines mixed into an existing dense PowerGrid setup. Tests Iridium Cable headroom before Radioisotope-density networks.",
+  "days": 3,
+  "cable": "Iridium Cable",
+  "initialBatteryChargePercent": 1.0,
+  "weather": {
+    "clear": 1.0
+  },
+  "machines": [
+    {
+      "id": "Electric Smelter + Catalyst Chamber",
+      "count": 4,
+      "activeFraction": 0.80
+    },
+    {
+      "id": "Industrial Recycler + Sorting Magnet",
+      "count": 2,
+      "activeFraction": 0.60
+    },
+    {
+      "id": "Powered Dehydrator + Drying Rack Array",
+      "count": 4,
+      "activeFraction": 0.75
+    },
+    {
+      "id": "Metal Keg",
+      "count": 48,
+      "activeFraction": 1.0
+    },
+    {
+      "id": "Industrial Preserves Jar",
+      "count": 12,
+      "activeFraction": 1.0
+    }
+  ],
+  "generators": [
+    {
+      "id": "Combustion Generator",
+      "count": 4
+    },
+    {
+      "id": "Wind Generator",
+      "count": 8
+    }
+  ],
+  "batteries": [
+    {
+      "id": "Iridium Power Battery",
+      "count": 3
+    }
+  ],
+  "fuelInventory": {
+    "Biofuel": 24
+  }
+}

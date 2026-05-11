@@ -14,7 +14,7 @@ This file is for mod authors. Players do not need it.
 
 ## What API Version 1 Is For
 
-PowerGrid `0.2.1` exposes API version `1`.
+Current PowerGrid `0.3.0-rc.1` builds expose API version `1`.
 
 API version `1` is intentionally small and beginner-friendly. It is meant for mods that:
 
@@ -254,7 +254,7 @@ Not supported in API version `1`:
 4. Automatic support for arbitrary non-standard machine timing systems.
 5. Public snapshot DTO queries for networks, consumers, generators, or batteries.
 
-Future versions can expand the contract, but `0.2.1` intentionally keeps the surface small and reliable.
+Future versions can expand the contract, but `0.3.0-rc.1` intentionally keeps the surface small and reliable.
 
 ## Load Order
 

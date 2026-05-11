@@ -1,6 +1,7 @@
 using StardewModdingAPI;
 using StardewModdingAPI.Utilities;
 using Meiameiameia.PowerGrid;
+using Meiameiameia.PowerGrid.Core;
 
 namespace Meiameiameia.PowerGrid.Integrations;
 
@@ -15,6 +16,16 @@ public interface IGmcmApi
 
 internal static class GmcmIntegration
 {
+    private static int ToMachineDemandPerTick(int euPerMinute)
+    {
+        return Math.Max(0, euPerMinute) * PowerConstants.TickIntervalMinutes;
+    }
+
+    private static int ToLegacyMachineEUPerMinute(int euPerTick)
+    {
+        return Math.Max(0, euPerTick) / PowerConstants.TickIntervalMinutes;
+    }
+
     public static void Register(IModHelper helper, IManifest manifest, ModConfig config, Action resetCallback)
     {
         var gmcmApi = helper.ModRegistry.GetApi<IGmcmApi>("spacechase0.GenericModConfigMenu");
@@ -199,11 +210,11 @@ internal static class GmcmIntegration
         gmcmApi.AddSectionTitle(manifest, () => I18n.Get("item.industrial-preserves-jar.name"));
 
         gmcmApi.AddNumberOption(manifest,
-            () => config.IndustrialPreservesJarEUPerMinute,
-            (int val) => config.IndustrialPreservesJarEUPerMinute = val,
-            () => I18n.Get("gmcm.eu-per-minute.name"),
+            () => ToMachineDemandPerTick(config.IndustrialPreservesJarEUPerMinute),
+            (int val) => config.IndustrialPreservesJarEUPerMinute = ToLegacyMachineEUPerMinute(val),
+            () => I18n.Get("gmcm.eu-per-tick.name"),
             () => I18n.Get("gmcm.industrial-preserves-jar-eu.tooltip"),
-            min: 0, max: 100, interval: 1);
+            min: 0, max: 1000, interval: 10);
 
         gmcmApi.AddNumberOption(manifest,
             () => (int)MathF.Round(config.IndustrialPreservesJarMaxSpeedup * 100f),
@@ -222,11 +233,11 @@ internal static class GmcmIntegration
         gmcmApi.AddSectionTitle(manifest, () => I18n.Get("item.metal-cask.name"));
 
         gmcmApi.AddNumberOption(manifest,
-            () => config.MetalCaskEUPerMinute,
-            (int val) => config.MetalCaskEUPerMinute = val,
-            () => I18n.Get("gmcm.eu-per-minute.name"),
+            () => ToMachineDemandPerTick(config.MetalCaskEUPerMinute),
+            (int val) => config.MetalCaskEUPerMinute = ToLegacyMachineEUPerMinute(val),
+            () => I18n.Get("gmcm.eu-per-tick.name"),
             () => I18n.Get("gmcm.metal-cask-eu.tooltip"),
-            min: 0, max: 100, interval: 1);
+            min: 0, max: 1000, interval: 10);
 
         gmcmApi.AddNumberOption(manifest,
             () => (int)MathF.Round(config.MetalCaskMaxSpeedup * 100f),
@@ -245,11 +256,11 @@ internal static class GmcmIntegration
         gmcmApi.AddSectionTitle(manifest, () => I18n.Get("item.metal-keg.name"));
 
         gmcmApi.AddNumberOption(manifest,
-            () => config.MetalKegEUPerMinute,
-            (int val) => config.MetalKegEUPerMinute = val,
-            () => I18n.Get("gmcm.eu-per-minute.name"),
+            () => ToMachineDemandPerTick(config.MetalKegEUPerMinute),
+            (int val) => config.MetalKegEUPerMinute = ToLegacyMachineEUPerMinute(val),
+            () => I18n.Get("gmcm.eu-per-tick.name"),
             () => I18n.Get("gmcm.metal-keg-eu.tooltip"),
-            min: 0, max: 100, interval: 1);
+            min: 0, max: 1000, interval: 10);
 
         gmcmApi.AddNumberOption(manifest,
             () => (int)MathF.Round(config.MetalKegMaxSpeedup * 100f),
@@ -268,11 +279,11 @@ internal static class GmcmIntegration
         gmcmApi.AddSectionTitle(manifest, () => I18n.Get("item.hard-iridium-keg.name"));
 
         gmcmApi.AddNumberOption(manifest,
-            () => config.HardIridiumKegEUPerMinute,
-            (int val) => config.HardIridiumKegEUPerMinute = val,
-            () => I18n.Get("gmcm.eu-per-minute.name"),
+            () => ToMachineDemandPerTick(config.HardIridiumKegEUPerMinute),
+            (int val) => config.HardIridiumKegEUPerMinute = ToLegacyMachineEUPerMinute(val),
+            () => I18n.Get("gmcm.eu-per-tick.name"),
             () => I18n.Get("gmcm.hard-iridium-keg-eu.tooltip"),
-            min: 0, max: 100, interval: 1);
+            min: 0, max: 1000, interval: 10);
 
         gmcmApi.AddNumberOption(manifest,
             () => (int)MathF.Round(config.HardIridiumKegMaxSpeedup * 100f),
@@ -284,6 +295,75 @@ internal static class GmcmIntegration
         gmcmApi.AddNumberOption(manifest,
             () => config.HardIridiumKegPriority,
             (int val) => config.HardIridiumKegPriority = val,
+            () => I18n.Get("gmcm.priority.name"),
+            () => I18n.Get("gmcm.priority.tooltip"),
+            min: 0, max: 100, interval: 1);
+
+        gmcmApi.AddSectionTitle(manifest, () => I18n.Get("item.electric-smelter.name"));
+
+        gmcmApi.AddNumberOption(manifest,
+            () => config.ElectricSmelterEUPerTick,
+            (int val) => config.ElectricSmelterEUPerTick = val,
+            () => I18n.Get("gmcm.eu-per-tick.name"),
+            () => I18n.Get("gmcm.electric-smelter-eu.tooltip"),
+            min: 0, max: 1000, interval: 5);
+
+        gmcmApi.AddNumberOption(manifest,
+            () => (int)MathF.Round(config.ElectricSmelterMaxSpeedup * 100f),
+            (int val) => config.ElectricSmelterMaxSpeedup = Math.Clamp(val / 100f, 0f, 1f),
+            () => I18n.Get("gmcm.max-speedup-percent.name"),
+            () => I18n.Get("gmcm.processing-speedup.tooltip"),
+            min: 0, max: 100, interval: 1);
+
+        gmcmApi.AddNumberOption(manifest,
+            () => config.ElectricSmelterPriority,
+            (int val) => config.ElectricSmelterPriority = val,
+            () => I18n.Get("gmcm.priority.name"),
+            () => I18n.Get("gmcm.priority.tooltip"),
+            min: 0, max: 100, interval: 1);
+
+        gmcmApi.AddSectionTitle(manifest, () => I18n.Get("item.industrial-recycler.name"));
+
+        gmcmApi.AddNumberOption(manifest,
+            () => config.IndustrialRecyclerEUPerTick,
+            (int val) => config.IndustrialRecyclerEUPerTick = val,
+            () => I18n.Get("gmcm.eu-per-tick.name"),
+            () => I18n.Get("gmcm.industrial-recycler-eu.tooltip"),
+            min: 0, max: 1000, interval: 5);
+
+        gmcmApi.AddNumberOption(manifest,
+            () => (int)MathF.Round(config.IndustrialRecyclerMaxSpeedup * 100f),
+            (int val) => config.IndustrialRecyclerMaxSpeedup = Math.Clamp(val / 100f, 0f, 1f),
+            () => I18n.Get("gmcm.max-speedup-percent.name"),
+            () => I18n.Get("gmcm.processing-speedup.tooltip"),
+            min: 0, max: 100, interval: 1);
+
+        gmcmApi.AddNumberOption(manifest,
+            () => config.IndustrialRecyclerPriority,
+            (int val) => config.IndustrialRecyclerPriority = val,
+            () => I18n.Get("gmcm.priority.name"),
+            () => I18n.Get("gmcm.priority.tooltip"),
+            min: 0, max: 100, interval: 1);
+
+        gmcmApi.AddSectionTitle(manifest, () => I18n.Get("item.powered-dehydrator.name"));
+
+        gmcmApi.AddNumberOption(manifest,
+            () => config.PoweredDehydratorEUPerTick,
+            (int val) => config.PoweredDehydratorEUPerTick = val,
+            () => I18n.Get("gmcm.eu-per-tick.name"),
+            () => I18n.Get("gmcm.powered-dehydrator-eu.tooltip"),
+            min: 0, max: 1000, interval: 5);
+
+        gmcmApi.AddNumberOption(manifest,
+            () => (int)MathF.Round(config.PoweredDehydratorMaxSpeedup * 100f),
+            (int val) => config.PoweredDehydratorMaxSpeedup = Math.Clamp(val / 100f, 0f, 1f),
+            () => I18n.Get("gmcm.max-speedup-percent.name"),
+            () => I18n.Get("gmcm.processing-speedup.tooltip"),
+            min: 0, max: 100, interval: 1);
+
+        gmcmApi.AddNumberOption(manifest,
+            () => config.PoweredDehydratorPriority,
+            (int val) => config.PoweredDehydratorPriority = val,
             () => I18n.Get("gmcm.priority.name"),
             () => I18n.Get("gmcm.priority.tooltip"),
             min: 0, max: 100, interval: 1);
