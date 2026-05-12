@@ -144,7 +144,7 @@ The zip also includes short player guides:
 - `PLAYER_GUIDE.md` for English
 - `GUIA_DO_JOGADOR.pt-BR.md` for Brazilian Portuguese
 
-The bundled Spanish guide is still waiting on a human translation refresh for the 0.3 industrial processing update.
+The bundled Spanish guide has been refreshed for the 0.3 industrial processing update and may still receive a native-speaker wording pass later.
 
 Use the player guides for the current recipes, unlock milestones, generator outputs, cable throughputs, battery capacities, machine power values, and upgrade summaries.
 
