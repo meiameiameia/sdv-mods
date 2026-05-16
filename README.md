@@ -8,7 +8,7 @@ If you just want to play the mods, download the packaged versions from Nexus Mod
 
 | Mod | Type | Summary | Downloads |
 | --- | --- | --- | --- |
-| `PowerGrid` | SMAPI mod | Electrical infrastructure for Stardew Valley: generators, batteries, cables, conduits, powered artisan machines, automation-friendly fuel handling, and a public integration API. | [Nexus Mods](https://www.nexusmods.com/stardewvalley/mods/45572) |
+| `PowerGrid` | SMAPI mod | Electrical infrastructure for Stardew Valley: generators, batteries, cables, conduits, powered artisan and industrial machines, machine upgrades, automation-friendly fuel handling, and a public integration API. | [Nexus Mods](https://www.nexusmods.com/stardewvalley/mods/45572) |
 | `ProspectorsPan` | SMAPI mod | Lightweight panning improvements: more reliable reachable spots, modest progression-aware bonus rewards, configurable hints, and optional GMCM support. | [Nexus Mods](https://www.nexusmods.com/stardewvalley/mods/45921) |
 | `FishSmokerRecipe` | Content Patcher pack | Small recipe tweak for the Fish Smoker. | Source only |
 

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Reflection;
@@ -47,21 +48,60 @@ internal sealed class ModEntry : Mod
     private const string RuntimeGeneratedThisTickKey = PersistedModDataPrefix + "generatedThisTick";
     private const string BiofuelRecipeKey = "Biofuel";
     private const string RadioisotopeFuelRecipeKey = "Radioisotope Fuel";
+    private const string HeatingCoilRecipeKey = "Heating Coil";
+    private const string EfficiencyCoreRecipeKey = "Efficiency Core";
+    private const string CatalystChamberRecipeKey = "Catalyst Chamber";
+    private const string SortingMagnetRecipeKey = "Sorting Magnet";
+    private const string DryingRackArrayRecipeKey = "Drying Rack Array";
+    private const string HeatRegulatorRecipeKey = "Heat Regulator";
     private const string CombustionGeneratorRecipeKey = "Combustion Generator";
     private const string RadioisotopeGeneratorRecipeKey = "Radioisotope Generator";
     private const string IndustrialPreservesJarRecipeKey = "Industrial Preserves Jar";
     private const string MetalCaskRecipeKey = "Metal Cask";
     private const string MetalKegRecipeKey = "Metal Keg";
     private const string HardIridiumKegRecipeKey = "Hard Iridium Keg";
+    private const string ElectricSmelterRecipeKey = "Electric Smelter";
+    private const string IndustrialRecyclerRecipeKey = "Industrial Recycler";
+    private const string PoweredDehydratorRecipeKey = "Powered Dehydrator";
     private const string IndustrialPreservesJarSpriteName = "IndustrialPreservesJar";
     private const string MetalCaskSpriteName = "MetalCask";
     private const string MetalKegSpriteName = "MetalKeg";
     private const string HardIridiumKegSpriteName = "HardIridiumKeg";
+    private const string ElectricSmelterSpriteName = "ElectricSmelter";
+    private const string ElectricSmelterOfflineState = "offline";
+    private const string ElectricSmelterStandbyState = "standby";
+    private const string ElectricSmelterProcessingPoweredState = "processing_powered";
+    private const string HeatingCoilSpriteName = "HeatingCoil";
+    private const string EfficiencyCoreSpriteName = "EfficiencyCore";
+    private const string CatalystChamberSpriteName = "CatalystChamber";
+    private const string IndustrialRecyclerSpriteName = "IndustrialRecycler";
+    private const string SortingMagnetSpriteName = "SortingMagnet";
+    private const string DryingRackArraySpriteName = "DryingRackArray";
+    private const string HeatRegulatorSpriteName = "HeatRegulator";
+    private const string PoweredDehydratorSpriteName = "PoweredDehydrator";
     private const string IndustrialPreservesJarPoweredState = "powered";
     private const string IndustrialPreservesJarUnpoweredState = "unpowered";
     private const string GofHardwoodKegId = "GOF_Hardwood_Keg";
     private const float MetalCaskBaseAgingMultiplier = 0.50f;
     private const float MetalCaskPoweredBonusDaysAtFullPower = 1.50f;
+    private const int ElectricSmelterDemandPerTick = 40;
+    private const float ElectricSmelterMaxSpeedup = 0.50f;
+    private const int ElectricSmelterPriority = 10;
+    private const int ElectricSmelterUpgradeSlots = 1;
+    private const float ElectricSmelterBonusOutputChance = 0.05f;
+    private const float ElectricSmelterCatalystBonusOutputChance = 0.15f;
+    private const float ElectricSmelterHeatingCoilSpeedMultiplier = 0.65f;
+    private const int IndustrialRecyclerDemandPerTick = 20;
+    private const float IndustrialRecyclerMaxSpeedup = 0.35f;
+    private const int IndustrialRecyclerPriority = 20;
+    private const int IndustrialRecyclerUpgradeSlots = 1;
+    private const int IndustrialRecyclerBaseMinutes = 60;
+    private const int PoweredDehydratorDemandPerTick = 20;
+    private const float PoweredDehydratorMaxSpeedup = 0.40f;
+    private const int PoweredDehydratorPriority = 20;
+    private const int PoweredDehydratorUpgradeSlots = 1;
+    private const float PoweredDehydratorHeatRegulatorSpeedMultiplier = 0.65f;
+    private const double PoweredDehydratorDryingRackExtraOutputChance = 0.15;
     private const string MetalCaskMarkerKey = PersistedModDataPrefix + "MetalCask";
     private const string MetalCaskPowerModeKey = PersistedModDataPrefix + "MetalCaskPowerMode";
     private const string MetalCaskObservedPowerStateKey = PersistedModDataPrefix + "MetalCaskObservedPowerState";
@@ -69,6 +109,8 @@ internal sealed class ModEntry : Mod
     private const string MetalCaskDaysToNextQualityKey = PersistedModDataPrefix + "MetalCaskDaysToNextQuality";
     private const string MetalCaskLastAppliedBonusDaysKey = PersistedModDataPrefix + "MetalCaskLastAppliedBonusDays";
     private const string MetalCaskLastAppliedDateKey = PersistedModDataPrefix + "MetalCaskLastAppliedDate";
+    private const string ElectricSmelterInputItemKey = PersistedModDataPrefix + "ElectricSmelterInputItem";
+    private const string ElectricSmelterInputCountKey = PersistedModDataPrefix + "ElectricSmelterInputCount";
     private const string SpriteDirectoryName = "Assets";
     private const float ChargedBatteryThreshold = 0.5f;
     private const string WindGeneratorWheelSpriteName = "WindGenerator__wheel";
@@ -79,6 +121,23 @@ internal sealed class ModEntry : Mod
     private const float DefaultBigCraftableLayerDepthYOffset = 24f;
     private const float FloorMountedLayerDepthInsetFromTileTop = 8f;
     private static readonly Rectangle BigCraftableSourceRect = new(0, 0, 16, 32);
+    private static readonly string[] ElectricSmelterUpgradeIds =
+    {
+        PowerConstants.HeatingCoilId,
+        PowerConstants.EfficiencyCoreId,
+        PowerConstants.CatalystChamberId
+    };
+    private static readonly string[] IndustrialRecyclerUpgradeIds =
+    {
+        PowerConstants.SortingMagnetId,
+        PowerConstants.EfficiencyCoreId
+    };
+    private static readonly string[] PoweredDehydratorUpgradeIds =
+    {
+        PowerConstants.HeatRegulatorId,
+        PowerConstants.EfficiencyCoreId,
+        PowerConstants.DryingRackArrayId
+    };
     private static readonly Vector2 WindGeneratorWheelPivot = new(8f, 6f);
     private static readonly FieldInfo? CaskDaysToMatureField = AccessTools.Field(typeof(Cask), "daysToMature");
     private static readonly MethodInfo? CaskCheckForMaturityMethod = AccessTools.Method(typeof(Cask), "checkForMaturity");
@@ -90,6 +149,7 @@ internal sealed class ModEntry : Mod
     private readonly HashSet<string> invalidStateSpritesLogged = new(StringComparer.Ordinal);
     private readonly HashSet<string> conduitRenderDiagnosticsLogged = new(StringComparer.Ordinal);
     private readonly List<PendingBatteryCharge> pendingBatteryCharges = new();
+    private readonly List<PendingMachineUpgradeData> pendingMachineUpgrades = new();
     private static readonly string[] RequiredSpriteNames =
     {
         "CopperCable",
@@ -131,17 +191,32 @@ internal sealed class ModEntry : Mod
         "MetalKeg__unpowered",
         "HardIridiumKeg",
         "HardIridiumKeg__powered",
-        "HardIridiumKeg__unpowered"
+        "HardIridiumKeg__unpowered",
+        "ElectricSmelter",
+        "ElectricSmelter__offline",
+        "ElectricSmelter__standby",
+        "ElectricSmelter__processing_powered",
+        "IndustrialRecycler",
+        "IndustrialRecycler__powered",
+        "IndustrialRecycler__unpowered",
+        "PoweredDehydrator",
+        "PoweredDehydrator__powered",
+        "PoweredDehydrator__unpowered"
     };
     private string? vanillaPreservesJarBigCraftableId;
     private string? vanillaCaskBigCraftableId;
     private string? vanillaKegBigCraftableId;
+    private string? vanillaDehydratorBigCraftableId;
     private string? hardwoodKegBigCraftableId;
     private bool loggedMissingPreservesTemplate;
     private bool loggedMissingPreservesMachineTemplate;
     private bool loggedMissingCaskTemplate;
     private bool loggedMissingCaskMachineTemplate;
     private bool loggedMissingKegTemplate;
+    private bool loggedMissingFurnaceTemplate;
+    private bool loggedMissingRecyclerTemplate;
+    private bool loggedMissingDehydratorTemplate;
+    private bool loggedMissingDehydratorMachineTemplate;
     private bool loggedHardIridiumFallbackToVanillaKeg;
     private bool loggedHardIridiumBoundToHardwoodKeg;
     private bool loggedMissingKegMachineTemplate;
@@ -155,6 +230,12 @@ internal sealed class ModEntry : Mod
     private string EnergizedIridiumCableTexture => GetTextureAsset("EnergizedIridiumCable");
     private string BiofuelTexture => GetTextureAsset("Biofuel");
     private string RadioisotopeFuelTexture => GetTextureAsset("RadioisotopeFuel");
+    private string HeatingCoilTexture => GetTextureAsset(HeatingCoilSpriteName);
+    private string EfficiencyCoreTexture => GetTextureAsset(EfficiencyCoreSpriteName);
+    private string CatalystChamberTexture => GetTextureAsset(CatalystChamberSpriteName);
+    private string SortingMagnetTexture => GetTextureAsset(SortingMagnetSpriteName);
+    private string DryingRackArrayTexture => GetTextureAsset(DryingRackArraySpriteName);
+    private string HeatRegulatorTexture => GetTextureAsset(HeatRegulatorSpriteName);
     private string SteamGeneratorTexture => GetTextureAsset("SteamGenerator");
     private string CombustionGeneratorTexture => GetTextureAsset("CombustionGenerator");
     private string RadioisotopeGeneratorTexture => GetTextureAsset("RadioisotopeGenerator");
@@ -167,6 +248,9 @@ internal sealed class ModEntry : Mod
     private string MetalCaskTexture => GetTextureAsset(MetalCaskSpriteName);
     private string MetalKegTexture => GetTextureAsset(MetalKegSpriteName);
     private string HardIridiumKegTexture => GetTextureAsset(HardIridiumKegSpriteName);
+    private string ElectricSmelterTexture => GetTextureAsset(ElectricSmelterSpriteName);
+    private string IndustrialRecyclerTexture => GetTextureAsset(IndustrialRecyclerSpriteName);
+    private string PoweredDehydratorTexture => GetTextureAsset(PoweredDehydratorSpriteName);
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -182,6 +266,27 @@ internal sealed class ModEntry : Mod
     };
 
     private readonly record struct LegacyConduitEndpoint(string LocationName, Vector2 Tile, StardewValley.Object ConduitObject);
+    private sealed record ElectricSmelterRecipe(string InputQualifiedItemId, string OutputQualifiedItemId, int InputCount, int BaseMinutes);
+    private sealed record IndustrialRecyclerRecipe(string InputQualifiedItemId, string OutputQualifiedItemId, int OutputCount);
+
+    private static readonly Dictionary<string, ElectricSmelterRecipe> ElectricSmelterRecipes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["(O)378"] = new("(O)378", "(O)334", 5, 30),
+        ["(O)380"] = new("(O)380", "(O)335", 5, 120),
+        ["(O)384"] = new("(O)384", "(O)336", 5, 300),
+        ["(O)386"] = new("(O)386", "(O)337", 5, 480),
+        ["(O)909"] = new("(O)909", "(O)910", 5, 600)
+    };
+
+    private static readonly Dictionary<string, IndustrialRecyclerRecipe> IndustrialRecyclerRecipes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["(O)168"] = new("(O)168", "(O)390", 2),
+        ["(O)169"] = new("(O)169", "(O)388", 2),
+        ["(O)170"] = new("(O)170", "(O)338", 1),
+        ["(O)171"] = new("(O)171", "(O)338", 1),
+        ["(O)172"] = new("(O)172", "(O)771", 3),
+        ["(O)167"] = new("(O)167", "(O)382", 1)
+    };
 
     public override void Entry(IModHelper helper)
     {
@@ -284,6 +389,33 @@ internal sealed class ModEntry : Mod
             MaxSpeedupFraction = ClampSpeedup(Config.HardIridiumKegMaxSpeedup),
             Priority = Math.Max(0, Config.HardIridiumKegPriority),
             DisplayName = I18n.Get("item.hard-iridium-keg.name")
+        });
+
+        ConsumerRegistry.Instance.Register(new ConsumerDefinition
+        {
+            QualifiedItemId = PowerConstants.Q(PowerConstants.ElectricSmelterId),
+            DemandPerTick = Math.Max(0, Config.ElectricSmelterEUPerTick),
+            MaxSpeedupFraction = ClampSpeedup(Config.ElectricSmelterMaxSpeedup),
+            Priority = Math.Max(0, Config.ElectricSmelterPriority),
+            DisplayName = I18n.Get("item.electric-smelter.name")
+        });
+
+        ConsumerRegistry.Instance.Register(new ConsumerDefinition
+        {
+            QualifiedItemId = PowerConstants.Q(PowerConstants.IndustrialRecyclerId),
+            DemandPerTick = Math.Max(0, Config.IndustrialRecyclerEUPerTick),
+            MaxSpeedupFraction = ClampSpeedup(Config.IndustrialRecyclerMaxSpeedup),
+            Priority = Math.Max(0, Config.IndustrialRecyclerPriority),
+            DisplayName = I18n.Get("item.industrial-recycler.name")
+        });
+
+        ConsumerRegistry.Instance.Register(new ConsumerDefinition
+        {
+            QualifiedItemId = PowerConstants.Q(PowerConstants.PoweredDehydratorId),
+            DemandPerTick = Math.Max(0, Config.PoweredDehydratorEUPerTick),
+            MaxSpeedupFraction = ClampSpeedup(Config.PoweredDehydratorMaxSpeedup),
+            Priority = Math.Max(0, Config.PoweredDehydratorPriority),
+            DisplayName = I18n.Get("item.powered-dehydrator.name")
         });
     }
 
@@ -446,6 +578,9 @@ internal sealed class ModEntry : Mod
         PruneStaleConduitLinks();
         RehydrateMetalCasks();
         RefreshMetalCaskTelemetry();
+        RefreshElectricSmelters();
+        RefreshIndustrialRecyclers();
+        RefreshPoweredDehydrators();
 
         PowerMgr.ResetRuntimeState();
         lastTimeOfDay = Game1.timeOfDay;
@@ -591,6 +726,13 @@ internal sealed class ModEntry : Mod
         return itemId == PowerConstants.BasicBatteryId || itemId == PowerConstants.IridiumBatteryId;
     }
 
+    private static bool IsUpgradeableMachineItem(string itemId)
+    {
+        return itemId == PowerConstants.ElectricSmelterId
+            || itemId == PowerConstants.IndustrialRecyclerId
+            || itemId == PowerConstants.PoweredDehydratorId;
+    }
+
     private void RehydrateBatteryChargeState()
     {
         if (!Context.IsWorldReady)
@@ -695,6 +837,31 @@ internal sealed class ModEntry : Mod
         PowerMgr.MarkDirty(location.NameOrUniqueName);
     }
 
+    private void QueuePendingMachineUpgrades(GameLocation location, Vector2 tile, StardewValley.Object obj)
+    {
+        string itemId = obj.ItemId ?? "";
+        if (!IsUpgradeableMachineItem(itemId)
+            || !MachineUpgradeState.TryGetSerialized(obj, out string serializedUpgradeIds))
+        {
+            return;
+        }
+
+        RemovePendingMachineUpgrades(location.NameOrUniqueName, tile, itemId);
+        pendingMachineUpgrades.Add(new PendingMachineUpgradeData(location.NameOrUniqueName, tile, itemId, serializedUpgradeIds));
+    }
+
+    private void ApplyHeldMachineUpgradesToPlacedObject(StardewValley.Object heldObject, StardewValley.Object placedObject)
+    {
+        if (!IsUpgradeableMachineItem(heldObject.ItemId ?? "")
+            || !string.Equals(heldObject.ItemId, placedObject.ItemId, StringComparison.Ordinal)
+            || !MachineUpgradeState.TryGetSerialized(heldObject, out string serializedUpgradeIds))
+        {
+            return;
+        }
+
+        MachineUpgradeState.SetSerialized(placedObject, serializedUpgradeIds);
+    }
+
     private void ApplyPendingBatteryChargeToItem(Item item)
     {
         if (item is not StardewValley.Object obj || !IsBatteryItem(obj.ItemId ?? ""))
@@ -712,6 +879,23 @@ internal sealed class ModEntry : Mod
         obj.modData[PersistedChargeKey] = charge.ToString(System.Globalization.CultureInfo.InvariantCulture);
     }
 
+    private void ApplyPendingMachineUpgradesToItem(Item item)
+    {
+        if (item is not StardewValley.Object obj || !IsUpgradeableMachineItem(obj.ItemId ?? ""))
+            return;
+
+        if (MachineUpgradeState.TryGetSerialized(obj, out _))
+        {
+            TryConsumePendingMachineUpgrades(obj.ItemId ?? "", out _);
+            return;
+        }
+
+        if (!TryConsumePendingMachineUpgrades(obj.ItemId ?? "", out string serializedUpgradeIds))
+            return;
+
+        MachineUpgradeState.SetSerialized(obj, serializedUpgradeIds);
+    }
+
     private void CopyPendingBatteryChargeToItem(Item item)
     {
         if (item is not StardewValley.Object obj || !IsBatteryItem(obj.ItemId ?? ""))
@@ -724,6 +908,20 @@ internal sealed class ModEntry : Mod
             return;
 
         obj.modData[PersistedChargeKey] = charge.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private void CopyPendingMachineUpgradesToItem(Item item)
+    {
+        if (item is not StardewValley.Object obj || !IsUpgradeableMachineItem(obj.ItemId ?? ""))
+            return;
+
+        if (MachineUpgradeState.TryGetSerialized(obj, out _))
+            return;
+
+        if (!TryPeekPendingMachineUpgrades(obj.ItemId ?? "", out string serializedUpgradeIds))
+            return;
+
+        MachineUpgradeState.SetSerialized(obj, serializedUpgradeIds);
     }
 
     private bool TryPeekPendingBatteryCharge(string itemId, out int charge)
@@ -759,6 +957,39 @@ internal sealed class ModEntry : Mod
         return false;
     }
 
+    private bool TryPeekPendingMachineUpgrades(string itemId, out string serializedUpgradeIds)
+    {
+        serializedUpgradeIds = "";
+        for (int i = pendingMachineUpgrades.Count - 1; i >= 0; i--)
+        {
+            PendingMachineUpgradeData pending = pendingMachineUpgrades[i];
+            if (!string.Equals(pending.ItemId, itemId, StringComparison.Ordinal))
+                continue;
+
+            serializedUpgradeIds = pending.SerializedUpgradeIds;
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool TryConsumePendingMachineUpgrades(string itemId, out string serializedUpgradeIds)
+    {
+        serializedUpgradeIds = "";
+        for (int i = pendingMachineUpgrades.Count - 1; i >= 0; i--)
+        {
+            PendingMachineUpgradeData pending = pendingMachineUpgrades[i];
+            if (!string.Equals(pending.ItemId, itemId, StringComparison.Ordinal))
+                continue;
+
+            serializedUpgradeIds = pending.SerializedUpgradeIds;
+            pendingMachineUpgrades.RemoveAt(i);
+            return true;
+        }
+
+        return false;
+    }
+
     private void RemovePendingBatteryCharge(string locationName, Vector2 tile, string itemId)
     {
         for (int i = pendingBatteryCharges.Count - 1; i >= 0; i--)
@@ -769,6 +1000,20 @@ internal sealed class ModEntry : Mod
                 && string.Equals(pending.ItemId, itemId, StringComparison.Ordinal))
             {
                 pendingBatteryCharges.RemoveAt(i);
+            }
+        }
+    }
+
+    private void RemovePendingMachineUpgrades(string locationName, Vector2 tile, string itemId)
+    {
+        for (int i = pendingMachineUpgrades.Count - 1; i >= 0; i--)
+        {
+            PendingMachineUpgradeData pending = pendingMachineUpgrades[i];
+            if (string.Equals(pending.LocationName, locationName, StringComparison.Ordinal)
+                && pending.Tile == tile
+                && string.Equals(pending.ItemId, itemId, StringComparison.Ordinal))
+            {
+                pendingMachineUpgrades.RemoveAt(i);
             }
         }
     }
@@ -861,6 +1106,9 @@ internal sealed class ModEntry : Mod
         BatteryState.ApplyDailyLeak();
         RehydrateMetalCasks();
         RefreshMetalCaskTelemetry();
+        RefreshElectricSmelters();
+        RefreshIndustrialRecyclers();
+        RefreshPoweredDehydrators();
         PowerMgr.ResetRuntimeState();
         if (Context.IsMainPlayer)
         {
@@ -877,6 +1125,7 @@ internal sealed class ModEntry : Mod
     {
         PowerMgr.ResetRuntimeState();
         pendingBatteryCharges.Clear();
+        pendingMachineUpgrades.Clear();
         lastTimeOfDay = 0;
     }
 
@@ -896,6 +1145,9 @@ internal sealed class ModEntry : Mod
             {
                 PowerMgr.SimulateTick();
                 TriggerFueledGeneratorWorkingAnimations();
+                RefreshElectricSmelters(enforcePowerLoss: true);
+                RefreshIndustrialRecyclers();
+                RefreshPoweredDehydrators();
             }
         }
     }
@@ -924,12 +1176,17 @@ internal sealed class ModEntry : Mod
         foreach ((Vector2 tile, StardewValley.Object removedObj) in e.Removed)
         {
             HandleRemovedBatteryState(e.Location, tile, removedObj);
+            HandleRemovedMachineUpgradeState(e.Location, tile, removedObj);
             HandleRemovedGeneratorFuelState(e.Location, tile, removedObj);
             removedConduitState |= HandleRemovedConduitState(e.Location, tile, removedObj);
         }
 
         RehydrateMetalCasks(e.Location);
         RefreshMetalCaskTelemetry(e.Location);
+        RefreshElectricSmelters(e.Location);
+        CancelDisconnectedElectricSmelters(e.Location);
+        RefreshIndustrialRecyclers(e.Location);
+        RefreshPoweredDehydrators(e.Location);
 
         // Mark location dirty when objects are placed/removed.
         PowerMgr.MarkDirty(e.Location.NameOrUniqueName);
@@ -943,7 +1200,10 @@ internal sealed class ModEntry : Mod
             return;
 
         foreach (Item item in e.Added)
+        {
             ApplyPendingBatteryChargeToItem(item);
+            ApplyPendingMachineUpgradesToItem(item);
+        }
     }
 
     private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
@@ -971,6 +1231,33 @@ internal sealed class ModEntry : Mod
 
             string itemId = obj.ItemId ?? "";
             bool wantsLegacyMonitor = Helper.Input.IsDown(SButton.LeftShift) || Helper.Input.IsDown(SButton.RightShift);
+
+            if (wantsLegacyMonitor && TryOpenMachinePanel(loc, tile, obj))
+            {
+                Helper.Input.Suppress(e.Button);
+                return;
+            }
+
+            if (itemId == PowerConstants.ElectricSmelterId && TryHandleElectricSmelterInteraction(loc, tile, obj))
+            {
+                Helper.Input.Suppress(e.Button);
+                PowerMgr.MarkDirty(loc.NameOrUniqueName);
+                return;
+            }
+
+            if (itemId == PowerConstants.IndustrialRecyclerId && TryHandleIndustrialRecyclerInteraction(loc, tile, obj))
+            {
+                Helper.Input.Suppress(e.Button);
+                PowerMgr.MarkDirty(loc.NameOrUniqueName);
+                return;
+            }
+
+            if (itemId == PowerConstants.PoweredDehydratorId && TryHandlePoweredDehydratorInteraction(obj))
+            {
+                Helper.Input.Suppress(e.Button);
+                PowerMgr.MarkDirty(loc.NameOrUniqueName);
+                return;
+            }
 
             // Power Conduit interaction: pairing / unlink
             if (itemId == PowerConstants.PowerConduitId)
@@ -1055,11 +1342,276 @@ internal sealed class ModEntry : Mod
         }
     }
 
+    private bool TryOpenMachinePanel(GameLocation location, Vector2 tile, StardewValley.Object obj)
+    {
+        MachinePanelSpec? spec = (obj.ItemId ?? "") switch
+        {
+            PowerConstants.ElectricSmelterId => new MachinePanelSpec(PowerConstants.ElectricSmelterId, ElectricSmelterUpgradeSlots, ElectricSmelterUpgradeIds),
+            PowerConstants.IndustrialRecyclerId => new MachinePanelSpec(PowerConstants.IndustrialRecyclerId, IndustrialRecyclerUpgradeSlots, IndustrialRecyclerUpgradeIds),
+            PowerConstants.PoweredDehydratorId => new MachinePanelSpec(PowerConstants.PoweredDehydratorId, PoweredDehydratorUpgradeSlots, PoweredDehydratorUpgradeIds),
+            _ => null
+        };
+
+        if (spec == null)
+            return false;
+
+        Game1.activeClickableMenu = new MachinePanelMenu(
+            location,
+            tile,
+            obj,
+            spec,
+            PowerQuery,
+            () => PowerMgr.MarkDirty(location.NameOrUniqueName));
+        return true;
+    }
+
     private static bool IsFuelGeneratorItem(string itemId)
     {
         return itemId == PowerConstants.SteamGeneratorId
             || itemId == PowerConstants.CombustionGeneratorId
             || itemId == PowerConstants.RadioisotopeGeneratorId;
+    }
+
+    private bool TryHandleElectricSmelterInteraction(GameLocation location, Vector2 tile, StardewValley.Object smelter)
+    {
+        if (TryCollectElectricSmelterOutput(smelter))
+            return true;
+
+        StardewValley.Object? activeObject = Game1.player.ActiveObject;
+        if (activeObject == null)
+            return false;
+
+        if (TryInstallElectricSmelterUpgrade(smelter, activeObject))
+            return true;
+
+        return TryStartElectricSmelter(location, tile, smelter, activeObject, showMessages: true, consumeInput: () => ConsumeActiveObject(ElectricSmelterRecipes[activeObject.QualifiedItemId].InputCount));
+    }
+
+    private bool TryCollectElectricSmelterOutput(StardewValley.Object smelter)
+    {
+        StardewValley.Object? output = smelter.heldObject.Value;
+        if (output == null || smelter.MinutesUntilReady > 0)
+            return false;
+
+        if (!Game1.player.addItemToInventoryBool(output))
+        {
+            Game1.addHUDMessage(new HUDMessage(I18n.Get("message.inventory-full"), HUDMessage.error_type));
+            return true;
+        }
+
+        smelter.heldObject.Value = null;
+        smelter.readyForHarvest.Value = false;
+        smelter.MinutesUntilReady = 0;
+        ClearElectricSmelterInputData(smelter);
+        Game1.playSound("coin");
+        return true;
+    }
+
+    private bool TryInstallElectricSmelterUpgrade(StardewValley.Object smelter, StardewValley.Object activeObject)
+    {
+        return TryInstallSupportedMachineUpgrade(smelter, activeObject, ElectricSmelterUpgradeSlots, ElectricSmelterUpgradeIds);
+    }
+
+    private bool TryStartElectricSmelter(GameLocation location, Vector2 tile, StardewValley.Object smelter, StardewValley.Object input, bool showMessages, Action consumeInput)
+    {
+        if (!ElectricSmelterRecipes.TryGetValue(input.QualifiedItemId, out ElectricSmelterRecipe? recipe))
+            return false;
+
+        if (smelter.MinutesUntilReady > 0 || smelter.heldObject.Value != null)
+        {
+            if (showMessages)
+                Game1.addHUDMessage(new HUDMessage(I18n.Get("message.electric-smelter.busy"), HUDMessage.error_type));
+            return true;
+        }
+
+        if (input.Stack < recipe.InputCount)
+        {
+            if (showMessages)
+                Game1.addHUDMessage(new HUDMessage(I18n.Get("message.electric-smelter.need-ore", new { count = recipe.InputCount }), HUDMessage.error_type));
+            return true;
+        }
+
+        if (!HasPowerGridInfrastructureConnection(location, tile, PowerConstants.ElectricSmelterId))
+        {
+            if (showMessages)
+                Game1.addHUDMessage(new HUDMessage(I18n.Get("message.electric-smelter.no-power"), HUDMessage.error_type));
+            return true;
+        }
+
+        StardewValley.Object output = ItemRegistry.Create<StardewValley.Object>(recipe.OutputQualifiedItemId);
+        double bonusChance = MachineUpgradeState.HasUpgrade(smelter, PowerConstants.CatalystChamberId)
+            ? ElectricSmelterCatalystBonusOutputChance
+            : ElectricSmelterBonusOutputChance;
+        output.Stack = Game1.random.NextDouble() < bonusChance ? 2 : 1;
+
+        smelter.heldObject.Value = output;
+        smelter.MinutesUntilReady = GetElectricSmelterMinutes(smelter, recipe);
+        smelter.readyForHarvest.Value = false;
+        smelter.shakeTimer = 100;
+        smelter.modData[ElectricSmelterInputItemKey] = recipe.InputQualifiedItemId;
+        smelter.modData[ElectricSmelterInputCountKey] = recipe.InputCount.ToString(CultureInfo.InvariantCulture);
+
+        consumeInput();
+        Game1.playSound("furnace");
+        if (showMessages)
+            Game1.addHUDMessage(new HUDMessage(I18n.Get("message.electric-smelter.started", new { item = output.DisplayName }), HUDMessage.newQuest_type));
+        return true;
+    }
+
+    private bool HasPowerGridInfrastructureConnection(GameLocation location, Vector2 tile, string itemId)
+    {
+        PowerMgr.MarkDirty(location.NameOrUniqueName);
+
+        PowerConsumerSnapshot? consumerSnapshot = PowerQuery.GetConsumerSnapshots(location.NameOrUniqueName)
+            .FirstOrDefault(consumer =>
+                consumer.TileX == (int)tile.X
+                && consumer.TileY == (int)tile.Y
+                && string.Equals(consumer.ItemId, itemId, StringComparison.Ordinal));
+
+        if (consumerSnapshot == null)
+            return false;
+
+        foreach (PowerNetworkSnapshot network in PowerQuery.GetNetworkSnapshots())
+        {
+            if (network.NetworkId != consumerSnapshot.NetworkId)
+                continue;
+
+            return network.CableCount > 0
+                || network.GeneratorCount > 0
+                || network.BatteryCount > 0
+                || network.ConduitCount > 0;
+        }
+
+        return false;
+    }
+
+    private static int GetElectricSmelterMinutes(StardewValley.Object smelter, ElectricSmelterRecipe recipe)
+    {
+        float multiplier = MachineUpgradeState.HasUpgrade(smelter, PowerConstants.HeatingCoilId)
+            ? ElectricSmelterHeatingCoilSpeedMultiplier
+            : 1f;
+
+        return Math.Max(PowerConstants.TickIntervalMinutes, (int)MathF.Ceiling(recipe.BaseMinutes * multiplier));
+    }
+
+    private static void ConsumeActiveObject(int count)
+    {
+        for (int i = 0; i < count; i++)
+            Game1.player.reduceActiveItemByOne();
+    }
+
+    private bool TryHandleIndustrialRecyclerInteraction(GameLocation location, Vector2 tile, StardewValley.Object recycler)
+    {
+        if (TryCollectIndustrialMachineOutput(recycler))
+            return true;
+
+        StardewValley.Object? activeObject = Game1.player.ActiveObject;
+        if (activeObject == null)
+            return false;
+
+        if (TryInstallIndustrialRecyclerUpgrade(recycler, activeObject))
+            return true;
+
+        return TryStartIndustrialRecycler(recycler, activeObject, showMessages: true, consumeInput: () => ConsumeActiveObject(1));
+    }
+
+    private bool TryInstallIndustrialRecyclerUpgrade(StardewValley.Object recycler, StardewValley.Object activeObject)
+    {
+        return TryInstallSupportedMachineUpgrade(recycler, activeObject, IndustrialRecyclerUpgradeSlots, IndustrialRecyclerUpgradeIds);
+    }
+
+    private static StardewValley.Object CreateIndustrialRecyclerOutput(StardewValley.Object recycler, IndustrialRecyclerRecipe recipe)
+    {
+        string outputQualifiedItemId = recipe.OutputQualifiedItemId;
+        int outputCount = recipe.OutputCount;
+
+        if (MachineUpgradeState.HasUpgrade(recycler, PowerConstants.SortingMagnetId)
+            && Game1.random.NextDouble() < 0.20)
+        {
+            outputQualifiedItemId = Game1.random.NextDouble() < 0.60 ? "(O)378" : "(O)380";
+            outputCount = 1;
+        }
+
+        StardewValley.Object output = ItemRegistry.Create<StardewValley.Object>(outputQualifiedItemId);
+        output.Stack = outputCount;
+        return output;
+    }
+
+    private bool TryStartIndustrialRecycler(StardewValley.Object recycler, StardewValley.Object input, bool showMessages, Action consumeInput)
+    {
+        if (!IndustrialRecyclerRecipes.TryGetValue(input.QualifiedItemId, out IndustrialRecyclerRecipe? recipe))
+            return false;
+
+        if (recycler.MinutesUntilReady > 0 || recycler.heldObject.Value != null)
+        {
+            if (showMessages)
+                Game1.addHUDMessage(new HUDMessage(I18n.Get("message.industrial-recycler.busy"), HUDMessage.error_type));
+            return true;
+        }
+
+        StardewValley.Object output = CreateIndustrialRecyclerOutput(recycler, recipe);
+        recycler.heldObject.Value = output;
+        recycler.MinutesUntilReady = IndustrialRecyclerBaseMinutes;
+        recycler.readyForHarvest.Value = false;
+        recycler.shakeTimer = 100;
+
+        consumeInput();
+        Game1.playSound("trashcan");
+        if (showMessages)
+            Game1.addHUDMessage(new HUDMessage(I18n.Get("message.industrial-recycler.started", new { item = output.DisplayName }), HUDMessage.newQuest_type));
+        return true;
+    }
+
+    private bool TryHandlePoweredDehydratorInteraction(StardewValley.Object dehydrator)
+    {
+        StardewValley.Object? activeObject = Game1.player.ActiveObject;
+        if (activeObject == null)
+            return false;
+
+        return TryInstallSupportedMachineUpgrade(dehydrator, activeObject, PoweredDehydratorUpgradeSlots, PoweredDehydratorUpgradeIds);
+    }
+
+    private bool TryInstallSupportedMachineUpgrade(StardewValley.Object machine, StardewValley.Object activeObject, int maxSlots, IReadOnlyList<string> supportedUpgradeIds)
+    {
+        if (!supportedUpgradeIds.Contains(activeObject.ItemId, StringComparer.OrdinalIgnoreCase))
+            return false;
+
+        if (MachineUpgradeState.TryInstall(machine, activeObject.ItemId, maxSlots, out string reason))
+        {
+            Game1.player.reduceActiveItemByOne();
+            Game1.playSound("Ship");
+            Game1.addHUDMessage(new HUDMessage(I18n.Get("message.upgrade.installed", new { upgrade = activeObject.DisplayName }), HUDMessage.achievement_type));
+            return true;
+        }
+
+        string messageKey = reason switch
+        {
+            "already-installed" => "message.upgrade.already-installed",
+            "slots-full" => "message.upgrade.slots-full",
+            _ => "message.upgrade.cannot-install"
+        };
+
+        Game1.addHUDMessage(new HUDMessage(I18n.Get(messageKey), HUDMessage.error_type));
+        return true;
+    }
+
+    private bool TryCollectIndustrialMachineOutput(StardewValley.Object machine)
+    {
+        StardewValley.Object? output = machine.heldObject.Value;
+        if (output == null || machine.MinutesUntilReady > 0)
+            return false;
+
+        if (!Game1.player.addItemToInventoryBool(output))
+        {
+            Game1.addHUDMessage(new HUDMessage(I18n.Get("message.inventory-full"), HUDMessage.error_type));
+            return true;
+        }
+
+        machine.heldObject.Value = null;
+        machine.readyForHarvest.Value = false;
+        machine.MinutesUntilReady = 0;
+        Game1.playSound("coin");
+        return true;
     }
 
     private void OnRenderedWorld(object? sender, RenderedWorldEventArgs e)
@@ -1168,6 +1720,12 @@ internal sealed class ModEntry : Mod
         TryLoadTexture(e, EnergizedIridiumCableTexture, "EnergizedIridiumCable", new Color(100, 220, 180));
         TryLoadObjectTexture(e, BiofuelTexture, "Biofuel", new Color(84, 196, 118));
         TryLoadObjectTexture(e, RadioisotopeFuelTexture, "RadioisotopeFuel", new Color(160, 220, 80));
+        TryLoadObjectTexture(e, HeatingCoilTexture, HeatingCoilSpriteName, new Color(230, 150, 80));
+        TryLoadObjectTexture(e, EfficiencyCoreTexture, EfficiencyCoreSpriteName, new Color(120, 180, 220));
+        TryLoadObjectTexture(e, CatalystChamberTexture, CatalystChamberSpriteName, new Color(150, 100, 210));
+        TryLoadObjectTexture(e, SortingMagnetTexture, SortingMagnetSpriteName, new Color(160, 170, 190));
+        TryLoadObjectTexture(e, DryingRackArrayTexture, DryingRackArraySpriteName, new Color(160, 150, 140));
+        TryLoadObjectTexture(e, HeatRegulatorTexture, HeatRegulatorSpriteName, new Color(180, 170, 190));
         TryLoadTexture(e, SteamGeneratorTexture, "SteamGenerator", new Color(140, 140, 160));
         TryLoadTexture(e, CombustionGeneratorTexture, "CombustionGenerator", new Color(120, 128, 144));
         TryLoadTexture(e, RadioisotopeGeneratorTexture, "RadioisotopeGenerator", new Color(110, 184, 132));
@@ -1180,6 +1738,9 @@ internal sealed class ModEntry : Mod
         TryLoadTexture(e, MetalCaskTexture, MetalCaskSpriteName, new Color(130, 130, 140));
         TryLoadTexture(e, MetalKegTexture, MetalKegSpriteName, new Color(170, 170, 180));
         TryLoadTexture(e, HardIridiumKegTexture, HardIridiumKegSpriteName, new Color(150, 110, 210));
+        TryLoadTexture(e, ElectricSmelterTexture, ElectricSmelterSpriteName, new Color(190, 120, 80));
+        TryLoadTexture(e, IndustrialRecyclerTexture, IndustrialRecyclerSpriteName, new Color(120, 140, 150));
+        TryLoadTexture(e, PoweredDehydratorTexture, PoweredDehydratorSpriteName, new Color(150, 170, 190));
 
         TryLoadStateTexture(e, "SteamGenerator", "off", new Color(140, 140, 160));
         TryLoadStateTexture(e, "SteamGenerator", "on", new Color(140, 140, 160));
@@ -1203,6 +1764,13 @@ internal sealed class ModEntry : Mod
         TryLoadStateTexture(e, MetalKegSpriteName, IndustrialPreservesJarUnpoweredState, new Color(170, 170, 180));
         TryLoadStateTexture(e, HardIridiumKegSpriteName, IndustrialPreservesJarPoweredState, new Color(150, 110, 210));
         TryLoadStateTexture(e, HardIridiumKegSpriteName, IndustrialPreservesJarUnpoweredState, new Color(150, 110, 210));
+        TryLoadStateTexture(e, ElectricSmelterSpriteName, ElectricSmelterOfflineState, new Color(190, 120, 80));
+        TryLoadStateTexture(e, ElectricSmelterSpriteName, ElectricSmelterStandbyState, new Color(190, 120, 80));
+        TryLoadStateTexture(e, ElectricSmelterSpriteName, ElectricSmelterProcessingPoweredState, new Color(190, 120, 80));
+        TryLoadStateTexture(e, IndustrialRecyclerSpriteName, IndustrialPreservesJarPoweredState, new Color(120, 140, 150));
+        TryLoadStateTexture(e, IndustrialRecyclerSpriteName, IndustrialPreservesJarUnpoweredState, new Color(120, 140, 150));
+        TryLoadStateTexture(e, PoweredDehydratorSpriteName, IndustrialPreservesJarPoweredState, new Color(150, 170, 190));
+        TryLoadStateTexture(e, PoweredDehydratorSpriteName, IndustrialPreservesJarUnpoweredState, new Color(150, 170, 190));
     }
 
     private void TryLoadTexture(AssetRequestedEventArgs e, string assetKey, string spriteName, Color tint)
@@ -1443,13 +2011,13 @@ internal sealed class ModEntry : Mod
 
         // Cables (inventory/world base icon uses sprite index 0; connected arms are overlaid dynamically).
         RegisterBigCraftable(dict, template, PowerConstants.CopperCableId, "Copper Cable", I18n.Get("item.copper-cable.name"),
-            I18n.Get("item.copper-cable.description"), CopperCableTexture, passable: true);
+            I18n.Get("item.copper-cable.description"), CopperCableTexture, passable: true, spriteIndex: 15);
         RegisterBigCraftable(dict, template, PowerConstants.IronCableId, "Iron Cable", I18n.Get("item.iron-cable.name"),
-            I18n.Get("item.iron-cable.description"), IronCableTexture, passable: true);
+            I18n.Get("item.iron-cable.description"), IronCableTexture, passable: true, spriteIndex: 15);
         RegisterBigCraftable(dict, template, PowerConstants.IridiumCableId, "Iridium Cable", I18n.Get("item.iridium-cable.name"),
-            I18n.Get("item.iridium-cable.description"), IridiumCableTexture, passable: true);
+            I18n.Get("item.iridium-cable.description"), IridiumCableTexture, passable: true, spriteIndex: 15);
         RegisterBigCraftable(dict, template, PowerConstants.EnergizedIridiumCableId, "Energized Iridium Cable", I18n.Get("item.energized-iridium-cable.name"),
-            I18n.Get("item.energized-iridium-cable.description"), EnergizedIridiumCableTexture, passable: true);
+            I18n.Get("item.energized-iridium-cable.description"), EnergizedIridiumCableTexture, passable: true, spriteIndex: 15);
 
         // Generators
         RegisterBigCraftable(dict, template, PowerConstants.SteamGeneratorId, "Steam Generator", I18n.Get("item.steam-generator.name"),
@@ -1474,6 +2042,9 @@ internal sealed class ModEntry : Mod
         RegisterIndustrialPreservesJar(dict);
         RegisterMetalCask(dict);
         RegisterPoweredArtisanMachines(dict);
+        RegisterElectricSmelter(dict);
+        RegisterIndustrialRecycler(dict);
+        RegisterPoweredDehydrator(dict);
     }
 
     private void EditObjects(IAssetData asset)
@@ -1481,6 +2052,48 @@ internal sealed class ModEntry : Mod
         var dict = asset.AsDictionary<string, ObjectData>().Data;
         dict[PowerConstants.BiofuelId] = CreateBiofuelObjectData();
         dict[PowerConstants.RadioisotopeFuelId] = CreateRadioisotopeFuelObjectData();
+        dict[PowerConstants.HeatingCoilId] = CreateUpgradeObjectData(
+            HeatingCoilRecipeKey,
+            I18n.Get("item.heating-coil.name"),
+            I18n.Get("item.heating-coil.description"),
+            HeatingCoilTexture,
+            price: 350,
+            contextTag: "powergrid_heating_coil");
+        dict[PowerConstants.EfficiencyCoreId] = CreateUpgradeObjectData(
+            EfficiencyCoreRecipeKey,
+            I18n.Get("item.efficiency-core.name"),
+            I18n.Get("item.efficiency-core.description"),
+            EfficiencyCoreTexture,
+            price: 450,
+            contextTag: "powergrid_efficiency_core");
+        dict[PowerConstants.CatalystChamberId] = CreateUpgradeObjectData(
+            CatalystChamberRecipeKey,
+            I18n.Get("item.catalyst-chamber.name"),
+            I18n.Get("item.catalyst-chamber.description"),
+            CatalystChamberTexture,
+            price: 500,
+            contextTag: "powergrid_catalyst_chamber");
+        dict[PowerConstants.SortingMagnetId] = CreateUpgradeObjectData(
+            SortingMagnetRecipeKey,
+            I18n.Get("item.sorting-magnet.name"),
+            I18n.Get("item.sorting-magnet.description"),
+            SortingMagnetTexture,
+            price: 300,
+            contextTag: "powergrid_sorting_magnet");
+        dict[PowerConstants.DryingRackArrayId] = CreateUpgradeObjectData(
+            DryingRackArrayRecipeKey,
+            I18n.Get("item.drying-rack-array.name"),
+            I18n.Get("item.drying-rack-array.description"),
+            DryingRackArrayTexture,
+            price: 450,
+            contextTag: "powergrid_drying_rack_array");
+        dict[PowerConstants.HeatRegulatorId] = CreateUpgradeObjectData(
+            HeatRegulatorRecipeKey,
+            I18n.Get("item.heat-regulator.name"),
+            I18n.Get("item.heat-regulator.description"),
+            HeatRegulatorTexture,
+            price: 350,
+            contextTag: "powergrid_heat_regulator");
     }
 
     private ObjectData CreateBiofuelObjectData()
@@ -1539,6 +2152,32 @@ internal sealed class ModEntry : Mod
             GameDataCloneJsonOptions);
 
         return data ?? throw new InvalidOperationException("Failed to build Radioisotope Fuel object data.");
+    }
+
+    private static ObjectData CreateUpgradeObjectData(string internalName, string displayName, string description, string texture, int price, string contextTag)
+    {
+        ObjectData? data = JsonSerializer.Deserialize<ObjectData>(
+            $$"""
+            {
+              "Name": "{{internalName}}",
+              "DisplayName": "{{displayName}}",
+              "Description": "{{description}}",
+              "Type": "Basic",
+              "Category": 0,
+              "Price": {{price}},
+              "Texture": "{{texture}}",
+              "SpriteIndex": 0,
+              "Edibility": -300,
+              "CanBeGivenAsGift": false,
+              "CanBeTrashed": true,
+              "ExcludeFromShippingCollection": true,
+              "ExcludeFromRandomSale": true,
+              "ContextTags": [ "{{contextTag}}", "powergrid_upgrade" ]
+            }
+            """,
+            GameDataCloneJsonOptions);
+
+        return data ?? throw new InvalidOperationException($"Failed to build {internalName} object data.");
     }
 
     private void RegisterIndustrialPreservesJar(IDictionary<string, BigCraftableData> dict)
@@ -1630,7 +2269,7 @@ internal sealed class ModEntry : Mod
             hardwoodKegBigCraftableId = hardwoodTemplateOpt.Value.Key;
         else if (!loggedHardIridiumFallbackToVanillaKeg)
         {
-            Monitor.Log("[PowerGrid] Hardwood Keg template was not found in Data/BigCraftables; Hard Iridium Keg will use vanilla Keg item data.", LogLevel.Info);
+            Monitor.Log("[PowerGrid] Hardwood Keg template was not found in Data/BigCraftables yet; Hard Iridium Keg will use vanilla Keg item data until a compatible Hardwood Keg template is available.", LogLevel.Trace);
             loggedHardIridiumFallbackToVanillaKeg = true;
         }
 
@@ -1643,15 +2282,96 @@ internal sealed class ModEntry : Mod
         dict[PowerConstants.HardIridiumKegId] = hardIridiumData;
     }
 
+    private void RegisterElectricSmelter(IDictionary<string, BigCraftableData> dict)
+    {
+        KeyValuePair<string, BigCraftableData>? templateOpt =
+            FindBigCraftableTemplate(dict, targetDisplayName: "Furnace", preferredKey: "13");
+
+        if (templateOpt == null)
+        {
+            if (!loggedMissingFurnaceTemplate)
+            {
+                Monitor.Log("[PowerGrid] Failed to find vanilla Furnace template in Data/BigCraftables; Electric Smelter was not added.", LogLevel.Error);
+                loggedMissingFurnaceTemplate = true;
+            }
+
+            return;
+        }
+
+        BigCraftableData smelterData = CloneJson(templateOpt.Value.Value);
+        smelterData.Name = ElectricSmelterRecipeKey;
+        smelterData.DisplayName = I18n.Get("item.electric-smelter.name");
+        smelterData.Description = I18n.Get("item.electric-smelter.description");
+        smelterData.Texture = ElectricSmelterTexture;
+        smelterData.SpriteIndex = 0;
+
+        dict[PowerConstants.ElectricSmelterId] = smelterData;
+    }
+
+    private void RegisterIndustrialRecycler(IDictionary<string, BigCraftableData> dict)
+    {
+        KeyValuePair<string, BigCraftableData>? templateOpt =
+            FindBigCraftableTemplate(dict, targetDisplayName: "Recycling Machine", preferredKey: "20");
+
+        if (templateOpt == null)
+        {
+            if (!loggedMissingRecyclerTemplate)
+            {
+                Monitor.Log("[PowerGrid] Failed to find vanilla Recycling Machine template in Data/BigCraftables; Industrial Recycler was not added.", LogLevel.Error);
+                loggedMissingRecyclerTemplate = true;
+            }
+
+            return;
+        }
+
+        BigCraftableData recyclerData = CloneJson(templateOpt.Value.Value);
+        recyclerData.Name = IndustrialRecyclerRecipeKey;
+        recyclerData.DisplayName = I18n.Get("item.industrial-recycler.name");
+        recyclerData.Description = I18n.Get("item.industrial-recycler.description");
+        recyclerData.Texture = IndustrialRecyclerTexture;
+        recyclerData.SpriteIndex = 0;
+
+        dict[PowerConstants.IndustrialRecyclerId] = recyclerData;
+    }
+
+    private void RegisterPoweredDehydrator(IDictionary<string, BigCraftableData> dict)
+    {
+        KeyValuePair<string, BigCraftableData>? templateOpt =
+            FindBigCraftableTemplate(dict, targetDisplayName: "Dehydrator", preferredKey: null);
+
+        if (templateOpt == null)
+        {
+            if (!loggedMissingDehydratorTemplate)
+            {
+                Monitor.Log("[PowerGrid] Failed to find vanilla Dehydrator template in Data/BigCraftables; Powered Dehydrator was not added.", LogLevel.Error);
+                loggedMissingDehydratorTemplate = true;
+            }
+
+            return;
+        }
+
+        vanillaDehydratorBigCraftableId = templateOpt.Value.Key;
+
+        BigCraftableData dehydratorData = CloneJson(templateOpt.Value.Value);
+        dehydratorData.Name = PoweredDehydratorRecipeKey;
+        dehydratorData.DisplayName = I18n.Get("item.powered-dehydrator.name");
+        dehydratorData.Description = I18n.Get("item.powered-dehydrator.description");
+        dehydratorData.Texture = PoweredDehydratorTexture;
+        dehydratorData.SpriteIndex = 0;
+
+        dict[PowerConstants.PoweredDehydratorId] = dehydratorData;
+    }
+
+
     private void RegisterBigCraftable(IDictionary<string, BigCraftableData> dict, BigCraftableData template,
-        string itemId, string internalName, string displayName, string description, string textureAsset, bool passable = false)
+        string itemId, string internalName, string displayName, string description, string textureAsset, bool passable = false, int spriteIndex = 0)
     {
         BigCraftableData data = CloneJson(template);
         data.DisplayName = displayName;
         data.Name = internalName;
         data.Description = description;
         data.Texture = textureAsset;
-        data.SpriteIndex = 0;
+        data.SpriteIndex = spriteIndex;
 
         if (passable)
             TrySetPassableFlags(data);
@@ -1676,6 +2396,18 @@ internal sealed class ModEntry : Mod
         dict[BiofuelRecipeKey] = $"771 10 388 5 382 1/Field/{PowerConstants.BiofuelId} 8/false/null/";
         // Radioisotope Fuel: 910 (Radioactive Bar) x1, 338 (Refined Quartz) x1 => 7 Radioisotope Fuel
         dict[RadioisotopeFuelRecipeKey] = $"910 1 338 1/Field/{PowerConstants.RadioisotopeFuelId} 7/false/null/";
+        // Heating Coil: 336 (Gold Bar) x3, 338 (Refined Quartz) x2, 382 (Coal) x6
+        dict[HeatingCoilRecipeKey] = $"336 3 338 2 382 6/Field/{PowerConstants.HeatingCoilId}/false/null/";
+        // Efficiency Core: 338 (Refined Quartz) x4, 787 (Battery Pack) x1, 336 (Gold Bar) x2
+        dict[EfficiencyCoreRecipeKey] = $"338 4 787 1 336 2/Field/{PowerConstants.EfficiencyCoreId}/false/null/";
+        // Catalyst Chamber: 337 (Iridium Bar) x2, 336 (Gold Bar) x4, 338 (Refined Quartz) x4
+        dict[CatalystChamberRecipeKey] = $"337 2 336 4 338 4/Field/{PowerConstants.CatalystChamberId}/false/null/";
+        // Sorting Magnet: 335 (Iron Bar) x4, 338 (Refined Quartz) x2
+        dict[SortingMagnetRecipeKey] = $"335 4 338 2/Field/{PowerConstants.SortingMagnetId}/false/null/";
+        // Drying Rack Array: 388 (Wood) x20, 709 (Hardwood) x4, 336 (Gold Bar) x1
+        dict[DryingRackArrayRecipeKey] = $"388 20 709 4 336 1/Field/{PowerConstants.DryingRackArrayId}/false/null/";
+        // Heat Regulator: 336 (Gold Bar) x2, 338 (Refined Quartz) x2, 382 (Coal) x4
+        dict[HeatRegulatorRecipeKey] = $"336 2 338 2 382 4/Field/{PowerConstants.HeatRegulatorId}/false/null/";
 
         // Steam Generator: 335 (Iron Bar) x5, 334 (Copper Bar) x2, 382 (Coal) x6, 338 (Refined Quartz) x1
         dict["Steam Generator"] = $"335 5 334 2 382 6 338 1/Field/{PowerConstants.SteamGeneratorId}/true/null/";
@@ -1684,15 +2416,15 @@ internal sealed class ModEntry : Mod
         // Radioisotope Generator: Combustion Generator x1, Radioactive Bar x3, Iridium Bar x6, Iridium Power Battery x1, Refined Quartz x4
         dict[RadioisotopeGeneratorRecipeKey] = $"{PowerConstants.CombustionGeneratorId} 1 910 3 337 6 {PowerConstants.IridiumBatteryId} 1 338 4/Field/{PowerConstants.RadioisotopeGeneratorId}/true/null/";
         // Wind Generator: 335 (Iron Bar) x6, 338 (Refined Quartz) x4, 787 (Battery Pack) x1, 382 (Coal) x4
-        dict["Wind Generator"] = $"335 6 338 4 787 1 382 4/Field/{PowerConstants.WindGeneratorId}/true/null/";
+        dict["Wind Generator"] = $"335 6 338 4 787 1 382 4/Home/{PowerConstants.WindGeneratorId}/true/null/";
 
         // Basic Power Battery: 787 (Battery Pack) x1, 334 (Copper Bar) x4, 338 (Refined Quartz) x1
-        dict["Basic Power Battery"] = $"787 1 334 4 338 1/Field/{PowerConstants.BasicBatteryId}/true/null/";
+        dict["Basic Power Battery"] = $"787 1 334 4 338 1/Home/{PowerConstants.BasicBatteryId}/true/null/";
         // Iridium Power Battery: 787 (Battery Pack) x2, 337 (Iridium Bar) x2, 338 (Refined Quartz) x3
-        dict["Iridium Power Battery"] = $"787 2 337 2 338 3/Field/{PowerConstants.IridiumBatteryId}/true/null/";
+        dict["Iridium Power Battery"] = $"787 2 337 2 338 3/Home/{PowerConstants.IridiumBatteryId}/true/null/";
 
         // Power Conduit: 337 (Iridium Bar) x1, 787 (Battery Pack) x1, 338 (Refined Quartz) x1
-        dict["Power Conduit"] = $"337 1 787 1 338 1/Field/{PowerConstants.PowerConduitId}/true/null/";
+        dict["Power Conduit"] = $"337 1 787 1 338 1/Home/{PowerConstants.PowerConduitId}/true/null/";
 
         string? preservesTemplate = dict.TryGetValue("Preserves Jar", out string? value) ? value : null;
         dict[IndustrialPreservesJarRecipeKey] = BuildRecipeFromTemplate(
@@ -1717,6 +2449,10 @@ internal sealed class ModEntry : Mod
             hardwoodKegTemplate ?? kegTemplate,
             ingredients: "337 4 335 2 338 1",
             resultItemId: PowerConstants.HardIridiumKegId);
+
+        dict[ElectricSmelterRecipeKey] = $"335 8 336 4 338 3 787 1/Field/{PowerConstants.ElectricSmelterId}/true/null/";
+        dict[IndustrialRecyclerRecipeKey] = $"335 6 338 4 334 4 382 4/Field/{PowerConstants.IndustrialRecyclerId}/true/null/";
+        dict[PoweredDehydratorRecipeKey] = $"335 6 709 10 338 3 787 1/Field/{PowerConstants.PoweredDehydratorId}/true/null/";
     }
 
     private void EditMachines(IAssetData asset)
@@ -1744,6 +2480,9 @@ internal sealed class ModEntry : Mod
 
         RegisterMetalCaskMachine(machines);
         RegisterMetalKegMachines(machines);
+        RegisterElectricSmelterMachine(machines);
+        RegisterIndustrialRecyclerMachine(machines);
+        RegisterPoweredDehydratorMachine(machines);
     }
 
     private void RegisterSteamGeneratorMachine(IDictionary<string, MachineData> machines)
@@ -1765,6 +2504,39 @@ internal sealed class ModEntry : Mod
         MachineData machine = CreateInputOnlyMachineData();
         machines[PowerConstants.Q(PowerConstants.RadioisotopeGeneratorId)] = machine;
         machines[PowerConstants.RadioisotopeGeneratorId] = machine;
+    }
+
+    private void RegisterElectricSmelterMachine(IDictionary<string, MachineData> machines)
+    {
+        MachineData machine = CreateInputOnlyMachineData();
+        machines[PowerConstants.Q(PowerConstants.ElectricSmelterId)] = machine;
+        machines[PowerConstants.ElectricSmelterId] = machine;
+    }
+
+    private void RegisterIndustrialRecyclerMachine(IDictionary<string, MachineData> machines)
+    {
+        MachineData machine = CreateInputOnlyMachineData();
+        machines[PowerConstants.Q(PowerConstants.IndustrialRecyclerId)] = machine;
+        machines[PowerConstants.IndustrialRecyclerId] = machine;
+    }
+
+    private void RegisterPoweredDehydratorMachine(IDictionary<string, MachineData> machines)
+    {
+        string? dehydratorKey = GetDehydratorMachineKey(machines, vanillaDehydratorBigCraftableId);
+        if (dehydratorKey == null || !machines.TryGetValue(dehydratorKey, out MachineData? dehydratorMachine))
+        {
+            if (!loggedMissingDehydratorMachineTemplate)
+            {
+                Monitor.Log("[PowerGrid] Failed to find vanilla Dehydrator machine entry in Data/Machines; Powered Dehydrator machine rules were not added.", LogLevel.Error);
+                loggedMissingDehydratorMachineTemplate = true;
+            }
+
+            return;
+        }
+
+        MachineData machine = CloneMachineByJson(dehydratorMachine);
+        machines[PowerConstants.Q(PowerConstants.PoweredDehydratorId)] = machine;
+        machines[PowerConstants.PoweredDehydratorId] = machine;
     }
 
     private void RegisterMetalCaskMachine(IDictionary<string, MachineData> machines)
@@ -1817,7 +2589,7 @@ internal sealed class ModEntry : Mod
         }
         else if (!loggedHardIridiumFallbackToVanillaKeg)
         {
-            Monitor.Log("[PowerGrid] Hardwood Keg machine template was not found in Data/Machines; Hard Iridium Keg will use vanilla Keg machine behavior.", LogLevel.Info);
+            Monitor.Log("[PowerGrid] Hardwood Keg machine template was not found in Data/Machines yet; Hard Iridium Keg will use vanilla Keg machine behavior until a compatible Hardwood Keg template is available.", LogLevel.Trace);
             loggedHardIridiumFallbackToVanillaKeg = true;
         }
 
@@ -1942,6 +2714,27 @@ internal sealed class ModEntry : Mod
         foreach (string key in machines.Keys)
         {
             if (key.Contains("Cask", StringComparison.OrdinalIgnoreCase))
+                return key;
+        }
+
+        return null;
+    }
+
+    private static string? GetDehydratorMachineKey(IDictionary<string, MachineData> machines, string? vanillaBigCraftableId)
+    {
+        if (!string.IsNullOrWhiteSpace(vanillaBigCraftableId))
+        {
+            string qualified = "(BC)" + vanillaBigCraftableId;
+            if (machines.ContainsKey(qualified))
+                return qualified;
+
+            if (machines.ContainsKey(vanillaBigCraftableId))
+                return vanillaBigCraftableId;
+        }
+
+        foreach (string key in machines.Keys)
+        {
+            if (key.Contains("Dehydrator", StringComparison.OrdinalIgnoreCase))
                 return key;
         }
 
@@ -2134,7 +2927,8 @@ internal sealed class ModEntry : Mod
                 .ThenBy(c => c.TileX)
                 .ThenBy(c => c.TileY))
             {
-                Monitor.Log($"    Consumer [{consumer.LocationName} @ {consumer.TileX},{consumer.TileY}] {consumer.ItemId}: {consumer.EUAllocated}/{consumer.DemandPerTick} EU, speedup={consumer.SpeedupFraction:P0}, accel={consumer.MinutesAccelerated}min, {FormatConsumerProgress(consumer)}", LogLevel.Info);
+                string state = FormatConsumerPowerState(PowerConsumerPowerStatus.Classify(consumer, net));
+                Monitor.Log($"    Consumer [{consumer.LocationName} @ {consumer.TileX},{consumer.TileY}] {consumer.ItemId}: state={state}, {consumer.EUAllocated}/{consumer.DemandPerTick} EU, speedup={consumer.SpeedupFraction:P0}, accel={consumer.MinutesAccelerated}min, {FormatConsumerProgress(consumer)}", LogLevel.Info);
             }
         }
     }
@@ -2183,7 +2977,11 @@ internal sealed class ModEntry : Mod
 
         foreach (var consumer in consumers)
         {
-            Monitor.Log($"  Consumer [{consumer.LocationName} @ {consumer.TileX},{consumer.TileY}] {consumer.DisplayName}: processing={consumer.IsProcessing}, powered={consumer.IsPowered}, alloc={consumer.EUAllocated}/{consumer.DemandPerTick}, speedup={consumer.SpeedupFraction:P0}, {FormatConsumerProgress(consumer)}", LogLevel.Info);
+            PowerNetworkSnapshot? network = networks.FirstOrDefault(candidate =>
+                candidate.NetworkId == consumer.NetworkId
+                && candidate.LocationNames.Any(name => string.Equals(name, consumer.LocationName, StringComparison.Ordinal)));
+            string state = FormatConsumerPowerState(PowerConsumerPowerStatus.Classify(consumer, network));
+            Monitor.Log($"  Consumer [{consumer.LocationName} @ {consumer.TileX},{consumer.TileY}] {consumer.DisplayName}: processing={consumer.IsProcessing}, state={state}, alloc={consumer.EUAllocated}/{consumer.DemandPerTick}, speedup={consumer.SpeedupFraction:P0}, {FormatConsumerProgress(consumer)}", LogLevel.Info);
         }
 
         foreach (var generator in generators)
@@ -2205,6 +3003,19 @@ internal sealed class ModEntry : Mod
         return $"remaining={consumer.MinutesRemaining}min";
     }
 
+    private static string FormatConsumerPowerState(PowerConsumerPowerState state)
+    {
+        return state switch
+        {
+            PowerConsumerPowerState.GridOffline => "grid-offline",
+            PowerConsumerPowerState.Standby => "standby",
+            PowerConsumerPowerState.Powered => "powered",
+            PowerConsumerPowerState.LowPower => "low-power",
+            PowerConsumerPowerState.ProcessingUnpowered => "processing-unpowered",
+            _ => "not-connected"
+        };
+    }
+
     private static readonly string[] GridStarterRecipeKeys =
     {
         "Copper Cable",
@@ -2222,7 +3033,16 @@ internal sealed class ModEntry : Mod
     {
         BiofuelRecipeKey,
         "Iron Cable",
-        CombustionGeneratorRecipeKey
+        CombustionGeneratorRecipeKey,
+        ElectricSmelterRecipeKey,
+        HeatingCoilRecipeKey,
+        EfficiencyCoreRecipeKey,
+        CatalystChamberRecipeKey,
+        IndustrialRecyclerRecipeKey,
+        SortingMagnetRecipeKey,
+        PoweredDehydratorRecipeKey,
+        DryingRackArrayRecipeKey,
+        HeatRegulatorRecipeKey
     };
 
     private static readonly string[] AdvancedGridRecipeKeys =
@@ -2470,7 +3290,8 @@ internal sealed class ModEntry : Mod
             {
                 harmony.Patch(
                     PerformObjectDropInActionMethod,
-                    prefix: new HarmonyMethod(typeof(ModEntry), nameof(SteamGeneratorDropInActionPrefix)));
+                    prefix: new HarmonyMethod(typeof(ModEntry), nameof(SteamGeneratorDropInActionPrefix)),
+                    postfix: new HarmonyMethod(typeof(ModEntry), nameof(PoweredDehydratorDropInActionPostfix)));
             }
 
             if (PerformToolActionMethod != null)
@@ -2540,6 +3361,7 @@ internal sealed class ModEntry : Mod
             return;
 
         Instance.ApplyHeldBatteryChargeToPlacedObject(__instance, placedObject, location, tile);
+        Instance.ApplyHeldMachineUpgradesToPlacedObject(__instance, placedObject);
 
         if (__instance.QualifiedItemId != PowerConstants.Q(PowerConstants.MetalCaskId))
             return;
@@ -2566,38 +3388,58 @@ internal sealed class ModEntry : Mod
 
     private static void BatteryToolActionPrefix(StardewValley.Object __instance)
     {
-        if (Instance == null || __instance == null || !IsBatteryItem(__instance.ItemId ?? ""))
+        if (Instance == null || __instance == null)
             return;
 
         GameLocation? location = __instance.Location ?? Game1.currentLocation;
         if (location == null)
             return;
 
-        Instance.QueuePendingBatteryCharge(location, __instance.TileLocation, __instance);
+        if (IsBatteryItem(__instance.ItemId ?? ""))
+            Instance.QueuePendingBatteryCharge(location, __instance.TileLocation, __instance);
+
+        if (IsUpgradeableMachineItem(__instance.ItemId ?? ""))
+            Instance.QueuePendingMachineUpgrades(location, __instance.TileLocation, __instance);
     }
 
     private static void BatteryRemoveActionPrefix(StardewValley.Object __instance)
     {
-        if (Instance == null || __instance == null || !IsBatteryItem(__instance.ItemId ?? ""))
+        if (Instance == null || __instance == null)
             return;
 
         GameLocation? location = __instance.Location ?? Game1.currentLocation;
         if (location == null)
             return;
 
-        Instance.QueuePendingBatteryCharge(location, __instance.TileLocation, __instance);
+        if (IsBatteryItem(__instance.ItemId ?? ""))
+            Instance.QueuePendingBatteryCharge(location, __instance.TileLocation, __instance);
+
+        if (IsUpgradeableMachineItem(__instance.ItemId ?? ""))
+            Instance.QueuePendingMachineUpgrades(location, __instance.TileLocation, __instance);
     }
 
     private static void BatteryDropObjectPrefix(GameLocation __instance, StardewValley.Object obj)
     {
-        if (Instance == null || __instance == null || obj == null || !IsBatteryItem(obj.ItemId ?? ""))
+        if (Instance == null || __instance == null || obj == null)
             return;
 
-        Instance.CopyPendingBatteryChargeToItem(obj);
+        if (IsBatteryItem(obj.ItemId ?? ""))
+            Instance.CopyPendingBatteryChargeToItem(obj);
+
+        if (IsUpgradeableMachineItem(obj.ItemId ?? ""))
+            Instance.CopyPendingMachineUpgradesToItem(obj);
     }
 
     private static bool SteamGeneratorDropInActionPrefix(StardewValley.Object __instance, Item dropInItem, bool probe, Farmer who, bool returnFalseIfItemConsumed, ref bool __result)
     {
+        if (Instance != null
+            && __instance != null
+            && dropInItem is StardewValley.Object machineInput
+            && TryHandleIndustrialMachineDropIn(__instance, machineInput, probe, ref __result))
+        {
+            return false;
+        }
+
         if (Instance == null
             || __instance == null
             || dropInItem is not StardewValley.Object fuel
@@ -2780,9 +3622,11 @@ internal sealed class ModEntry : Mod
 
     private void DrawStatefulTexture(SpriteBatch spriteBatch, Texture2D texture, Vector2 screenPos, float alpha, float layerDepth, StardewValley.Object obj, string stateSpriteName)
     {
+        Rectangle? animatedDestination = null;
         if (IsAnimatedStatefulBigCraftable(obj.ItemId))
         {
-            DrawAnimatedBigCraftableTexture(spriteBatch, texture, screenPos, alpha, layerDepth, obj);
+            animatedDestination = GetAnimatedBigCraftableDestination(screenPos, obj);
+            DrawAnimatedBigCraftableTexture(spriteBatch, texture, animatedDestination.Value, alpha, layerDepth);
         }
         else
         {
@@ -2799,6 +3643,7 @@ internal sealed class ModEntry : Mod
         }
 
         DrawFuelGeneratorActiveOverlay(spriteBatch, screenPos, alpha, layerDepth, obj, stateSpriteName);
+        DrawElectricSmelterProcessingOverlay(spriteBatch, screenPos, animatedDestination, alpha, layerDepth, obj, stateSpriteName);
         DrawWindGeneratorWheelOverlay(spriteBatch, screenPos, alpha, layerDepth, obj, stateSpriteName);
         DrawStatefulReadyIndicator(spriteBatch, alpha, layerDepth, obj);
     }
@@ -2808,7 +3653,10 @@ internal sealed class ModEntry : Mod
         return itemId == PowerConstants.IndustrialPreservesJarId
             || itemId == PowerConstants.MetalCaskId
             || itemId == PowerConstants.MetalKegId
-            || itemId == PowerConstants.HardIridiumKegId;
+            || itemId == PowerConstants.HardIridiumKegId
+            || itemId == PowerConstants.ElectricSmelterId
+            || itemId == PowerConstants.IndustrialRecyclerId
+            || itemId == PowerConstants.PoweredDehydratorId;
     }
 
     private static bool UsesStatefulReadyIndicator(string? itemId)
@@ -2816,27 +3664,27 @@ internal sealed class ModEntry : Mod
         return itemId == PowerConstants.IndustrialPreservesJarId
             || itemId == PowerConstants.MetalCaskId
             || itemId == PowerConstants.MetalKegId
-            || itemId == PowerConstants.HardIridiumKegId;
+            || itemId == PowerConstants.HardIridiumKegId
+            || itemId == PowerConstants.ElectricSmelterId
+            || itemId == PowerConstants.IndustrialRecyclerId
+            || itemId == PowerConstants.PoweredDehydratorId;
     }
 
-    private static void DrawAnimatedBigCraftableTexture(
-        SpriteBatch spriteBatch,
-        Texture2D texture,
-        Vector2 screenPos,
-        float alpha,
-        float layerDepth,
-        StardewValley.Object obj)
+    private static Rectangle GetAnimatedBigCraftableDestination(Vector2 screenPos, StardewValley.Object obj)
     {
         Vector2 drawScale = obj.getScale() * 4f;
         int shakeX = obj.shakeTimer > 0 ? Game1.random.Next(-1, 2) : 0;
         int shakeY = obj.shakeTimer > 0 ? Game1.random.Next(-1, 2) : 0;
 
-        Rectangle destination = new(
+        return new Rectangle(
             (int)(screenPos.X - drawScale.X / 2f) + shakeX,
             (int)(screenPos.Y - drawScale.Y / 2f) + shakeY,
             Math.Max(1, (int)(64f + drawScale.X)),
             Math.Max(1, (int)(128f + drawScale.Y / 2f)));
+    }
 
+    private static void DrawAnimatedBigCraftableTexture(SpriteBatch spriteBatch, Texture2D texture, Rectangle destination, float alpha, float layerDepth)
+    {
         spriteBatch.Draw(
             texture,
             destination,
@@ -2938,23 +3786,23 @@ internal sealed class ModEntry : Mod
         }
 
         // Steam puffs near the stack to make active state readable at a glance.
-        Color steamColor = new Color(224, 230, 236) * Math.Min(1f, alpha * (0.4f + pulse * 0.5f));
-        float stackCenterX = screenPos.X + 22f;
+        Color steamColor = new Color(224, 230, 236) * Math.Min(1f, alpha * (0.62f + pulse * 0.58f));
+        float stackCenterX = screenPos.X + 25f;
 
         spriteBatch.Draw(
             Game1.staminaRect,
-            new Vector2(stackCenterX - 3f, screenPos.Y + 18f - drift * 2f),
+            new Vector2(stackCenterX - 4f, screenPos.Y + 10f - drift * 2f),
             unitSrc,
             steamColor,
             0f,
             Vector2.Zero,
-            new Vector2(7f, 4f),
+            new Vector2(8f, 4f),
             SpriteEffects.None,
             overlayDepth);
 
         spriteBatch.Draw(
             Game1.staminaRect,
-            new Vector2(stackCenterX - 3f, screenPos.Y + 12f - drift * 3f),
+            new Vector2(stackCenterX - 3f, screenPos.Y + 4f - drift * 3f),
             unitSrc,
             steamColor * 0.85f,
             0f,
@@ -2965,7 +3813,7 @@ internal sealed class ModEntry : Mod
 
         spriteBatch.Draw(
             Game1.staminaRect,
-            new Vector2(stackCenterX - 1f, screenPos.Y + 10f - drift * 2.2f),
+            new Vector2(stackCenterX - 1f, screenPos.Y - 1f - drift * 2.2f),
             unitSrc,
             steamColor * 0.95f,
             0f,
@@ -3071,11 +3919,115 @@ internal sealed class ModEntry : Mod
         }
     }
 
+    private static void DrawElectricSmelterProcessingOverlay(SpriteBatch spriteBatch, Vector2 screenPos, Rectangle? animatedDestination, float alpha, float layerDepth, StardewValley.Object obj, string stateSpriteName)
+    {
+        if (obj.ItemId != PowerConstants.ElectricSmelterId || !stateSpriteName.EndsWith("__processing_powered", StringComparison.Ordinal))
+            return;
+
+        Rectangle destination = animatedDestination ?? new Rectangle((int)screenPos.X, (int)screenPos.Y, 64, 128);
+        double totalSeconds = Game1.currentGameTime?.TotalGameTime.TotalSeconds ?? 0d;
+        bool startup = obj.shakeTimer > 0;
+        float pulse = 0.5f + ((float)Math.Sin(totalSeconds * 5.5f) + 1f) * 0.25f;
+        float glowStrength = startup
+            ? 0.48f + pulse * 0.24f
+            : 0.28f + pulse * 0.16f;
+        int moltenFrame = ((int)(totalSeconds * 6f)) % 4;
+        int rodFrame = ((int)(totalSeconds * 2.5f)) % 4;
+        float overlayDepth = Math.Min(1f, layerDepth + SteamActiveOverlayLayerOffset);
+
+        DrawElectricSmelterGlowMask(spriteBatch, destination, alpha, glowStrength, overlayDepth);
+        DrawElectricSmelterTopOverlay(spriteBatch, destination, alpha, rodFrame, overlayDepth);
+        DrawElectricSmelterRodOverlay(spriteBatch, destination, alpha, rodFrame, overlayDepth);
+        DrawElectricSmelterMoltenOverlay(spriteBatch, destination, alpha, moltenFrame, overlayDepth);
+    }
+
+    private static void DrawElectricSmelterGlowMask(SpriteBatch spriteBatch, Rectangle destination, float alpha, float glowStrength, float overlayDepth)
+    {
+        Color outerGlow = new Color(255, 104, 24) * Math.Min(1f, alpha * glowStrength);
+        Color innerGlow = new Color(255, 178, 58) * Math.Min(1f, alpha * glowStrength * 0.78f);
+
+        DrawOverlayPixel(spriteBatch, destination, 5, 17, 6, 1, outerGlow, overlayDepth);
+        for (int y = 18; y <= 25; y++)
+            DrawOverlayPixel(spriteBatch, destination, 4, y, 8, 1, y is >= 19 and <= 23 ? innerGlow : outerGlow, overlayDepth);
+    }
+
+    private static void DrawElectricSmelterTopOverlay(SpriteBatch spriteBatch, Rectangle destination, float alpha, int rodFrame, float overlayDepth)
+    {
+        Color topA = new Color(255, 162, 44) * Math.Min(1f, alpha * (0.56f + rodFrame * 0.035f));
+        Color topB = new Color(255, 214, 90) * Math.Min(1f, alpha * (0.48f + (3 - rodFrame) * 0.03f));
+        Color topSide = new Color(255, 126, 32) * Math.Min(1f, alpha * (0.42f + rodFrame * 0.025f));
+
+        DrawOverlayPixel(spriteBatch, destination, 6, 6, 1, 1, rodFrame % 2 == 0 ? topSide : topA, overlayDepth);
+        DrawOverlayPixel(spriteBatch, destination, 7, 6, 1, 1, topA, overlayDepth);
+        DrawOverlayPixel(spriteBatch, destination, 8, 6, 1, 1, topB, overlayDepth);
+        DrawOverlayPixel(spriteBatch, destination, 9, 6, 1, 1, rodFrame % 2 == 0 ? topB : topSide, overlayDepth);
+        DrawOverlayPixel(spriteBatch, destination, 6, 8, 1, 1, rodFrame % 2 == 0 ? topA : topSide, overlayDepth);
+        DrawOverlayPixel(spriteBatch, destination, 7, 8, 1, 1, rodFrame % 2 == 0 ? topB : topA, overlayDepth);
+        DrawOverlayPixel(spriteBatch, destination, 8, 8, 1, 1, rodFrame % 2 == 0 ? topA : topB, overlayDepth);
+        DrawOverlayPixel(spriteBatch, destination, 9, 8, 1, 1, rodFrame % 2 == 0 ? topSide : topB, overlayDepth);
+        DrawOverlayPixel(spriteBatch, destination, 6, 10, 1, 1, rodFrame % 2 == 0 ? topSide : topB, overlayDepth);
+        DrawOverlayPixel(spriteBatch, destination, 7, 10, 1, 1, topA, overlayDepth);
+        DrawOverlayPixel(spriteBatch, destination, 8, 10, 1, 1, topB, overlayDepth);
+        DrawOverlayPixel(spriteBatch, destination, 9, 10, 1, 1, rodFrame % 2 == 0 ? topA : topSide, overlayDepth);
+    }
+
+    private static void DrawElectricSmelterRodOverlay(SpriteBatch spriteBatch, Rectangle destination, float alpha, int rodFrame, float overlayDepth)
+    {
+        Color rodA = new Color(255, 150, 36) * Math.Min(1f, alpha * (0.66f + rodFrame * 0.025f));
+        Color rodB = new Color(255, 216, 84) * Math.Min(1f, alpha * (0.58f + (3 - rodFrame) * 0.02f));
+
+        for (int y = 17; y <= 21; y++)
+        {
+            bool alternate = (y + rodFrame) % 2 == 0;
+            DrawOverlayPixel(spriteBatch, destination, 6, y, 1, 1, alternate ? rodA : rodB, overlayDepth);
+            DrawOverlayPixel(spriteBatch, destination, 9, y, 1, 1, alternate ? rodB : rodA, overlayDepth);
+        }
+    }
+
+    private static void DrawElectricSmelterMoltenOverlay(SpriteBatch spriteBatch, Rectangle destination, float alpha, int moltenFrame, float overlayDepth)
+    {
+        Color redMolten = new Color(196, 64, 18) * alpha;
+        Color orangeMolten = new Color(248, 116, 24) * alpha;
+        Color hotMolten = new Color(255, 192, 72) * alpha;
+        Color[] palette = moltenFrame switch
+        {
+            0 => new[] { hotMolten, orangeMolten, redMolten, orangeMolten },
+            1 => new[] { orangeMolten, hotMolten, orangeMolten, redMolten },
+            2 => new[] { redMolten, orangeMolten, hotMolten, orangeMolten },
+            _ => new[] { orangeMolten, redMolten, orangeMolten, hotMolten }
+        };
+
+        DrawOverlayPixel(spriteBatch, destination, 4, 24, 1, 1, palette[1], overlayDepth);
+        DrawOverlayPixel(spriteBatch, destination, 6, 24, 1, 1, palette[2], overlayDepth);
+        DrawOverlayPixel(spriteBatch, destination, 7, 24, 1, 1, palette[3], overlayDepth);
+        DrawOverlayPixel(spriteBatch, destination, 9, 24, 1, 1, palette[0], overlayDepth);
+        DrawOverlayPixel(spriteBatch, destination, 11, 24, 1, 1, palette[2], overlayDepth);
+        DrawOverlayPixel(spriteBatch, destination, 4, 25, 1, 1, palette[2], overlayDepth);
+        DrawOverlayPixel(spriteBatch, destination, 6, 25, 1, 1, palette[3], overlayDepth);
+        DrawOverlayPixel(spriteBatch, destination, 8, 25, 1, 1, palette[0], overlayDepth);
+        DrawOverlayPixel(spriteBatch, destination, 9, 25, 1, 1, palette[1], overlayDepth);
+        DrawOverlayPixel(spriteBatch, destination, 11, 25, 1, 1, palette[3], overlayDepth);
+    }
+
     private static void DrawOverlayPixel(SpriteBatch spriteBatch, Vector2 screenPos, int spriteX, int spriteY, int widthPixels, int heightPixels, Color color, float layerDepth)
     {
         Vector2 pos = new(screenPos.X + spriteX * 4f, screenPos.Y + spriteY * 4f);
         Vector2 scale = new(widthPixels * 4f, heightPixels * 4f);
         spriteBatch.Draw(Game1.staminaRect, pos, new Rectangle(0, 0, 1, 1), color, 0f, Vector2.Zero, scale, SpriteEffects.None, layerDepth);
+    }
+
+    private static void DrawOverlayPixel(SpriteBatch spriteBatch, Rectangle destination, int spriteX, int spriteY, int widthPixels, int heightPixels, Color color, float layerDepth)
+    {
+        Vector2 pos = SpritePixelToScreen(destination, spriteX, spriteY);
+        Vector2 scale = new(destination.Width * (widthPixels / 16f), destination.Height * (heightPixels / 32f));
+        spriteBatch.Draw(Game1.staminaRect, pos, new Rectangle(0, 0, 1, 1), color, 0f, Vector2.Zero, scale, SpriteEffects.None, layerDepth);
+    }
+
+    private static Vector2 SpritePixelToScreen(Rectangle destination, float spriteX, float spriteY)
+    {
+        return new Vector2(
+            destination.X + destination.Width * (spriteX / 16f),
+            destination.Y + destination.Height * (spriteY / 32f));
     }
 
     private bool TryDrawStatefulTileReplacement(StardewValley.Object obj, SpriteBatch spriteBatch, int tileX, int tileY, float alpha, string source)
@@ -3190,7 +4142,10 @@ internal sealed class ModEntry : Mod
             || itemId == PowerConstants.IndustrialPreservesJarId
             || itemId == PowerConstants.MetalCaskId
             || itemId == PowerConstants.MetalKegId
-            || itemId == PowerConstants.HardIridiumKegId;
+            || itemId == PowerConstants.HardIridiumKegId
+            || itemId == PowerConstants.ElectricSmelterId
+            || itemId == PowerConstants.IndustrialRecyclerId
+            || itemId == PowerConstants.PoweredDehydratorId;
     }
 
     private static bool IsCableItem(string? itemId)
@@ -3221,6 +4176,9 @@ internal sealed class ModEntry : Mod
             PowerConstants.MetalCaskId => GetPoweredMachineState(obj),
             PowerConstants.MetalKegId => GetPoweredMachineState(obj),
             PowerConstants.HardIridiumKegId => GetPoweredMachineState(obj),
+            PowerConstants.ElectricSmelterId => GetElectricSmelterState(obj),
+            PowerConstants.IndustrialRecyclerId => GetPoweredMachineState(obj),
+            PowerConstants.PoweredDehydratorId => GetPoweredMachineState(obj),
             _ => null
         };
 
@@ -3369,6 +4327,157 @@ internal sealed class ModEntry : Mod
 
             float observedSpeedup = GetObservedSpeedup(location, cask);
             UpdateMetalCaskPowerTelemetry(cask, location, observedSpeedup, lastAppliedBonusDays: null);
+        }
+    }
+
+    private void RefreshElectricSmelters(bool enforcePowerLoss = false)
+    {
+        foreach (GameLocation location in EnumerateLoadedLocations())
+            RefreshElectricSmelters(location, enforcePowerLoss);
+    }
+
+    private void RefreshElectricSmelters(GameLocation location, bool enforcePowerLoss = false)
+    {
+        foreach (KeyValuePair<Vector2, StardewValley.Object> pair in location.objects.Pairs)
+        {
+            StardewValley.Object obj = pair.Value;
+            if (obj.ItemId != PowerConstants.ElectricSmelterId)
+                continue;
+
+            if (enforcePowerLoss && obj.MinutesUntilReady > 0 && !IsElectricSmelterActivelyPowered(location, pair.Key, obj))
+            {
+                CancelElectricSmelterProcessing(location, pair.Key, obj);
+                continue;
+            }
+
+            obj.readyForHarvest.Value = obj.heldObject.Value != null && obj.MinutesUntilReady <= 0;
+        }
+    }
+
+    private bool IsElectricSmelterActivelyPowered(GameLocation location, Vector2 tile, StardewValley.Object smelter)
+    {
+        PowerConsumerSnapshot? consumer = PowerQuery.GetConsumerSnapshots(location.NameOrUniqueName)
+            .FirstOrDefault(candidate =>
+                candidate.TileX == (int)tile.X
+                && candidate.TileY == (int)tile.Y
+                && string.Equals(candidate.ItemId, PowerConstants.ElectricSmelterId, StringComparison.Ordinal));
+
+        if (consumer == null)
+            return false;
+
+        PowerNetworkSnapshot? network = PowerQuery.GetNetworkSnapshots()
+            .FirstOrDefault(candidate =>
+                candidate.NetworkId == consumer.NetworkId
+                && candidate.LocationNames.Any(name => string.Equals(name, consumer.LocationName, StringComparison.Ordinal)));
+
+        PowerConsumerPowerState state = PowerConsumerPowerStatus.Classify(consumer, network);
+        if (state is PowerConsumerPowerState.Powered or PowerConsumerPowerState.LowPower)
+            return true;
+
+        return smelter.modData.TryGetValue("meiameiameia.PowerGrid/powered", out string? powered)
+            && powered == "1";
+    }
+
+    private void CancelDisconnectedElectricSmelters(GameLocation location)
+    {
+        foreach (KeyValuePair<Vector2, StardewValley.Object> pair in location.objects.Pairs)
+        {
+            StardewValley.Object obj = pair.Value;
+            if (obj.ItemId != PowerConstants.ElectricSmelterId || obj.MinutesUntilReady <= 0)
+                continue;
+
+            if (HasPowerGridInfrastructureConnection(location, pair.Key, PowerConstants.ElectricSmelterId))
+                continue;
+
+            CancelElectricSmelterProcessing(location, pair.Key, obj);
+        }
+    }
+
+    private void CancelElectricSmelterProcessing(GameLocation location, Vector2 tile, StardewValley.Object smelter)
+    {
+        if (TryGetElectricSmelterInputReturn(smelter, out string inputQualifiedItemId, out int inputCount))
+        {
+            StardewValley.Object returnedInput = ItemRegistry.Create<StardewValley.Object>(inputQualifiedItemId);
+            returnedInput.Stack = Math.Max(1, inputCount);
+            Vector2 dropPosition = new(tile.X * Game1.tileSize + Game1.tileSize / 2f, tile.Y * Game1.tileSize + Game1.tileSize / 2f);
+            Game1.createItemDebris(returnedInput, dropPosition, -1, location);
+        }
+
+        smelter.heldObject.Value = null;
+        smelter.MinutesUntilReady = 0;
+        smelter.readyForHarvest.Value = false;
+        ClearElectricSmelterInputData(smelter);
+    }
+
+    private static bool TryGetElectricSmelterInputReturn(StardewValley.Object smelter, out string inputQualifiedItemId, out int inputCount)
+    {
+        inputQualifiedItemId = "";
+        inputCount = 0;
+
+        if (smelter.modData.TryGetValue(ElectricSmelterInputItemKey, out string? rawInput)
+            && !string.IsNullOrWhiteSpace(rawInput)
+            && smelter.modData.TryGetValue(ElectricSmelterInputCountKey, out string? rawCount)
+            && int.TryParse(rawCount, NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsedCount)
+            && parsedCount > 0)
+        {
+            inputQualifiedItemId = rawInput;
+            inputCount = parsedCount;
+            return true;
+        }
+
+        string? outputQualifiedItemId = smelter.heldObject.Value?.QualifiedItemId;
+        if (string.IsNullOrWhiteSpace(outputQualifiedItemId))
+            return false;
+
+        ElectricSmelterRecipe? recipe = ElectricSmelterRecipes.Values
+            .FirstOrDefault(candidate => string.Equals(candidate.OutputQualifiedItemId, outputQualifiedItemId, StringComparison.OrdinalIgnoreCase));
+        if (recipe == null)
+            return false;
+
+        inputQualifiedItemId = recipe.InputQualifiedItemId;
+        inputCount = recipe.InputCount;
+        return true;
+    }
+
+    private static void ClearElectricSmelterInputData(StardewValley.Object smelter)
+    {
+        smelter.modData.Remove(ElectricSmelterInputItemKey);
+        smelter.modData.Remove(ElectricSmelterInputCountKey);
+    }
+
+    private void RefreshIndustrialRecyclers()
+    {
+        foreach (GameLocation location in EnumerateLoadedLocations())
+            RefreshIndustrialRecyclers(location);
+    }
+
+    private static void RefreshIndustrialRecyclers(GameLocation location)
+    {
+        foreach (KeyValuePair<Vector2, StardewValley.Object> pair in location.objects.Pairs)
+        {
+            StardewValley.Object obj = pair.Value;
+            if (obj.ItemId != PowerConstants.IndustrialRecyclerId)
+                continue;
+
+            obj.readyForHarvest.Value = obj.heldObject.Value != null && obj.MinutesUntilReady <= 0;
+        }
+    }
+
+    private void RefreshPoweredDehydrators()
+    {
+        foreach (GameLocation location in EnumerateLoadedLocations())
+            RefreshPoweredDehydrators(location);
+    }
+
+    private static void RefreshPoweredDehydrators(GameLocation location)
+    {
+        foreach (KeyValuePair<Vector2, StardewValley.Object> pair in location.objects.Pairs)
+        {
+            StardewValley.Object obj = pair.Value;
+            if (obj.ItemId != PowerConstants.PoweredDehydratorId)
+                continue;
+
+            obj.readyForHarvest.Value = obj.heldObject.Value != null && obj.MinutesUntilReady <= 0;
         }
     }
 
@@ -3585,6 +4694,11 @@ internal sealed class ModEntry : Mod
         BatteryState.RemoveTileState(batteryNode);
     }
 
+    private void HandleRemovedMachineUpgradeState(GameLocation location, Vector2 tile, StardewValley.Object removedObj)
+    {
+        QueuePendingMachineUpgrades(location, tile, removedObj);
+    }
+
     private bool HandleRemovedConduitState(GameLocation location, Vector2 tile, StardewValley.Object removedObj)
     {
         if (removedObj.ItemId != PowerConstants.PowerConduitId)
@@ -3679,6 +4793,22 @@ internal sealed class ModEntry : Mod
         return isPowered ? IndustrialPreservesJarPoweredState : IndustrialPreservesJarUnpoweredState;
     }
 
+    private static string GetElectricSmelterState(StardewValley.Object obj)
+    {
+        bool energized = TryReadPowerModDataString(obj.modData, "energized", out string? energizedText)
+            && energizedText == "1";
+        bool powered = TryReadPowerModDataString(obj.modData, "powered", out string? poweredText)
+            && poweredText == "1";
+
+        if (obj.MinutesUntilReady > 0 && (powered || obj.shakeTimer > 0))
+            return ElectricSmelterProcessingPoweredState;
+
+        if (energized || powered)
+            return ElectricSmelterStandbyState;
+
+        return ElectricSmelterOfflineState;
+    }
+
     private int GetBatteryCapacity(string itemId)
     {
         return itemId switch
@@ -3704,6 +4834,9 @@ internal sealed class ModEntry : Mod
             PowerConstants.MetalCaskId => MetalCaskSpriteName,
             PowerConstants.MetalKegId => MetalKegSpriteName,
             PowerConstants.HardIridiumKegId => HardIridiumKegSpriteName,
+            PowerConstants.ElectricSmelterId => ElectricSmelterSpriteName,
+            PowerConstants.IndustrialRecyclerId => IndustrialRecyclerSpriteName,
+            PowerConstants.PoweredDehydratorId => PoweredDehydratorSpriteName,
             _ => null
         };
     }
@@ -3904,6 +5037,82 @@ internal sealed class ModEntry : Mod
         return true;
     }
 
+    private static bool TryHandleIndustrialMachineDropIn(StardewValley.Object machine, StardewValley.Object input, bool probe, ref bool result)
+    {
+        if (Instance == null)
+            return false;
+
+        string itemId = machine.ItemId ?? "";
+        GameLocation? location = machine.Location ?? Game1.currentLocation;
+        Vector2 tile = machine.TileLocation;
+
+        if (itemId == PowerConstants.ElectricSmelterId)
+        {
+            if (!ElectricSmelterRecipes.TryGetValue(input.QualifiedItemId, out ElectricSmelterRecipe? recipe))
+                return false;
+
+            result = machine.MinutesUntilReady <= 0
+                && machine.heldObject.Value == null
+                && input.Stack >= recipe.InputCount
+                && location != null
+                && Instance.HasPowerGridInfrastructureConnection(location, tile, PowerConstants.ElectricSmelterId);
+
+            if (probe || !result || location == null)
+                return true;
+
+            result = Instance.TryStartElectricSmelter(location, tile, machine, input, showMessages: false, consumeInput: () => ReduceInputStack(input, recipe.InputCount));
+            return true;
+        }
+
+        if (itemId == PowerConstants.IndustrialRecyclerId)
+        {
+            if (!IndustrialRecyclerRecipes.ContainsKey(input.QualifiedItemId))
+                return false;
+
+            result = machine.MinutesUntilReady <= 0
+                && machine.heldObject.Value == null
+                && input.Stack > 0;
+
+            if (probe || !result)
+                return true;
+
+            result = Instance.TryStartIndustrialRecycler(machine, input, showMessages: false, consumeInput: () => ReduceInputStack(input, 1));
+            return true;
+        }
+
+        return false;
+    }
+
+    private static void ReduceInputStack(StardewValley.Object input, int count)
+    {
+        input.Stack = Math.Max(0, input.Stack - Math.Max(0, count));
+    }
+
+    private static void PoweredDehydratorDropInActionPostfix(StardewValley.Object __instance, Item dropInItem, bool probe, Farmer who, bool returnFalseIfItemConsumed, bool __result)
+    {
+        if (!__result
+            || probe
+            || __instance?.ItemId != PowerConstants.PoweredDehydratorId)
+        {
+            return;
+        }
+
+        if (MachineUpgradeState.HasUpgrade(__instance, PowerConstants.HeatRegulatorId)
+            && __instance.MinutesUntilReady > PowerConstants.TickIntervalMinutes)
+        {
+            __instance.MinutesUntilReady = Math.Max(
+                PowerConstants.TickIntervalMinutes,
+                (int)MathF.Ceiling(__instance.MinutesUntilReady * PoweredDehydratorHeatRegulatorSpeedMultiplier));
+        }
+
+        if (MachineUpgradeState.HasUpgrade(__instance, PowerConstants.DryingRackArrayId)
+            && __instance.heldObject.Value != null
+            && Game1.random.NextDouble() < PoweredDehydratorDryingRackExtraOutputChance)
+        {
+            __instance.heldObject.Value.Stack++;
+        }
+    }
+
     private static int TimeDiffMinutes(int oldTime, int newTime)
     {
         int oldHour = oldTime / 100;
@@ -3921,4 +5130,5 @@ internal sealed class ModEntry : Mod
     }
 
     private sealed record PendingBatteryCharge(string LocationName, Vector2 Tile, string ItemId, int Charge);
+    private sealed record PendingMachineUpgradeData(string LocationName, Vector2 Tile, string ItemId, string SerializedUpgradeIds);
 }

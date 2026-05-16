@@ -1,0 +1,47 @@
+{
+  "name": "Stage - Mid Y2 Smelter Upgrade Comparison",
+  "description": "Focused Year 2 smelter room using one base Electric Smelter, one Heating Coil smelter, and one Efficiency Core smelter. Tests whether upgrade variants stay within Iron Cable and Combustion Generator expectations.",
+  "days": 1,
+  "cable": "Iron Cable",
+  "initialBatteryChargePercent": 1.0,
+  "weather": {
+    "clear": 1.0
+  },
+  "machines": [
+    {
+      "id": "Electric Smelter",
+      "count": 1,
+      "activeFraction": 0.90
+    },
+    {
+      "id": "Electric Smelter + Heating Coil",
+      "count": 1,
+      "activeFraction": 0.90
+    },
+    {
+      "id": "Electric Smelter + Efficiency Core",
+      "count": 1,
+      "activeFraction": 0.90
+    },
+    {
+      "id": "Industrial Recycler",
+      "count": 1,
+      "activeFraction": 0.50
+    }
+  ],
+  "generators": [
+    {
+      "id": "Combustion Generator",
+      "count": 1
+    }
+  ],
+  "batteries": [
+    {
+      "id": "Basic Power Battery",
+      "count": 2
+    }
+  ],
+  "fuelInventory": {
+    "Biofuel": 2
+  }
+}

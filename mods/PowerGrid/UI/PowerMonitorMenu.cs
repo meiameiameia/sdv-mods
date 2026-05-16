@@ -92,7 +92,7 @@ internal sealed class PowerMonitorMenu : IClickableMenu
                     .OrderBy(consumer => consumer.TileY)
                     .ThenBy(consumer => consumer.TileX))
                 {
-                    lines.Add($"  ({consumer.TileX},{consumer.TileY}) {consumer.DisplayName}: {FormatConsumerLine(consumer)}");
+                    lines.Add($"  ({consumer.TileX},{consumer.TileY}) {consumer.DisplayName}: {FormatConsumerLine(consumer, net)}");
                 }
             }
 
@@ -100,24 +100,35 @@ internal sealed class PowerMonitorMenu : IClickableMenu
         }
     }
 
-    private static string FormatConsumerLine(PowerConsumerSnapshot consumer)
+    private static string FormatConsumerLine(PowerConsumerSnapshot consumer, PowerNetworkSnapshot network)
     {
+        PowerConsumerPowerState state = PowerConsumerPowerStatus.Classify(consumer, network);
+        string stateLabel = FormatPowerState(state).ToUpperInvariant();
+
         if (consumer.ProgressMode == "days" && !string.IsNullOrWhiteSpace(consumer.ProgressText))
         {
-            string powerState = consumer.IsPowered ? "POWERED" : "DAY-BASED";
-            return $"{powerState}, EU {consumer.EUAllocated}/{consumer.DemandPerTick}, live speed {consumer.SpeedupFraction:P0}, {consumer.ProgressText}";
+            return $"{stateLabel}, EU {consumer.EUAllocated}/{consumer.DemandPerTick}, live speed {consumer.SpeedupFraction:P0}, {consumer.ProgressText}";
         }
 
         if (consumer.IsProcessing)
         {
-            string powerState = consumer.IsPowered ? "POWERED" : "UNPOWERED";
-            return $"{powerState}, EU {consumer.EUAllocated}/{consumer.DemandPerTick}, speed {consumer.SpeedupFraction:P0}, accel {consumer.MinutesAccelerated}m, about {consumer.MinutesRemaining}m remaining";
+            return $"{stateLabel}, EU {consumer.EUAllocated}/{consumer.DemandPerTick}, speed {consumer.SpeedupFraction:P0}, accel {consumer.MinutesAccelerated}m, about {consumer.MinutesRemaining}m remaining";
         }
 
-        if (consumer.IsPowered)
-            return $"POWERED, EU {consumer.EUAllocated}/{consumer.DemandPerTick}, speed {consumer.SpeedupFraction:P0}, ready for work";
+        return $"{stateLabel}, demand {consumer.DemandPerTick} EU/tick, speed {consumer.SpeedupFraction:P0}";
+    }
 
-        return $"IDLE/UNPOWERED on latest tick, EU {consumer.EUAllocated}/{consumer.DemandPerTick}";
+    private static string FormatPowerState(PowerConsumerPowerState state)
+    {
+        return state switch
+        {
+            PowerConsumerPowerState.GridOffline => "grid offline",
+            PowerConsumerPowerState.Standby => "standby",
+            PowerConsumerPowerState.Powered => "powered",
+            PowerConsumerPowerState.LowPower => "low power",
+            PowerConsumerPowerState.ProcessingUnpowered => "processing unpowered",
+            _ => "not connected"
+        };
     }
 
     public override void draw(SpriteBatch b)
@@ -143,9 +154,9 @@ internal sealed class PowerMonitorMenu : IClickableMenu
                 color = new Color(60, 60, 160);
             else if (line.StartsWith("---"))
                 color = new Color(100, 100, 100);
-            else if (line.Contains("POWERED"))
+            else if (line.Contains("POWERED") || line.Contains("STANDBY"))
                 color = new Color(20, 140, 20);
-            else if (line.Contains("UNPOWERED"))
+            else if (line.Contains("UNPOWERED") || line.Contains("LOW POWER") || line.Contains("GRID OFFLINE"))
                 color = new Color(180, 40, 40);
 
             b.DrawString(Game1.smallFont, line, new Vector2(textX, textY), color);
