@@ -26,7 +26,7 @@ internal static class GmcmIntegration
         return Math.Max(0, euPerTick) / PowerConstants.TickIntervalMinutes;
     }
 
-    public static void Register(IModHelper helper, IManifest manifest, ModConfig config, Action resetCallback)
+    public static void Register(IModHelper helper, IManifest manifest, ModConfig config, Action resetCallback, Action saveCallback)
     {
         var gmcmApi = helper.ModRegistry.GetApi<IGmcmApi>("spacechase0.GenericModConfigMenu");
         if (gmcmApi == null)
@@ -38,6 +38,7 @@ internal static class GmcmIntegration
         }, () =>
         {
             helper.WriteConfig(config);
+            saveCallback();
         });
 
         // --- Unlocking ---

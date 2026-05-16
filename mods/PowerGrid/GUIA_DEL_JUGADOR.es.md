@@ -48,17 +48,17 @@ Si usas Generic Mod Config Menu, el comportamiento de los desbloqueos puede camb
 | --- | ---: | --- | --- |
 | Generador de Vapor | 75 EU/tick | Carbón, Madera, Madera Noble | Generador inicial. Va bien para salas pequeñas. |
 | Generador de Combustión | 240 EU/tick | Biocombustible | Generador de mitad de juego. Va bien para grupos grandes de máquinas. |
-| Generador de Radioisótopos | 900 EU/tick | Combustible de Radioisótopos, Barra Radiactiva | Generador de alta densidad para salas de producción pesadas en el juego tardío. |
+| Generador de Radioisótopos | 900 EU/tick | Combustible de Radioisótopos, Lingote Radiactivo | Generador de alta densidad para salas de producción pesadas en el juego tardío. |
 | Generador Eólico | 25 EU/tick base | ninguno | Energía pasiva, solo en exteriores, ajustada por el clima. |
 
 Recetas de generadores:
 
 | Generador | Receta |
 | --- | --- |
-| Generador de Vapor | Barra de Hierro x5, Barra de Cobre x2, Carbón x6, Cuarzo Refinado x1 |
-| Generador de Combustión | Generador de Vapor x1, Barra de Hierro x8, Barra de Oro x5, Cuarzo Refinado x3 |
-| Generador de Radioisótopos | Generador de Combustión x1, Barra Radiactiva x3, Barra de Iridio x6, Batería de Energía de Iridio x1, Cuarzo Refinado x4 |
-| Generador Eólico | Barra de Hierro x6, Cuarzo Refinado x4, Batería x1, Carbón x4 |
+| Generador de Vapor | Lingote de Hierro x5, Lingote de Cobre x2, Carbón x6, Cuarzo Refinado x1 |
+| Generador de Combustión | Generador de Vapor x1, Lingote de Hierro x8, Lingote de Oro x5, Cuarzo Refinado x3 |
+| Generador de Radioisótopos | Generador de Combustión x1, Lingote Radiactivo x3, Lingote de Iridio x6, Batería de Energía de Iridio x1, Cuarzo Refinado x4 |
+| Generador Eólico | Lingote de Hierro x6, Cuarzo Refinado x4, Batería x1, Carbón x4 |
 
 La producción eólica cambia con el clima:
 
@@ -66,7 +66,7 @@ La producción eólica cambia con el clima:
 - Lluvia o tormenta: producción mayor
 - Nieve: producción menor
 
-Haz clic derecho en un `Generador de Vapor` mientras sostienes `Carbón`, `Madera` o `Madera Noble` para cargarlo. Haz clic derecho en un `Generador de Combustión` mientras sostienes `Biocombustible` para cargarlo. Haz clic derecho en un `Generador de Radioisótopos` mientras sostienes `Combustible de Radioisótopos` o una `Barra Radiactiva` para cargarlo.
+Haz clic derecho en un `Generador de Vapor` mientras sostienes `Carbón`, `Madera` o `Madera Noble` para cargarlo. Haz clic derecho en un `Generador de Combustión` mientras sostienes `Biocombustible` para cargarlo. Haz clic derecho en un `Generador de Radioisótopos` mientras sostienes `Combustible de Radioisótopos` o un `Lingote Radiactivo` para cargarlo.
 
 ## Combustible
 
@@ -76,8 +76,8 @@ Haz clic derecho en un `Generador de Vapor` mientras sostienes `Carbón`, `Mader
 | Madera | Generador de Vapor | Combustible de respaldo fácil de conseguir. |
 | Madera Noble | Generador de Vapor | Mejor que la Madera. |
 | Biocombustible | Generador de Combustión | Combustible fabricado de mitad de juego. |
-| Combustible de Radioisótopos | Generador de Radioisótopos | Combustible fabricado de juego tardío. Mucho más eficiente que las barras en bruto. |
-| Barra Radiactiva | Generador de Radioisótopos | Combustible heredado en bruto. Menos eficiente que el Combustible de Radioisótopos. |
+| Combustible de Radioisótopos | Generador de Radioisótopos | Combustible fabricado de juego tardío. Mucho más eficiente que los lingotes en bruto. |
+| Lingote Radiactivo | Generador de Radioisótopos | Combustible heredado en bruto. Menos eficiente que el Combustible de Radioisótopos. |
 
 Receta de Biocombustible:
 
@@ -89,16 +89,16 @@ Receta de Combustible de Radioisótopos:
 
 | Receta | Resultado |
 | --- | ---: |
-| Barra Radiactiva x1, Cuarzo Refinado x1 | Combustible de Radioisótopos x7 |
+| Lingote Radiactivo x1, Cuarzo Refinado x1 | Combustible de Radioisótopos x7 |
 
 ## Cables
 
 | Cable | Receta | Capacidad |
 | --- | --- | ---: |
-| Cable de Cobre | Barra de Cobre x3 | 10 cables, 50 EU/tick |
-| Cable de Hierro | Barra de Hierro x3 | 10 cables, 250 EU/tick |
-| Cable de Iridio | Barra de Iridio x2, Cuarzo Refinado x1 | 10 cables, 1.000 EU/tick |
-| Cable de Iridio Energizado | Barra de Iridio x4, Barra Radiactiva x1, Batería x1, Cuarzo Refinado x2 | 10 cables, 3.000 EU/tick |
+| Cable de Cobre | Lingote de Cobre x3 | 10 cables, 50 EU/tick |
+| Cable de Hierro | Lingote de Hierro x3 | 10 cables, 250 EU/tick |
+| Cable de Iridio | Lingote de Iridio x2, Cuarzo Refinado x1 | 10 cables, 1.000 EU/tick |
+| Cable de Iridio Energizado | Lingote de Iridio x4, Lingote Radiactivo x1, Batería x1, Cuarzo Refinado x2 | 10 cables, 3.000 EU/tick |
 
 La capacidad es la cantidad de EU que una red puede mover por tick. Si una red mezcla cables de distintos niveles, el cable más débil limita toda la red.
 
@@ -106,8 +106,8 @@ La capacidad es la cantidad de EU que una red puede mover por tick. Si una red m
 
 | Batería | Receta | Capacidad |
 | --- | --- | ---: |
-| Batería de Energía Básica | Batería x1, Barra de Cobre x4, Cuarzo Refinado x1 | 500 EU |
-| Batería de Energía de Iridio | Batería x2, Barra de Iridio x2, Cuarzo Refinado x3 | 2.000 EU |
+| Batería de Energía Básica | Batería x1, Lingote de Cobre x4, Cuarzo Refinado x1 | 500 EU |
+| Batería de Energía de Iridio | Batería x2, Lingote de Iridio x2, Cuarzo Refinado x3 | 2.000 EU |
 
 Vale la pena construir baterías pronto. Guardan el EU sobrante, cubren picos de demanda y mantienen las máquinas energizadas cuando los generadores se quedan sin combustible o cuando baja la producción eólica.
 
@@ -119,7 +119,7 @@ Los Conductos de Energía conectan redes entre ubicaciones, como de la Granja a 
 
 | Objeto | Receta |
 | --- | --- |
-| Conducto de Energía | Barra de Iridio x1, Batería x1, Cuarzo Refinado x1 |
+| Conducto de Energía | Lingote de Iridio x1, Batería x1, Cuarzo Refinado x1 |
 
 Para enlazar conductos:
 
@@ -133,10 +133,10 @@ También puedes hacer clic derecho en un conducto y luego clic derecho en el otr
 
 | Máquina | Receta | Uso de Energía | Bono Máximo |
 | --- | --- | ---: | ---: |
-| Envasadora Industrial | Madera x30, Carbón x4, Barra de Hierro x4, Cuarzo Refinado x1 | 20 EU/tick | 20% más rápida |
-| Barril Metálico | Barra de Hierro x6, Barra de Cobre x4, Cuarzo Refinado x1 | 10 EU/tick | 20% más rápido |
-| Barril de Iridio Reforzado | Barra de Iridio x4, Barra de Hierro x2, Cuarzo Refinado x1 | 30 EU/tick | 30% más rápido |
-| Tonel Metálico | Madera Noble x8, Barra de Hierro x6, Barra de Iridio x2, Cuarzo Refinado x1 | 40 EU/tick | 50% más rápido al añejar |
+| Envasadora Industrial | Madera x30, Carbón x4, Lingote de Hierro x4, Cuarzo Refinado x1 | 20 EU/tick | 20% más rápida |
+| Barril Metálico | Lingote de Hierro x6, Lingote de Cobre x4, Cuarzo Refinado x1 | 10 EU/tick | 20% más rápido |
+| Barril de Iridio Reforzado | Lingote de Iridio x4, Lingote de Hierro x2, Cuarzo Refinado x1 | 30 EU/tick | 30% más rápido |
+| Tonel Metálico | Madera Noble x8, Lingote de Hierro x6, Lingote de Iridio x2, Cuarzo Refinado x1 | 40 EU/tick | 50% más rápido al añejar |
 
 El Barril de Iridio Reforzado está pensado para usar el comportamiento del Hardwood Keg de Grapes of Ferngill. Sin Grapes of Ferngill, vuelve al comportamiento del Barril vanilla.
 
@@ -146,11 +146,11 @@ El Barril de Iridio Reforzado está pensado para usar el comportamiento del Hard
 
 | Máquina | Receta | Uso de Energía | Bono Máximo |
 | --- | --- | ---: | ---: |
-| Horno Eléctrico | Barra de Hierro x8, Barra de Oro x4, Cuarzo Refinado x3, Batería x1 | 40 EU/tick | 50% más rápido |
+| Horno Eléctrico | Lingote de Hierro x8, Lingote de Oro x4, Cuarzo Refinado x3, Batería x1 | 40 EU/tick | 50% más rápido |
 
 Qué hace:
 
-- Funde mineral en barras.
+- Funde mineral en lingotes.
 - Necesita una red energizada activa antes de empezar.
 - Si pierde la conexión de energía a mitad del proceso, el mineral se devuelve en vez de terminar gratis.
 
@@ -158,19 +158,19 @@ Recetas base compatibles:
 
 | Entrada | Salida | Tiempo Base |
 | --- | --- | ---: |
-| Mineral de Cobre x5 | Barra de Cobre x1 | 30m |
-| Mineral de Hierro x5 | Barra de Hierro x1 | 120m |
-| Mineral de Oro x5 | Barra de Oro x1 | 300m |
-| Mineral de Iridio x5 | Barra de Iridio x1 | 480m |
-| Mineral Radiactivo x5 | Barra Radiactiva x1 | 600m |
+| Mineral de Cobre x5 | Lingote de Cobre x1 | 30m |
+| Mineral de Hierro x5 | Lingote de Hierro x1 | 120m |
+| Mineral de Oro x5 | Lingote de Oro x1 | 300m |
+| Mineral de Iridio x5 | Lingote de Iridio x1 | 480m |
+| Mineral Radiactivo x5 | Lingote Radiactivo x1 | 600m |
 
-Probabilidad base de barra extra: 5%
+Probabilidad base de lingote extra: 5%
 
 ### Recicladora Industrial
 
 | Máquina | Receta | Uso de Energía | Bono Máximo |
 | --- | --- | ---: | ---: |
-| Recicladora Industrial | Barra de Hierro x6, Cuarzo Refinado x4, Barra de Cobre x4, Carbón x4 | 20 EU/tick | 35% más rápida |
+| Recicladora Industrial | Lingote de Hierro x6, Cuarzo Refinado x4, Lingote de Cobre x4, Carbón x4 | 20 EU/tick | 35% más rápida |
 
 Qué hace:
 
@@ -193,7 +193,7 @@ Salidas base compatibles:
 
 | Máquina | Receta | Uso de Energía | Bono Máximo |
 | --- | --- | ---: | ---: |
-| Deshidratador Energizado | Barra de Hierro x6, Madera Noble x10, Cuarzo Refinado x3, Batería x1 | 20 EU/tick | 40% más rápido |
+| Deshidratador Energizado | Lingote de Hierro x6, Madera Noble x10, Cuarzo Refinado x3, Batería x1 | 20 EU/tick | 40% más rápido |
 
 Qué hace:
 
@@ -221,12 +221,12 @@ Cada nueva máquina industrial tiene actualmente un solo espacio de mejora.
 
 | Mejora | Receta |
 | --- | --- |
-| Bobina de Calentamiento | Barra de Oro x3, Cuarzo Refinado x2, Carbón x6 |
-| Núcleo de Eficiencia | Cuarzo Refinado x4, Batería x1, Barra de Oro x2 |
-| Cámara Catalítica | Barra de Iridio x2, Barra de Oro x4, Cuarzo Refinado x4 |
-| Imán Clasificador | Barra de Hierro x4, Cuarzo Refinado x2 |
-| Conjunto de Rejillas de Secado | Madera x20, Madera Noble x4, Barra de Oro x1 |
-| Regulador Térmico | Barra de Oro x2, Cuarzo Refinado x2, Carbón x4 |
+| Bobina de Calentamiento | Lingote de Oro x3, Cuarzo Refinado x2, Carbón x6 |
+| Núcleo de Eficiencia | Cuarzo Refinado x4, Batería x1, Lingote de Oro x2 |
+| Cámara Catalítica | Lingote de Iridio x2, Lingote de Oro x4, Cuarzo Refinado x4 |
+| Imán Clasificador | Lingote de Hierro x4, Cuarzo Refinado x2 |
+| Conjunto de Rejillas de Secado | Madera x20, Madera Noble x4, Lingote de Oro x1 |
+| Regulador Térmico | Lingote de Oro x2, Cuarzo Refinado x2, Carbón x4 |
 
 ### Efectos de las Mejoras
 
@@ -234,7 +234,7 @@ Cada nueva máquina industrial tiene actualmente un solo espacio de mejora.
 | --- | --- | --- |
 | Bobina de Calentamiento | Horno Eléctrico | Reduce el tiempo de fundición y aumenta la demanda de EU. |
 | Núcleo de Eficiencia | Horno / Recicladora / Deshidratador | Reduce la demanda de EU. |
-| Cámara Catalítica | Horno Eléctrico | Aumenta la probabilidad de barra extra y aumenta la demanda de EU. |
+| Cámara Catalítica | Horno Eléctrico | Aumenta la probabilidad de lingote extra y aumenta la demanda de EU. |
 | Imán Clasificador | Recicladora Industrial | Añade mejores probabilidades de recuperar metal y aumenta la demanda de EU. |
 | Conjunto de Rejillas de Secado | Deshidratador Energizado | Puede mejorar la cantidad producida por lote y aumenta la demanda de EU. |
 | Regulador Térmico | Deshidratador Energizado | Reduce el tiempo de deshidratación y aumenta la demanda de EU. |
@@ -313,3 +313,4 @@ PowerGrid puede jugarse por sí solo, pero se siente mejor con:
 ## Créditos
 
 - Traducción al español revisada por Hayato2236.
+

@@ -275,7 +275,8 @@ internal sealed class ModEntry : Mod
         ["(O)380"] = new("(O)380", "(O)335", 5, 120),
         ["(O)384"] = new("(O)384", "(O)336", 5, 300),
         ["(O)386"] = new("(O)386", "(O)337", 5, 480),
-        ["(O)909"] = new("(O)909", "(O)910", 5, 600)
+        ["(O)909"] = new("(O)909", "(O)910", 5, 600),
+        ["(O)80"]  = new("(O)80",  "(O)338", 1, 90)
     };
 
     private static readonly Dictionary<string, IndustrialRecyclerRecipe> IndustrialRecyclerRecipes = new(StringComparer.OrdinalIgnoreCase)
@@ -343,6 +344,11 @@ internal sealed class ModEntry : Mod
         {
             Config = Helper.ReadConfig<ModConfig>() ?? new ModConfig();
             RegisterPowerGridOwnedConsumers();
+            PowerMgr.MarkAllDirty();
+        }, () =>
+        {
+            RegisterPowerGridOwnedConsumers();
+            PowerMgr.MarkAllDirty();
         });
 
         RegisterPowerGridOwnedConsumers();
@@ -1671,7 +1677,7 @@ internal sealed class ModEntry : Mod
 
                 var sourceRect = new Rectangle(col * tileW, row * tileH, tileW, tileH);
                 Vector2 screenPos = Game1.GlobalToLocal(Game1.viewport, new Vector2(cable.Tile.X * 64, cable.Tile.Y * 64));
-                screenPos.Y -= 64; 
+                screenPos.Y -= 64;
 
                 float layerDepth = 1f;
 
@@ -1903,7 +1909,7 @@ internal sealed class ModEntry : Mod
                     {
                         // Draw a central dot
                         bool isCenter = x >= 6 && x <= 9 && y >= 22 && y <= 25;
-                        
+
                         // Draw arms based on bitmask (Up=1, Right=2, Down=4, Left=8)
                         bool isUp = (mask & 1) != 0 && x >= 6 && x <= 9 && y >= 16 && y < 22;
                         bool isRight = (mask & 2) != 0 && x > 9 && x <= 15 && y >= 22 && y <= 25;
@@ -5055,7 +5061,8 @@ internal sealed class ModEntry : Mod
                 && machine.heldObject.Value == null
                 && input.Stack >= recipe.InputCount
                 && location != null
-                && Instance.HasPowerGridInfrastructureConnection(location, tile, PowerConstants.ElectricSmelterId);
+                && Instance.HasPowerGridInfrastructureConnection(location, tile, PowerConstants.ElectricSmelterId)
+                && Instance.IsElectricSmelterActivelyPowered(location, tile, machine);
 
             if (probe || !result || location == null)
                 return true;
